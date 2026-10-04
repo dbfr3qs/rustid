@@ -14,6 +14,11 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
  && cp target/release/rustid-server /rustid-server
 RUN mkdir -p /out/var/lib/rustid
 
+# The bare executable, for release archives:
+#   docker buildx build --target binary --output type=local,dest=out .
+FROM scratch AS binary
+COPY --from=build /rustid-server /rustid-server
+
 FROM scratch
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build --chown=65532:65532 /out/ /

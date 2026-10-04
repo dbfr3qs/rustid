@@ -1,0 +1,221 @@
+# A tag push vX.Y.Z releases rustid: static musl binaries for x86_64 and
+# aarch64, each built on a native runner from the Dockerfile, a multi-arch
+# image on ghcr.io, and a GitHub release with the CHANGELOG notes and
+# SHA-256 checksums. Run by hand on a branch, it builds and checks
+# everything and publishes nothing.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Release script tests
+        run: scripts/test-release-scripts.sh
+      - name: Version
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version=$(scripts/release-version.sh "$GITHUB_REF_NAME")
+            publish=true
+          else
+            version=$(scripts/release-version.sh)
+            publish=false
+          fi
+          case "$version" in *-*) prerelease=true ;; *) prerelease=false ;; esac
+          {
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+            echo "publish=$publish"
+          } >>"$GITHUB_OUTPUT"
+      - name: Release notes
+        run: scripts/release-notes.sh "${{ steps.version.outputs.version }}" >notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notes
+          path: notes.md
+
+  build:
+    needs: check
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux/amd64
+            target: x86_64-unknown-linux-musl
+            arch: x86-64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            target: aarch64-unknown-linux-musl
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the binary
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          target: binary
+          outputs: type=local,dest=out
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+      - name: Check the binary
+        run: |
+          chmod +x out/rustid-server
+          info=$(file out/rustid-server)
+          echo "$info"
+          grep -q "${{ matrix.arch }}" <<<"$info" || { echo "not ${{ matrix.arch }}"; exit 1; }
+          grep -Eq "static(-pie)? linked|statically linked" <<<"$info" || { echo "not static"; exit 1; }
+          out/rustid-server --version | grep -qx "rustid-server $VERSION"
+      - name: Package
+        run: |
+          dir="rustid-server-$VERSION-$TARGET"
+          mkdir "$dir"
+          cp out/rustid-server LICENSE-MIT LICENSE-APACHE README.md "$dir/"
+          tar --owner=0 --group=0 -czf "$dir.tar.gz" "$dir"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive-${{ matrix.target }}
+          path: rustid-server-*.tar.gz
+          if-no-files-found: error
+      - name: Image labels
+        if: needs.check.outputs.publish == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+      - name: Log in to ghcr.io
+        if: needs.check.outputs.publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the image by digest
+        if: needs.check.outputs.publish == 'true'
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.target }}
+      - name: Export the digest
+        if: needs.check.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          mkdir -p digests
+          touch "digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v4
+        if: needs.check.outputs.publish == 'true'
+        with:
+          name: digest-${{ matrix.target }}
+          path: digests/*
+          if-no-files-found: error
+
+  image:
+    needs: [check, build]
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: digest-*
+          merge-multiple: true
+          path: digests
+      - uses: docker/setup-buildx-action@v3
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          # latest=auto: stable versions only, never a pre-release.
+          flavor: latest=auto
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create the multi-arch image
+        working-directory: digests
+        run: |
+          tags=()
+          while read -r tag; do tags+=(-t "$tag"); done < <(jq -r '.tags[]' <<<"$DOCKER_METADATA_OUTPUT_JSON")
+          refs=()
+          for digest in *; do refs+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${tags[@]}" "${refs[@]}"
+      - name: Check both platforms
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          platforms=$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}' \
+            | jq -r '.manifests[].platform | "\(.os)/\(.architecture)"')
+          echo "$platforms"
+          grep -qx linux/amd64 <<<"$platforms"
+          grep -qx linux/arm64 <<<"$platforms"
+
+  release:
+    needs: [check, build, image]
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: archive-*
+          merge-multiple: true
+          path: dist
+      - uses: actions/download-artifact@v5
+        with:
+          name: notes
+      - name: Checksums
+        working-directory: dist
+        run: |
+          sha256sum -- *.tar.gz >SHA256SUMS
+          cat SHA256SUMS
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.check.outputs.version }}
+          PRERELEASE: ${{ needs.check.outputs.prerelease }}
+        run: |
+          flags=()
+          [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "rustid $VERSION" --notes-file notes.md "${flags[@]}" dist/*

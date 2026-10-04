@@ -30,6 +30,9 @@ fi
 echo "== references: no upstream product names"
 scripts/check-no-upstream-refs.sh
 
+echo "== release scripts"
+scripts/test-release-scripts.sh
+
 echo "== rust: fmt, clippy, test"
 cargo fmt --all --check
 cargo clippy --locked --workspace --all-targets -- -D warnings

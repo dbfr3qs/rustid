@@ -7,6 +7,12 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-05
+
+### Changed
+
+- The migration bundle format is now named `rustid-migration-bundle`. `rustid-server import` still reads bundles with the earlier name, `rustid-ef-export`.
+
 ## [0.1.0] - 2026-10-05
 
 The first release.
@@ -23,5 +29,6 @@ The first release.
 - Static Linux binaries (x86_64 and aarch64, musl) and a multi-arch container image on `ghcr.io/dbfr3qs/rustid`.
 - The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included.
 
-[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/dbfr3qs/rustid/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/dbfr3qs/rustid/releases/tag/v0.1.0

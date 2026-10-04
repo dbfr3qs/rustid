@@ -8,7 +8,7 @@ One JSON file:
 
 | Member | Holds |
 |---|---|
-| `format`, `version` | `"rustid-ef-export"` and `1` |
+| `format`, `version` | `"rustid-migration-bundle"` and `1` (the earlier name, `"rustid-ef-export"`, is still read) |
 | `exported_at` | when the export ran |
 | `clients` | clients in the `fixtures/clients.json` format; secrets stay hashed, as stored |
 | `resources` | identity resources, API scopes and API resources in the `fixtures/resources.json` format |

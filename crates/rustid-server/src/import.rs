@@ -13,7 +13,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// The bundle's `format`.
-pub const BUNDLE_FORMAT: &str = "rustid-ef-export";
+pub const BUNDLE_FORMAT: &str = "rustid-migration-bundle";
+/// The format's earlier name, still read.
+const EARLIER_BUNDLE_FORMAT: &str = "rustid-ef-export";
 /// The bundle version this server reads.
 pub const BUNDLE_VERSION: u32 = 1;
 
@@ -398,7 +400,7 @@ pub fn read_bundle(path: &std::path::Path) -> anyhow::Result<Bundle> {
         serde_json::from_str(&text).with_context(|| format!("{} is not JSON", path.display()))?;
     let format = head.get("format").and_then(Value::as_str).unwrap_or("");
     anyhow::ensure!(
-        format == BUNDLE_FORMAT,
+        format == BUNDLE_FORMAT || format == EARLIER_BUNDLE_FORMAT,
         "{} is a {format:?} file, not a {BUNDLE_FORMAT} bundle",
         path.display()
     );

@@ -293,3 +293,16 @@ async fn out_dir_with_postgres_refuses() {
         "{error}"
     );
 }
+
+#[test]
+fn the_format_is_rustid_migration_bundle_and_the_earlier_name_is_still_read() {
+    assert_eq!(BUNDLE_FORMAT, "rustid-migration-bundle");
+    let dir = tempfile::tempdir().unwrap();
+    let (path, _) = bundle(dir.path(), "RS256");
+    import::read_bundle(&path).unwrap();
+    let mut value: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    value["format"] = "rustid-ef-export".into();
+    std::fs::write(&path, value.to_string()).unwrap();
+    import::read_bundle(&path).unwrap();
+}

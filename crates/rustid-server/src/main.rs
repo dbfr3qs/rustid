@@ -10,6 +10,7 @@ use tokio::net::TcpListener;
 #[derive(Parser, Debug)]
 #[command(
     name = "rustid-server",
+    version,
     about = "An OpenID Connect, OAuth 2.0 and SAML 2.0 server"
 )]
 struct Args {
@@ -102,5 +103,17 @@ fn shutdown_signal() -> impl std::future::Future<Output = ()> {
             std::future::pending::<()>().await;
         }
         tracing::info!("shutdown requested");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_flag_prints_the_package_version() {
+        let err = Args::try_parse_from(["rustid-server", "--version"]).unwrap_err();
+        assert_eq!(err.kind(), clap::error::ErrorKind::DisplayVersion);
+        assert!(err.to_string().contains(env!("CARGO_PKG_VERSION")));
     }
 }

@@ -3,6 +3,7 @@ name = "rustid-hooks"
 edition.workspace = true
 version.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }

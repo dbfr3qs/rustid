@@ -3,6 +3,7 @@ name = "rustid-http"
 edition.workspace = true
 version.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [lib]
 name = "rustid_http"

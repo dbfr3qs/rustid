@@ -4,8 +4,10 @@
 # Certificate of Origin, CONTRIBUTING.md). Names each such commit.
 set -euo pipefail
 [ $# -eq 2 ] || { echo "usage: $0 BASE HEAD" >&2; exit 2; }
+# Listed first, so a range git cannot resolve fails instead of checking nothing.
+commits=$(git rev-list --no-merges "$1..$2")
 status=0
-for commit in $(git rev-list --no-merges "$1..$2"); do
+for commit in $commits; do
   email=$(git log -1 --format='%ae' "$commit")
   if ! git log -1 --format='%(trailers:key=Signed-off-by,valueonly)' "$commit" \
       | grep -qiF "<$email>"; then

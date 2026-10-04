@@ -1,8 +1,8 @@
 # A tag push vX.Y.Z releases rustid: static musl binaries for x86_64 and
 # aarch64, each built on a native runner from the Dockerfile, a multi-arch
 # image on ghcr.io, and a GitHub release with the CHANGELOG notes and
-# SHA-256 checksums. Run by hand on a branch, it builds and checks
-# everything and publishes nothing.
+# SHA-256 checksums. Run by hand (on any ref), it builds and checks the
+# binaries and publishes nothing.
 name: release
 
 on:
@@ -34,7 +34,9 @@ jobs:
       - name: Version
         id: version
         run: |
-          if [ "$GITHUB_REF_TYPE" = tag ]; then
+          # Only a tag push publishes; a manual run, even on a tag, is a dry
+          # run, so it can never move published image tags.
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF_TYPE" = tag ]; then
             version=$(scripts/release-version.sh "$GITHUB_REF_NAME")
             publish=true
           else
@@ -111,6 +113,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE }}
+          # The same rules as the image job's, so the version label is X.Y.Z.
+          flavor: latest=auto
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - name: Log in to ghcr.io
         if: needs.check.outputs.publish == 'true'
         uses: docker/login-action@v3

@@ -66,12 +66,15 @@ refused "$scripts/release-notes.sh" 1.2
 # check-dco.sh
 repo=$tmp/repo
 git init -q -b main "$repo"
+in_repo() { (cd "$repo" && "$@"); }
 g() { git -C "$repo" -c user.name="Ada Lovelace" -c user.email=ada@example.com -c commit.gpgsign=false "$@"; }
 g commit -q --allow-empty -m base
 base=$(g rev-parse HEAD)
 g commit -q --allow-empty -s -m signed
 signed=$(g rev-parse HEAD)
-(cd "$repo" && ok "$scripts/check-dco.sh" "$base" "$signed")
+ok in_repo "$scripts/check-dco.sh" "$base" "$signed"
+refused in_repo "$scripts/check-dco.sh" deadbeefdeadbeef "$signed"
+refused in_repo "$scripts/check-dco.sh" 0000000000000000000000000000000000000000 "$signed"
 g commit -q --allow-empty -m "unsigned"
 unsigned=$(g rev-parse --short HEAD)
 out=$(cd "$repo" && "$scripts/check-dco.sh" "$base" HEAD 2>&1) && fail "check-dco.sh passed an unsigned commit"
@@ -86,7 +89,7 @@ g checkout -q -b side
 g commit -q --allow-empty -s -m side
 g checkout -q main
 g merge -q --no-ff --no-edit side
-(cd "$repo" && ok "$scripts/check-dco.sh" "$base" HEAD)
+ok in_repo "$scripts/check-dco.sh" "$base" HEAD
 
 [ $failures = 0 ] || { echo "$failures release script test(s) failed"; exit 1; }
 echo "release script tests passed"

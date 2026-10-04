@@ -1,0 +1,69 @@
+{
+  "alias": "rustid-fapi-ciba",
+  "description": "rustid FAPI-CIBA (poll)",
+  "server": {
+    "discoveryUrl": "https://localhost:9445/.well-known/openid-configuration"
+  },
+  "client": {
+    "client_id": "fapi-ciba-conformance-client",
+    "scope": "openid profile offline_access",
+    "hint_type": "login_hint",
+    "hint_value": "alice",
+    "jwks": {
+      "keys": [
+        {
+          "kty": "RSA",
+          "use": "sig",
+          "alg": "PS256",
+          "kid": "fapi2-client1-key",
+          "n": "zgJULGjAC6c7LVKfn3eF69NsmwCPZQpaRjwRh8B3NxChBnJz-Q9JowI9v35HvFlMYvR1C6mhUAptYISkB2tuxDk5xHPkxJSiFpk1v3yOhc_b5tBEKDgBXZapvCpwBJWvNOoJnxVdBwwPuNVXQOhphL_7xtxJcIV1jZePF463zRS6GtISToYvA-Xz3iwWuqikPZ_flko7S0Vw7rRZgZ_05h6Bm-qg9J9D4-NG-eD57vxaqUfuO8VxSESLgaQB4EA1U7A06BbU9S8Ul8zz3pkgs3Wp2iQol0qNcaEfhOuRoTQLpFtjP5vlZ8w6-rygJQd-O-NA9Xmo4GVqkUTKuaHuSw",
+          "e": "AQAB",
+          "d": "Uywvz74xyxTwT25nup7iYIrEzmIQFRaY7jAJLPyaAI8RmJsKpUyZEtud7ekgVmrbx6oz4G9An0cEKwX0oVNjLkOjReRf-GvAvBXWHWcaI6MjgLFL98xbnDaTUMBjwpqsWQwkaJYAnaDlk4NqNtzDKwxX0XHVomFkJtiubOayBVCxztsN5PQqin-YHFK8jGFly1w-B2RtnQVMpme29PuDX5FYz5ofnyzRbjaJMq3PAi0wn_XVzruUXnebAbxO01nBCqfvAhVNApiXvZNM4Td4qhC54k41DN2vXZCBWGR_Wm3RL9JhxwS--MJP6nkkVFDbVx6cver63QYJqDvezWvJ",
+          "p": "5647v22mvwPVgJc7O-6sGnPmm7MFLECBMymg91_aeC_ctZmtyC3LM8H7ZsPRwBc3QP5g3OVbKPvlZJVLKx6cRhIDgaTcvrg42veChqbLDf0m--ac3xxxVwgSX2Xkfv-Bqjt828xKLVAXx7pvhmdUkQwuDUb55Gnk90d-vikZLgk",
+          "q": "46I-6eCtCv49wp64RAb21W343V98ilb3w3NdI6rs1jxWTf1pD8ZEBiPzoq_0UXB8mmzJRILUiSbtGm0u1m2Qzp3lBXoHm5RwCyXNEVT0TWPF1vHboLQqXaVEw-IRMVZVyMvz8Vr5YRK9H6qhK5FlruDcawvWQvhZxf3pMAkATrM",
+          "dp": "mQj0Gny5uk80Bl7fF7WOJWMNnydfcV2iekMzOnQsgVtMNQCwVBw7r5KhF76dnH85VksxfHhcAPRzED-1iWQM4hQgENDvp2NU2v7HT155nmHsEFTCpnXJQC3qxO0vQ9xOsD3fOej1znyrWJkD9gnnSHB9MvQBOSnhvp2RUNcg9NE",
+          "dq": "qtkHJzo-JlYTvJKr8kLX1_CmLGCSdLI5WzSm3zJWd6Tpkbd0tyYzv_gT0DMHyGgI3U5w8T7Qje_tXTw9PysU2D6hua6RLzAFuBgzBaMhiUQtJNp54O_YLFjyd6KhDMqjsAWDnc6OBVGvKKlENhL2on6acK19rt3_Yx7jee4HkQk",
+          "qi": "JOUjBgFrzYJo6no0ECtw7fl-NtX7123lkWLA8LzpGfqXxQoHIyJmdFYw1AmIDBSL5mtaA4yC0ofBD2yQYBEpTb2y4UcGY_SgT-mGfgN8jMjVAKt90RPWCDz_IaDiIhM7dUY16dlBgmWEYhipChTjjx1joChePhutaHYoToFKzT0"
+        }
+      ]
+    }
+  },
+  "browser": [],
+  "override": {},
+  "client2": {
+    "client_id": "fapi-ciba-conformance-client-2",
+    "scope": "openid profile offline_access",
+    "hint_type": "login_hint",
+    "hint_value": "alice",
+    "jwks": {
+      "keys": [
+        {
+          "kty": "RSA",
+          "use": "sig",
+          "alg": "PS256",
+          "kid": "fapi2-client2-key",
+          "n": "nBdSOoG1p2DSvQmY_P397fYQZgTrn1FVr1e52GFNYZH2K8KKnOBhP-OeFTuKU9oupse1dlToIM6UvC8b1hGPm--0VLl8st8cwx8d-g4F8geG9A-ZUW_-t_7ujBhHOOt72jcTWN0qsI4APLydPV2b0wCDGbulcEyDXef6woEIWTwQLyj6DTIg-PrA_W5PaBIZO9OBEJ9vYdLE-wP1qmjzsVxxeegHXgTU2kqvd35iBl5KEV7ezgNA-5XtmABoxyOEtjmC5TnaTyUQrfVQtBvv3dRBsX8dIaR6zO-iLqgVpTn3MjhYUFlWogRQrbLIBm20uR2Buv3vGISMI5TTqJr-Qw",
+          "e": "AQAB",
+          "d": "Qm9EnsU1QRubJj0vAcLC8KSRvzIp7QGro_kFDvz-99-tdFuVLobrrUseLfBNBDpxL6gBam9h6xCxylSMlvSbeGWyDXtzARin_74_Pn34dtZQUJFREpHFyp80_aiZq7bCXJKjZ-eeM04E-NTYYdV1LH3jzrCIjf7qzK2fE2ji2kNlNYiH7l5vPYu5KmCpuroTFUqSXuElsW1cUR8IttddFn9KDPUJTK6xwiswhnzWrtOeo9bk4vq2MuTFpRsuL00b0AZ_xHFcG_jf5KWULJRR6Tj4eKboN7Nr55G6wyHwXcIKLcyv2PUo-WuDBIxoodvDU0OKvDAQJCHHxvWxyjyUbQ",
+          "p": "0_uRe5e-Doc30m93LLHuBnB07f_Q-gjSunlUfMTrpxoDb1ZFLq5IJrVLs_H-uQeKlnJ55OleJ-Lna7YpuB_WznHu3WkGgsjSNgOj72ufelNje5oUV_JFhUPzylPntKBdI5mfs525ax0Dk2Bd8fzFHLMeGiL1JQskjxU-qHmKl_8",
+          "q": "vIC0q6DKw6PB9i9YHIkuS2r5VBaY9Lh4q92aJQbN1IPjKlhAXwmrheDaAhKhic2izYVNSwtKpRoti645d7lYVHn4L6SnrJciBBM_Xstl2rmqcfGqWuHxAi6gn1DuhSxJW9nE0Ii1sw_RFHQeB4bAoiC-LtFwQs6RULMwGNaPOb0",
+          "dp": "M9Y-uzReG3thYSo0wE86X4S8cz6tQZdKwKLO0DvvTEuGL4GvJT0lE6IdwwEYQvLfJu8Tc7DFf4dzA9nl1cqjYpRlzurR1sV48hBt1CxDMUyW9TC2bNMnwPDe-skNzhOw8vWsIeYd412S9EUKdBRVtzDt2YJW5BoXdI3DZrth8s0",
+          "dq": "nH-Wf-8sqCRqwgMoefiCUObtPRzNvE7zEG0YrqjpdghRLzS5rK2Qk8PL-3CQYKIzCcIkG6uyO0Ryj8cDuxxL80aYAKYI90c6XHvGXuMrGt6OXa8vqehveUpQ3DQK8tGDzhgMSL1XbOQyx3JoBAOiJnhcrO4A79Yj2wYJZnWrz1k",
+          "qi": "Y70-8YciPAsyghqWYCixl0jKYgObrWKBAbGsBHJIJXqBCUo9uxcx8KOVlYKZe5DAUXiJ19Bsol0se_Zq3KQB0Z_kanrfSIuyhG2HopY8E3YJeYnBzG5J5FkxAb8Nc24j3QaOajROuxisYGGzj528Gn0QJR7cf8x5Up8qxmCnVB8"
+        }
+      ]
+    }
+  },
+  "mtls": {
+    "cert": "-----BEGIN CERTIFICATE-----\nMIIDMzCCAhugAwIBAgIUaPCfBa/fLYGq4XedEv3yV2J+wAUwDQYJKoZIhvcNAQEL\nBQAwKTEnMCUGA1UEAwweZmFwaS1jaWJhLWNvbmZvcm1hbmNlLWNsaWVudC0xMB4X\nDTI2MTAwMzE5MjMwNloXDTM2MDkzMDE5MjMwNlowKTEnMCUGA1UEAwweZmFwaS1j\naWJhLWNvbmZvcm1hbmNlLWNsaWVudC0xMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\nMIIBCgKCAQEA8RzxRB5O3JdbT7gPVsdoLsfHdaNAo8Iypb5MdzMn1Tmgspzlkqw2\nSrqmbRdurZtElFLuuM8K2jrotbK2XDBBAg1wyjDViXh37am1G1xEUxZxoFnlnLX0\nURJK76PISEMldaIuOtIB2yMSRfMtN4K6XBmrNu9XC+iawWic0xcU6LU6MD+eHxi+\n0BKObnhyOD7Ym6FKidJkQqXiZul0ISakB1x4IVxJgGFMTWM2oxLF3ta9aNlcvorh\nlvLmLFMziEshs6Nl5CPe6eUY9b/dSP/+3IS+Wa8Vk3Vc3dre7NCnPGAY0+8HKBDl\nlsoOhujMX4sJGSVkESiJwAMW/+7yVwcXyQIDAQABo1MwUTAdBgNVHQ4EFgQUG763\nfmMKESoTyekbiXB3QbXZzoQwHwYDVR0jBBgwFoAUG763fmMKESoTyekbiXB3QbXZ\nzoQwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAj292LculgYYH\nQdC64aXiH+SZbabXP7azJiS9hh6ZbGiR4iz/0T6aeY6FoX9Ur9NDwG45frNfFQzh\ng8PCTdMYfO9FJaCBxsuc1vLECpzMKVYqc1GI0X8yDsKsQokokuFQl4WmXdV5g6pF\nnDHAcPhFcUOgCZXiaTOkoQIAcPhPKxIEuX3a+PXSFWbDatHNMMizku5ljyiDBBE7\nQrzi3xM2RpuTWI8jeCdV1aK9hilGEb7gGRMTtDZ3tkcBTGXEOrxf54pAhv2SgcsD\nGlOLz1CzaYSxjvxLSsPWPJ1SNLwSqjCXsoNyKC5KjAbGKbO+pG3cTqI1fs/fSjso\naGYHz2BIeA==\n-----END CERTIFICATE-----\n",
+    "key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDxHPFEHk7cl1tP\nuA9Wx2gux8d1o0CjwjKlvkx3MyfVOaCynOWSrDZKuqZtF26tm0SUUu64zwraOui1\nsrZcMEECDXDKMNWJeHftqbUbXERTFnGgWeWctfRREkrvo8hIQyV1oi460gHbIxJF\n8y03grpcGas271cL6JrBaJzTFxTotTowP54fGL7QEo5ueHI4PtiboUqJ0mRCpeJm\n6XQhJqQHXHghXEmAYUxNYzajEsXe1r1o2Vy+iuGW8uYsUzOISyGzo2XkI97p5Rj1\nv91I//7chL5ZrxWTdVzd2t7s0Kc8YBjT7wcoEOWWyg6G6MxfiwkZJWQRKInAAxb/\n7vJXBxfJAgMBAAECggEAGaPBY8Qh0HsfbIknB2w9z9CyjRfKx0c+xcmIXdogo5/k\nzu2Yi5n4zYZO7ZWi8T7sQmYVyO0Ka0W9qpm6IvBGL3LQsk2SXZOkFC+6aLINeXTu\n6RV6MWmXdRoQAi79XLLYPEu+ZQahSCVw+2OGRMuH6ASaRIWb0PI/p67JU3i2Ql8T\nWhgPZFFCrVcbGJQT40LfS/d4DsdkLRd/EZqOO22cW5AprxYq2lxzc9gl16YrfxUI\nW7O0Rgzf0/dC3TYPo3xPH8Zm+11F80w9MKQCPcfSe/lY9uM0vS3f+gC8D2tL6PaU\ntFEHPsIlHcZw6wuM9L8CLAcOSOaEnXKP+Gxn/9pr0QKBgQD+QfyTOh6Ldak+TB8h\nuR4yN/jjEYh3YG9Th3pAaAeqyusedF3qf8ypVSHJaXjfiteJFuwsJENHHNujX4ue\nGp5jE+eoJid5nFkJsPp5+2SvxTSCAzF1SDmOOuNm26RXi+TAECQVWrQLs8FEnZk1\nJ+6e/UKDFrxSHIjh81RiV+sP8QKBgQDyw+XN7Q7FgwmQplNmzxPYof5xNE5j3SkY\nDzJzcUawt8d3pnhAFLHdamRTZSOYJBFfCqXGvcSZGcbuXn19GZgF3rdrj0LCxxrb\nVigzXCaaBWFBNc4zbxX7/2mUQ3do8E1LknStqQmQCFgfC9Y/DPb6rmhY9wzs9MaX\nxVmY/cRdWQKBgQDfhAjTMLubY+NVdbvEfKV0BkqQ61/peehEKQwqxIlA9sP88NWD\nCbhUgBeEpWjyM29I/9K892ABivf2xk7JvaLRfLUg1/HJ8c1APMnlJEAeWSHQzZfT\n/5tBUrmIObxejgeZZFckQqmWw/46IMWHukQGlqO68+i30ofvAmeDUMC/MQKBgG4j\nbE4Z39rCEYPbwfjhuApPrGVlqq7p9qvgsS3o1X51Uny5PNMt0Gg4zZ18RELREkSB\nSya4j8o6BKO+oMYx52O6YJLe4xYFSOz70K9EforgJ/hy1cNGAb5baWYHmdQ1OYww\nvNjQ2PLMplYng6MFWcPvfo3mP6n9f1/5/CVJ9F25AoGBALW5W+5/dZYy3Hmwv5iw\n1BVBprBzwQw9h0xSzidjq9we0MKg7T3FerO52KDm1qtA0Q6HuvevqVl6puquoCGm\nWNubB5xbnjlws3nqTD1PmMhi3siqGsK3l/yXch0k4gKC2+2Pp7ptT50wa2/MSDJP\nSHuhdn4JSq8hCLWsBten8HWu\n-----END PRIVATE KEY-----\n"
+  },
+  "mtls2": {
+    "cert": "-----BEGIN CERTIFICATE-----\nMIIDMzCCAhugAwIBAgIUT3lW16Xu8tQ9hE/mIZfj5niuNjgwDQYJKoZIhvcNAQEL\nBQAwKTEnMCUGA1UEAwweZmFwaS1jaWJhLWNvbmZvcm1hbmNlLWNsaWVudC0yMB4X\nDTI2MTAwMzE5MjMwNloXDTM2MDkzMDE5MjMwNlowKTEnMCUGA1UEAwweZmFwaS1j\naWJhLWNvbmZvcm1hbmNlLWNsaWVudC0yMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\nMIIBCgKCAQEAt0m3kAm80/OcdXHj5onUp+p4kgAH9rwkb769sE46hZMQpNbf106q\nyTUeWcurW83CrYanrdkbmS0dQC7QyPrVL95U8vwbQGNNvo+ZN+iQOtztHp3QpX9i\nokOmMn3Y4pkhG3xtiYkXbnIB0Gv7Xf/lS8cfj22zSaEICfUoqxiMF9OVfDQPVpgE\nn4kGpcIaHCtpuJZxzZo48ECIZgy4sgQBPY1GLs/8xD++0BrKJMcZAeINohTHlxXn\n6UATJv6Hsq0vCZ5qeQz2N/J0M+yGiujhgKW+gCbj/MaaeJPHXP4pSYBPTtv/3l7Y\n/OicIsbV0dyit4pNvPxulX7iju3TPRGtnQIDAQABo1MwUTAdBgNVHQ4EFgQUhvMv\npzmlSBpuevbGh3Hh9e6L9qAwHwYDVR0jBBgwFoAUhvMvpzmlSBpuevbGh3Hh9e6L\n9qAwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEADyCSv+frJM9g\nUrJIM8+JZlXw/3Z7nm3Z4NEbLvXijIbI9iW+p8AtF3o03W/48TfLZpr7b3mNinxh\nNB4XT6zqukcTXbEAEtpquLYUsLhXnxFhUq3uyYgsggOYXF0dZoYRIBnxuLMAQoOC\nStCrCVMf5xVxkPbUz70vAD1pYLchQIBy40BIzMMAJlIJQpU2bTcQp52M6Lr+0c5o\n3RSFCfiskAh9xc5Z57fqQAgSu8bfFUuLQJ7hfnQXCy1JnB2OE6xx50a5hgVs4UMF\n/opo2Vs5RPzl9o6CdLPlXSLfQ3AwNCZdB8ALfvfCv37x8WI6t7DRirkqslO3dpvr\nlGgd9X7myA==\n-----END CERTIFICATE-----\n",
+    "key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC3SbeQCbzT85x1\ncePmidSn6niSAAf2vCRvvr2wTjqFkxCk1t/XTqrJNR5Zy6tbzcKthqet2RuZLR1A\nLtDI+tUv3lTy/BtAY02+j5k36JA63O0endClf2KiQ6YyfdjimSEbfG2JiRducgHQ\na/td/+VLxx+PbbNJoQgJ9SirGIwX05V8NA9WmASfiQalwhocK2m4lnHNmjjwQIhm\nDLiyBAE9jUYuz/zEP77QGsokxxkB4g2iFMeXFefpQBMm/oeyrS8Jnmp5DPY38nQz\n7IaK6OGApb6AJuP8xpp4k8dc/ilJgE9O2//eXtj86JwixtXR3KK3ik28/G6VfuKO\n7dM9Ea2dAgMBAAECggEAAh7Qsv0MhFkyS1YyIEB3nNUEvbpRXUSHmWFYBBpLlAWu\nW3HUQhiPYjzX6TWxeaI+PnqrJZg4OQPsGDTScS4cWZhABwBConKOUNuMFrj9M351\nzHUKl7eLC7yDnNxBg5GTmqP3B8XLEcSGNS6NSGTwS/mgPwJdC3IuS8sxxBTzHfLC\nxkuGd1fJLrDOVBpkRZ+unS2tuPjnE5+0EOrWGSCFzoaa0do2+DNwnv3O7h2QQPFR\nqAxzH7SG0V2bdRsqo8LgFD3A0m8fyzuAmcBLkoeETA0bVIwFYyeAAtoJlCl46Vx+\nMApz4/+f3WNiPe1UzZyQHrmf5e1oe69wyyxYGeljQQKBgQD7ppb+8vZygGBlLIui\nMfmAhnZQL8/OaIi4yOn4dp0eGN9wLEeCSDJaGTbnHC9cYz7KK/g4+1ORVPRXQWDS\nLYOlUPL1zlBQoMyFTin4VcvtWGgCQHlHhDHzFTmqscvGipGL2SBQGmimEoFNLGgX\nTpHUdCCTJjUWLXOo09yzVEKcoQKBgQC6dKk+d7FgNnYBATbKv3811a15Wyx9Jgpq\nnRzHyRB4M8p59OcVGoAIG2xTnIt03ZYPu2hqUHeYg9UNFmv9k/Uy533oMd++EAqy\nFwlpEXXQ58f9TuxEyjgUgFFbPJjW9LVm0WpycOShcAgaA6Blnay0R3BFhGKyleDb\nUTimfeNTfQKBgQCfBcjJVzORa7p+dMXQOxBVvaKqTWxeHQS48I2ZqyriSAl6UyDl\nHUZkVSayqMbs9PJKw7paF8fZQPwe33uVlZlpMFw4JKXwLYzQeHJhMaZqV8FyGtgI\n72q5F6KXUT9aOVp8KzsWI3oZ5/u5juRARjA1NyUWl8BYQWSjPS5sTETDwQKBgAiq\nf2s92Oql3Voymj9WIy13Xvay/CBc8kL+RmYqvC86CQEeFtduQeEelSxVrE2kNuNI\nTJQUZVqbVf2juyUwCUdyZvGxz7pfuH+Kfo95lkY9X5gwYN7Znz2ksSNSb7Ad84hx\n10a2ZIn0UQwUexH+ABbo8xjoDEZMnQTUg5OJalVpAoGAEDqDs9m7FUn3AmW/O6cP\nMmHotve1mHp3UKR3ZIuSocGbTp+xzQ3ykSyEf9TPUSmT+VEnSd5odGW6uQkIBkBk\n/1OdOHejY2Ogr0dj3Tw+X6yVLcwAEcvutTpkDdF/SPOaeae3eiNebxqBNp9AhrZZ\neoTy2vabCSR5onuOueuw2NA=\n-----END PRIVATE KEY-----\n"
+  },
+  "resource": {
+    "resourceUrl": "https://localhost:9445/fapi-ciba/resource"
+  },
+  "automated_ciba_approval_url": "http://127.0.0.1:5451/approve?token={auth_req_id}&action={action}"
+}

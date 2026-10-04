@@ -1,0 +1,90 @@
+[
+  {
+    "clientId": "client1",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "authorization_code",
+      "client_credentials"
+    ],
+    "redirectUris": [
+      "https://client1/callback"
+    ],
+    "requirePkce": false,
+    "allowOfflineAccess": true,
+    "refreshTokenUsage": "ReUse",
+    "requireConsent": false,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "client2",
+    "requireClientSecret": false,
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "redirectUris": [
+      "https://client2/callback"
+    ],
+    "requirePkce": false,
+    "allowOfflineAccess": true,
+    "refreshTokenUsage": "ReUse",
+    "requireConsent": false,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "scope2"
+    ]
+  },
+  {
+    "clientId": "client1.reference",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "accessTokenType": "Reference",
+    "allowedScopes": [
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "client.dpop.required",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "requireDPoP": true,
+    "allowedScopes": [
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "client.dpop.nonce",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "dPoPValidationMode": "Nonce",
+    "allowedScopes": [
+      "scope1"
+    ]
+  }
+]

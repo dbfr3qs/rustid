@@ -1,0 +1,33 @@
+# The OpenID Foundation conformance suite from its published images, with
+# host networking so it and its browser reach rustid on 127.0.0.1:9443.
+# Everything listens on loopback only. Started by scripts/conformance.sh.
+services:
+  mongodb:
+    image: mongo@sha256:b415b12f638e2685d06c58ab7fb5943577c50fadec6d9340ef67d21aeac72070
+    network_mode: host
+    command: ["--bind_ip", "127.0.0.1"]
+  server:
+    # The suite image the recorded results come from (pinned by digest).
+    image: ${SUITE_IMAGE:-registry.gitlab.com/openid/conformance-suite@sha256:df0385890213dd0670701aba4ee0caaacd8fba26b1afd86570c65d667ce8ee41}
+    network_mode: host
+    environment:
+      BASE_URL: https://localhost:8443
+      BASE_MTLS_URL: https://localhost:8444
+      MONGODB_HOST: 127.0.0.1
+      SPRING_PROFILES_ACTIVE: dev
+      JAVA_EXTRA_ARGS: -Dserver.port=18080 -Dserver.address=127.0.0.1
+      OIDC_GOOGLE_CLIENTID: google-client
+      OIDC_GOOGLE_SECRET: google-secret
+      OIDC_GITLAB_CLIENTID: gitlab-client
+      OIDC_GITLAB_SECRET: gitlab-secret
+    depends_on:
+      - mongodb
+  nginx:
+    image: nginx@sha256:bc2f6a7c8ddbccf55bdb19659ce3b0a92ca6559e86d42677a5a02ef6bda2fcef
+    network_mode: host
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../target/conformance/cert.pem:/etc/nginx/certs/cert.pem:ro
+      - ../target/conformance/key.pem:/etc/nginx/certs/key.pem:ro
+    depends_on:
+      - server

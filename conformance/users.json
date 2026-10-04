@@ -1,0 +1,89 @@
+[
+  {
+    "subjectId": "1",
+    "username": "alice",
+    "password": "alice",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Alice Smith"
+      },
+      {
+        "type": "given_name",
+        "value": "Alice"
+      },
+      {
+        "type": "family_name",
+        "value": "Smith"
+      },
+      {
+        "type": "middle_name",
+        "value": "Jane"
+      },
+      {
+        "type": "nickname",
+        "value": "Ally"
+      },
+      {
+        "type": "preferred_username",
+        "value": "alice"
+      },
+      {
+        "type": "profile",
+        "value": "https://alice.example.test/profile"
+      },
+      {
+        "type": "picture",
+        "value": "https://alice.example.test/alice.png"
+      },
+      {
+        "type": "website",
+        "value": "https://alice.example.test"
+      },
+      {
+        "type": "gender",
+        "value": "female"
+      },
+      {
+        "type": "birthdate",
+        "value": "1990-01-01"
+      },
+      {
+        "type": "zoneinfo",
+        "value": "Europe/Berlin"
+      },
+      {
+        "type": "locale",
+        "value": "en-GB"
+      },
+      {
+        "type": "updated_at",
+        "value": "1700000000",
+        "valueType": "http://www.w3.org/2001/XMLSchema#integer"
+      },
+      {
+        "type": "email",
+        "value": "alice@example.test"
+      },
+      {
+        "type": "email_verified",
+        "value": "true",
+        "valueType": "http://www.w3.org/2001/XMLSchema#boolean"
+      },
+      {
+        "type": "address",
+        "value": "{\"street_address\": \"One Hacker Way\", \"locality\": \"Heidelberg\", \"postal_code\": \"69118\", \"country\": \"Germany\"}",
+        "valueType": "json"
+      },
+      {
+        "type": "phone_number",
+        "value": "+49 (0)6221 12345"
+      },
+      {
+        "type": "phone_number_verified",
+        "value": "false",
+        "valueType": "http://www.w3.org/2001/XMLSchema#boolean"
+      }
+    ]
+  }
+]

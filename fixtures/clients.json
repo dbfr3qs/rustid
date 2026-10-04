@@ -1,0 +1,938 @@
+[
+  {
+    "clientId": "m2m",
+    "clientName": "Machine client",
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "web",
+    "clientName": "Web client without consent",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "postLogoutRedirectUris": [
+      "https://client.test/signout"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false
+  },
+  {
+    "clientId": "web-consent",
+    "clientName": "Web client with consent",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "postLogoutRedirectUris": [
+      "https://client.test/signout"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": true
+  },
+  {
+    "clientId": "client",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "api1",
+      "api2",
+      "other_api"
+    ],
+    "allowedCorsOrigins": [
+      "https://client.test"
+    ]
+  },
+  {
+    "clientId": "client.identityscopes",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1",
+      "api2"
+    ]
+  },
+  {
+    "clientId": "client.no_default_scopes",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ]
+  },
+  {
+    "clientId": "client.no_secret",
+    "requireClientSecret": false,
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "client.sha512",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "vSsar3708Jvp9Szi2NWZZ02Bqp1qRCFpbcTZPdBhnWgs5WtNZKnvCXdhztmeD2cmW192CF5bDufKRpayrW/isg==",
+        "description": "sha512 of secret"
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "client.two_secrets",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "y6BrVzb69n5UsHtWHq6UOV53TFF6fZEKVDaeEmPM+9Q=",
+        "expiration": "2001-01-01T00:00:00Z"
+      },
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "client.expired",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=",
+        "expiration": "2001-01-01T00:00:00Z"
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "client.disabled",
+    "enabled": false,
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "client.saml",
+    "protocolType": "saml2p",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "client.claims",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ],
+    "accessTokenLifetime": 120,
+    "includeJwtId": false,
+    "claims": [
+      {
+        "type": "role",
+        "value": "service"
+      },
+      {
+        "type": "role",
+        "value": "batch"
+      },
+      {
+        "type": "flag",
+        "value": "true",
+        "valueType": "http://www.w3.org/2001/XMLSchema#boolean"
+      },
+      {
+        "type": "count",
+        "value": "42",
+        "valueType": "http://www.w3.org/2001/XMLSchema#integer"
+      },
+      {
+        "type": "obj",
+        "value": "{\"a\":1,\"b\":[true]}",
+        "valueType": "json"
+      }
+    ]
+  },
+  {
+    "clientId": "client.claims.noprefix",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ],
+    "clientClaimsPrefix": "",
+    "claims": [
+      {
+        "type": "tenant",
+        "value": "acme"
+      }
+    ]
+  },
+  {
+    "clientId": "implicit",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "allowedScopes": [
+      "api1"
+    ],
+    "redirectUris": [
+      "https://implicit.test/cb"
+    ]
+  },
+  {
+    "clientId": "implicit_and_client_creds",
+    "allowedGrantTypes": [
+      "implicit",
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ],
+    "redirectUris": [
+      "https://implicit.test/cb"
+    ]
+  },
+  {
+    "clientId": "client.jwt",
+    "clientSecrets": [
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"client-jwt-rsa\",\"alg\":\"RS256\",\"e\":\"AQAB\",\"n\":\"yNvI-ZZMJn8dUhiVX_p1jfWbVXsyq6pvhi3USE4lBup5B9YhUaAp04xdwBz3KjJDgKPkkvoawj4RJ8aRALhWOEv9-j_lLUhNz6AuqHJ3EZfIE_MfpU8z2qw6biJqfGN-Rj-dft35jkiPmdjFV8-yfKM-Mt33gPdbO4IHaXeCSoxTM8rZDlAsiZnspwTjUEqdMyy_kULzjEBOGNDgBhd7i3sCyUhgvG-QTYMdtffiIdwXn2-rvfRxDB12r7QNSsJUaDFaIcvw8Dd1JwmAAQeTCpiv7YPxEpblWBqryj6cMrw9EN1CR4OFB4yHc-4rdh5AyJn-Gc7PsWK7GBnW2aVT_w\"}"
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"EC\",\"use\":\"sig\",\"kid\":\"client-jwt-ec\",\"alg\":\"ES256\",\"crv\":\"P-256\",\"x\":\"r0-mrvA-YZ45ukollxkwHXzr6y84UYnOv5fMXR5uFfg\",\"y\":\"zpo963PzTcKtz-kdZ8Pwip9jZpY05ubk1tvmF0DIhSA\"}"
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ]
+  },
+  {
+    "clientId": "client.es256",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1",
+      "api.es256"
+    ]
+  },
+  {
+    "clientId": "client.reference",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1",
+      "api2",
+      "other_api"
+    ],
+    "accessTokenType": "Reference",
+    "claims": [
+      {
+        "type": "role",
+        "value": "service"
+      },
+      {
+        "type": "count",
+        "value": "7",
+        "valueType": "http://www.w3.org/2001/XMLSchema#integer"
+      }
+    ]
+  },
+  {
+    "clientId": "client.reference.short",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "api1"
+    ],
+    "accessTokenType": "Reference",
+    "accessTokenLifetime": 1
+  },
+  {
+    "clientId": "web.query",
+    "clientName": "Web client whose redirect URI has a query",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": false,
+    "redirectUris": [
+      "https://client.test/cb?foo=bar"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "web.idp",
+    "clientName": "Web client restricted to one identity provider",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": false,
+    "enableLocalLogin": false,
+    "identityProviderRestrictions": [
+      "google"
+    ],
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ]
+  },
+  {
+    "clientId": "web.plain",
+    "clientName": "Web client allowing plain PKCE",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "allowPlainTextPkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ]
+  },
+  {
+    "clientId": "spa",
+    "clientName": "Implicit client receiving access tokens in the browser",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "requireClientSecret": false,
+    "allowAccessTokensViaBrowser": true,
+    "redirectUris": [
+      "https://spa.test/cb"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "web.idclaims",
+    "clientName": "Web client with user claims in identity tokens",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": false,
+    "alwaysIncludeUserClaimsInIdToken": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "hybrid",
+    "clientName": "Hybrid client receiving access tokens in the browser",
+    "allowedGrantTypes": [
+      "hybrid"
+    ],
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "requirePkce": false,
+    "allowAccessTokensViaBrowser": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "hybrid.restricted",
+    "clientName": "Hybrid client without access tokens in the browser",
+    "allowedGrantTypes": [
+      "hybrid"
+    ],
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "requirePkce": false,
+    "allowAccessTokensViaBrowser": false,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "spa.restricted",
+    "clientName": "Implicit client without access tokens in the browser",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "requireClientSecret": false,
+    "redirectUris": [
+      "https://spa.test/cb"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ]
+  },
+  {
+    "clientId": "implicit-consent",
+    "clientName": "Implicit client with consent",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1",
+      "api2"
+    ],
+    "requireConsent": true,
+    "allowAccessTokensViaBrowser": true
+  },
+  {
+    "clientId": "consent-remember",
+    "clientName": "Web client remembering consent",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "postLogoutRedirectUris": [
+      "https://client.test/signout"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": true
+  },
+  {
+    "clientId": "consent-no-remember",
+    "clientName": "Web client that can't remember consent",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "postLogoutRedirectUris": [
+      "https://client.test/signout"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": true,
+    "allowRememberConsent": false
+  },
+  {
+    "clientId": "implicit-custom",
+    "clientName": "Implicit client with a custom identity scope",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "custom_identity"
+    ],
+    "requireConsent": false
+  },
+  {
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "clientId": "code-confidential",
+    "clientName": "Confidential code client",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ]
+  },
+  {
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "clientId": "code-one-time",
+    "clientName": "Code client with one-time-only refresh tokens",
+    "requireClientSecret": false,
+    "refreshTokenUsage": "OneTimeOnly"
+  },
+  {
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "clientId": "code-update-claims",
+    "clientName": "Code client updating claims on refresh",
+    "requireClientSecret": false,
+    "updateAccessTokenClaimsOnRefresh": true
+  },
+  {
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "clientId": "code-reference",
+    "clientName": "Code client with reference tokens",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "accessTokenType": "Reference"
+  },
+  {
+    "clientId": "implicit-revoke",
+    "clientName": "Implicit client with reference tokens",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "requireClientSecret": false,
+    "allowAccessTokensViaBrowser": true,
+    "accessTokenType": "Reference",
+    "allowedScopes": [
+      "api1"
+    ],
+    "redirectUris": [
+      "https://implicit.test/cb"
+    ],
+    "requireConsent": false
+  },
+  {
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "requireConsent": false,
+    "allowAccessTokensViaBrowser": true,
+    "clientSecrets": [
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"client-jwt-rsa\",\"alg\":\"RS256\",\"e\":\"AQAB\",\"n\":\"yNvI-ZZMJn8dUhiVX_p1jfWbVXsyq6pvhi3USE4lBup5B9YhUaAp04xdwBz3KjJDgKPkkvoawj4RJ8aRALhWOEv9-j_lLUhNz6AuqHJ3EZfIE_MfpU8z2qw6biJqfGN-Rj-dft35jkiPmdjFV8-yfKM-Mt33gPdbO4IHaXeCSoxTM8rZDlAsiZnspwTjUEqdMyy_kULzjEBOGNDgBhd7i3sCyUhgvG-QTYMdtffiIdwXn2-rvfRxDB12r7QNSsJUaDFaIcvw8Dd1JwmAAQeTCpiv7YPxEpblWBqryj6cMrw9EN1CR4OFB4yHc-4rdh5AyJn-Gc7PsWK7GBnW2aVT_w\"}"
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"EC\",\"use\":\"sig\",\"kid\":\"client-jwt-ec\",\"alg\":\"ES256\",\"crv\":\"P-256\",\"x\":\"r0-mrvA-YZ45ukollxkwHXzr6y84UYnOv5fMXR5uFfg\",\"y\":\"zpo963PzTcKtz-kdZ8Pwip9jZpY05ubk1tvmF0DIhSA\"}"
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"oct\",\"kid\":\"jar-oct\",\"alg\":\"HS256\",\"k\":\"YSBzeW1tZXRyaWMga2V5IG9mIGF0IGxlYXN0IDMyIGJ5dGVzIGZvciBIUzI1NiE\"}"
+      },
+      {
+        "type": "X509CertificateBase64",
+        "value": "MIIDNTCCAh2gAwIBAgIUZ9ZKb3/jcL20NjHyAF3sfRcsI1owDQYJKoZIhvcNAQELBQAwKTEnMCUGA1UEAwwecnVzdGlkIGZpeHR1cmUgdmFsaWRhdGlvbiBjZXJ0MCAXDTI2MDkyOTAxMzI1MloYDzIxMjYwOTA1MDEzMjUyWjApMScwJQYDVQQDDB5ydXN0aWQgZml4dHVyZSB2YWxpZGF0aW9uIGNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCkIcrGLYxmdr6KUqMzPSqO9ENBNLRYbWiyHqjT9M91G6qDiextAG3rImVWoaXBr7pp+HBwdx7Xj8GbgMhODEKZ9m8EomyyuW7WEmpyvaxfsbwYlZo/SHkNmKjTpaBfWfmFukLDcV0uisa8GMAg5+e3h0BBYn08UKJwaomuBtyZ/BmWHxekRUqtC/cMrXxPewwvy51cyxz8W8FECri400u54GRjaSNiENl/PtB+/YholBJJU6rH0X//BcBk6rZ50QiTExMkhkoO7U5mm9T+XsWbtXV0Vml8fDk8C94t6RThqLAAnR0CmZjTBv3w0O0X5ZyzPiXGo95loUzNhnyxhNrZAgMBAAGjUzBRMB0GA1UdDgQWBBSy4xqA/w5PN4hXIQxIyFMizAzltzAfBgNVHSMEGDAWgBSy4xqA/w5PN4hXIQxIyFMizAzltzAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQBRides3mGD2DmBbT+Jkb6MSXyCXkZXTof9mWnYzTiAbqLtCPzQNLNWZb8QAc9u5ZQ7cLmX9WJm+P9RJWN7AZu6Wd08Y6GIJ8yQCEQeL60UxI3rPrh3Mx+Bfz/3GJiKb1iIwEUaQTNTtLHjX+JYgVvhZBlqq3EZHE3oInkl09A81MgEeo13s1l00ESgHZZBYE88Y01gfrP01WZ6iQ73QWt2y+aZSS6gVu8r4DGoEYy7IFRocYtTE5R0j3KEWyWlTmv70tiZMApfhGjgu+9pDPgviI0M7rP17mnRAo6Iwys6HN1PRO69+Ddu4c7cV7m0qtN4/G0/aYONhzeQT3/bmcfN"
+      }
+    ],
+    "clientId": "jar",
+    "clientName": "Client sending request objects"
+  },
+  {
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "requireConsent": false,
+    "allowAccessTokensViaBrowser": true,
+    "clientSecrets": [
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"client-jwt-rsa\",\"alg\":\"RS256\",\"e\":\"AQAB\",\"n\":\"yNvI-ZZMJn8dUhiVX_p1jfWbVXsyq6pvhi3USE4lBup5B9YhUaAp04xdwBz3KjJDgKPkkvoawj4RJ8aRALhWOEv9-j_lLUhNz6AuqHJ3EZfIE_MfpU8z2qw6biJqfGN-Rj-dft35jkiPmdjFV8-yfKM-Mt33gPdbO4IHaXeCSoxTM8rZDlAsiZnspwTjUEqdMyy_kULzjEBOGNDgBhd7i3sCyUhgvG-QTYMdtffiIdwXn2-rvfRxDB12r7QNSsJUaDFaIcvw8Dd1JwmAAQeTCpiv7YPxEpblWBqryj6cMrw9EN1CR4OFB4yHc-4rdh5AyJn-Gc7PsWK7GBnW2aVT_w\"}"
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"EC\",\"use\":\"sig\",\"kid\":\"client-jwt-ec\",\"alg\":\"ES256\",\"crv\":\"P-256\",\"x\":\"r0-mrvA-YZ45ukollxkwHXzr6y84UYnOv5fMXR5uFfg\",\"y\":\"zpo963PzTcKtz-kdZ8Pwip9jZpY05ubk1tvmF0DIhSA\"}"
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"oct\",\"kid\":\"jar-oct\",\"alg\":\"HS256\",\"k\":\"YSBzeW1tZXRyaWMga2V5IG9mIGF0IGxlYXN0IDMyIGJ5dGVzIGZvciBIUzI1NiE\"}"
+      },
+      {
+        "type": "X509CertificateBase64",
+        "value": "MIIDNTCCAh2gAwIBAgIUZ9ZKb3/jcL20NjHyAF3sfRcsI1owDQYJKoZIhvcNAQELBQAwKTEnMCUGA1UEAwwecnVzdGlkIGZpeHR1cmUgdmFsaWRhdGlvbiBjZXJ0MCAXDTI2MDkyOTAxMzI1MloYDzIxMjYwOTA1MDEzMjUyWjApMScwJQYDVQQDDB5ydXN0aWQgZml4dHVyZSB2YWxpZGF0aW9uIGNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCkIcrGLYxmdr6KUqMzPSqO9ENBNLRYbWiyHqjT9M91G6qDiextAG3rImVWoaXBr7pp+HBwdx7Xj8GbgMhODEKZ9m8EomyyuW7WEmpyvaxfsbwYlZo/SHkNmKjTpaBfWfmFukLDcV0uisa8GMAg5+e3h0BBYn08UKJwaomuBtyZ/BmWHxekRUqtC/cMrXxPewwvy51cyxz8W8FECri400u54GRjaSNiENl/PtB+/YholBJJU6rH0X//BcBk6rZ50QiTExMkhkoO7U5mm9T+XsWbtXV0Vml8fDk8C94t6RThqLAAnR0CmZjTBv3w0O0X5ZyzPiXGo95loUzNhnyxhNrZAgMBAAGjUzBRMB0GA1UdDgQWBBSy4xqA/w5PN4hXIQxIyFMizAzltzAfBgNVHSMEGDAWgBSy4xqA/w5PN4hXIQxIyFMizAzltzAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQBRides3mGD2DmBbT+Jkb6MSXyCXkZXTof9mWnYzTiAbqLtCPzQNLNWZb8QAc9u5ZQ7cLmX9WJm+P9RJWN7AZu6Wd08Y6GIJ8yQCEQeL60UxI3rPrh3Mx+Bfz/3GJiKb1iIwEUaQTNTtLHjX+JYgVvhZBlqq3EZHE3oInkl09A81MgEeo13s1l00ESgHZZBYE88Y01gfrP01WZ6iQ73QWt2y+aZSS6gVu8r4DGoEYy7IFRocYtTE5R0j3KEWyWlTmv70tiZMApfhGjgu+9pDPgviI0M7rP17mnRAo6Iwys6HN1PRO69+Ddu4c7cV7m0qtN4/G0/aYONhzeQT3/bmcfN"
+      }
+    ],
+    "clientId": "jar.required",
+    "clientName": "Client requiring request objects",
+    "requireRequestObject": true
+  },
+  {
+    "clientId": "par.required",
+    "clientName": "Client requiring pushed authorization",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "postLogoutRedirectUris": [
+      "https://client.test/signout"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "requirePushedAuthorization": true
+  },
+  {
+    "clientId": "par.jar",
+    "clientName": "Confidential client pushing request objects",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "requireConsent": false,
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"client-jwt-rsa\",\"alg\":\"RS256\",\"e\":\"AQAB\",\"n\":\"yNvI-ZZMJn8dUhiVX_p1jfWbVXsyq6pvhi3USE4lBup5B9YhUaAp04xdwBz3KjJDgKPkkvoawj4RJ8aRALhWOEv9-j_lLUhNz6AuqHJ3EZfIE_MfpU8z2qw6biJqfGN-Rj-dft35jkiPmdjFV8-yfKM-Mt33gPdbO4IHaXeCSoxTM8rZDlAsiZnspwTjUEqdMyy_kULzjEBOGNDgBhd7i3sCyUhgvG-QTYMdtffiIdwXn2-rvfRxDB12r7QNSsJUaDFaIcvw8Dd1JwmAAQeTCpiv7YPxEpblWBqryj6cMrw9EN1CR4OFB4yHc-4rdh5AyJn-Gc7PsWK7GBnW2aVT_w\"}"
+      }
+    ]
+  },
+  {
+    "clientId": "logout.front",
+    "clientName": "Client with front-channel logout",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "postLogoutRedirectUris": [
+      "https://client.test/signout",
+      "https://client.test/signout2"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "frontChannelLogoutUri": "https://client.test/front"
+  },
+  {
+    "clientId": "logout.back",
+    "clientName": "Client with back-channel logout",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "postLogoutRedirectUris": [
+      "https://client.test/signout"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "backChannelLogoutUri": "http://127.0.0.1:5192/backchannel",
+    "coordinateLifetimeWithUserSession": true
+  },
+  {
+    "clientId": "device",
+    "clientName": "Device client",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:ietf:params:oauth:grant-type:device_code"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "device.fast",
+    "clientName": "Device client polling freely",
+    "pollingInterval": 0,
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:ietf:params:oauth:grant-type:device_code"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "device.short",
+    "clientName": "Device client with short codes",
+    "deviceCodeLifetime": 1,
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:ietf:params:oauth:grant-type:device_code"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "api1"
+    ]
+  }
+]

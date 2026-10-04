@@ -1,0 +1,25 @@
+[package]
+name = "rustid-admin"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[features]
+default = ["saml"]
+# SAML service provider admin (`/admin/saml-service-providers`).
+saml = ["dep:rustid-saml"]
+
+[dependencies]
+aws-lc-rs = { workspace = true }
+axum = { workspace = true }
+rustid-core = { path = "../rustid-core" }
+rustid-saml = { path = "../rustid-saml", optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+http-body-util = { workspace = true }
+rustid-store-memory = { path = "../rustid-store-memory" }
+tokio = { workspace = true }
+tower = { workspace = true }

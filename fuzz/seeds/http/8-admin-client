@@ -1,0 +1,1 @@
+{"clientId": "machine", "clientName": "Machine", "allowedGrantTypes": ["client_credentials"], "allowedScopes": ["api1"], "clientSecrets": [{"plaintextValue": "first"}]}

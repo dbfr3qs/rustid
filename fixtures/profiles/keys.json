@@ -1,0 +1,61 @@
+{
+  "signing_keys": [
+    {
+      "kid": "fixture-rsa-1",
+      "alg": "RS256",
+      "key_file": "../signing-key.pem"
+    },
+    {
+      "kid": "fixture-ec-p256",
+      "alg": "ES256",
+      "key_file": "../signing-ec-p256.pem"
+    },
+    {
+      "kid": "fixture-ec-p384",
+      "alg": "ES384",
+      "key_file": "../signing-ec-p384.pem"
+    },
+    {
+      "kid": "fixture-ec-p521",
+      "alg": "ES512",
+      "key_file": "../signing-ec-p521.pem"
+    }
+  ],
+  "validation_keys": [
+    {
+      "kid": "fixture-rsa-validation",
+      "alg": "RS256",
+      "key_file": "../validation-rsa.pem"
+    },
+    {
+      "kid": "fixture-cert-validation",
+      "alg": "RS256",
+      "key_file": "../validation-cert-key.pem",
+      "cert_file": "../validation-cert.pem"
+    }
+  ],
+  "resources_file": "../resources.json",
+  "clients_file": "../clients.json",
+  "placeholders": {
+    "password_grant": true
+  },
+  "protocol": {
+    "issuer_uri": "https://idsrv.test",
+    "key_management": {
+      "enabled": false
+    }
+  },
+  "reference_ui": {
+    "enabled": true,
+    "users_file": "../users.json",
+    "default_user": "alice"
+  },
+  "data_protection": {
+    "keys": [
+      {
+        "id": "fixture",
+        "secret": "cnVzdGlkIGZpeHR1cmUgZGF0YSBwcm90ZWN0aW9uISE="
+      }
+    ]
+  }
+}

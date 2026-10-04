@@ -1,0 +1,307 @@
+[
+  {
+    "entityId": "https://sp.example",
+    "displayName": "Signed SP",
+    "description": "Requires signed AuthnRequests and LogoutResponses",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://sp.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      },
+      {
+        "location": "https://sp.example/acs2",
+        "binding": "HttpPost",
+        "index": 1
+      }
+    ],
+    "singleLogoutServiceUrls": [
+      {
+        "location": "https://sp.example/slo",
+        "binding": "HttpRedirect"
+      }
+    ],
+    "requireSignedAuthnRequests": true,
+    "requireSignedLogoutResponses": true,
+    "certificates": [
+      {
+        "certificate": "-----BEGIN CERTIFICATE-----\nMIIDIzCCAgugAwIBAgIUQ1KJhTk+j/wu+zwFue/S90qzOzYwDQYJKoZIhvcNAQEL\nBQAwITEfMB0GA1UEAwwWcnVzdGlkLXRlc3Qtc3Atc2lnbmluZzAeFw0yNjEwMDEw\nOTE4NDNaFw00NjA5MjYwOTE4NDNaMCExHzAdBgNVBAMMFnJ1c3RpZC10ZXN0LXNw\nLXNpZ25pbmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCvOq1NEdfs\n0lm/E0XK4FFLqbCYJOSyOJj5G3JCLRQggrn/m1nc8IlWJlkn8shDAu7vFFt9PzKu\nbU6b878URgcqhwhJuPu2WJAPd6SAKp1KBgLwAvgbakQIUe40g/RpSNnbWX+MU+8E\n+EgQXE7hW7QBUx7k3Yb9G5vAhcuKPDXt626OZBJ37Yi6BPYQnRZizhNsk04tKyvj\n2KvaRtog2z+0q+JMSy72F5thMmG97sKTxBYG1dMPiVOmKiT5vLwYOCpeVMSHbUId\ngE+F0ux9RK5lTchbej+vGHd1wPtpEKXKAxom58Q+v1nc7XirCd0bpDfES4s3IeLi\n8hyEcoGIZNSvAgMBAAGjUzBRMB0GA1UdDgQWBBSuW9GiTf0mehOy788xpaRcCxI8\n/DAfBgNVHSMEGDAWgBSuW9GiTf0mehOy788xpaRcCxI8/DAPBgNVHRMBAf8EBTAD\nAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQB/AoI88twgQiz//kkmPwkRL1IVFIUtVlx3\nJTNBmYGSpvQc/8nH5y9VF4RIGTk/TZ8hEBQWLhQKUthGtcZfhkAck/cBxMieXc1z\nGFJuYtW/40uXqT9IuDkB42hwX8XFnFU8Jckb4EZcgMI0WQDvV14aLijY4ssyWwpG\nwd8I5Cmv29Rwc8RBPcjC0exQW7pYxbOVayr7FCxgTQ46TK1drOEeLWpuQ0mOF3o0\nbw54fjMzSi54xCTs6AtC7bdft4VxV0R023TP2hpX4lrgbl9pA5KQPhQNhajFWR03\npbMZvuduZRQ5qM3qPZOKSS4bSVC6T4YaaP2XAu/Pu5LwjZM5W8at\n-----END CERTIFICATE-----\n",
+        "use": "Signing"
+      }
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ],
+    "claimMappings": {
+      "department": "urn:example:department"
+    },
+    "authnContextMappings": {
+      "mfa": "urn:oasis:names:tc:SAML:2.0:ac:classes:MobileTwoFactorContract"
+    },
+    "requestedClaimTypes": [
+      "name",
+      "preferred_username"
+    ],
+    "defaultNameIdFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+    "signingBehavior": "SignBoth",
+    "clockSkew": "00:02:00",
+    "requestMaxAge": "00:10:00",
+    "assertionLifetime": "00:05:00",
+    "allowedSignatureAlgorithms": [
+      "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+      "http://www.w3.org/2001/04/xmlenc#sha256"
+    ]
+  },
+  {
+    "entityId": "https://idp-initiated.example",
+    "displayName": "IdP-initiated SP",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://idp-initiated.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "allowIdpInitiated": true,
+    "certificates": [
+      {
+        "certificate": "MIIDIzCCAgugAwIBAgIUQ1KJhTk+j/wu+zwFue/S90qzOzYwDQYJKoZIhvcNAQELBQAwITEfMB0GA1UEAwwWcnVzdGlkLXRlc3Qtc3Atc2lnbmluZzAeFw0yNjEwMDEwOTE4NDNaFw00NjA5MjYwOTE4NDNaMCExHzAdBgNVBAMMFnJ1c3RpZC10ZXN0LXNwLXNpZ25pbmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCvOq1NEdfs0lm/E0XK4FFLqbCYJOSyOJj5G3JCLRQggrn/m1nc8IlWJlkn8shDAu7vFFt9PzKubU6b878URgcqhwhJuPu2WJAPd6SAKp1KBgLwAvgbakQIUe40g/RpSNnbWX+MU+8E+EgQXE7hW7QBUx7k3Yb9G5vAhcuKPDXt626OZBJ37Yi6BPYQnRZizhNsk04tKyvj2KvaRtog2z+0q+JMSy72F5thMmG97sKTxBYG1dMPiVOmKiT5vLwYOCpeVMSHbUIdgE+F0ux9RK5lTchbej+vGHd1wPtpEKXKAxom58Q+v1nc7XirCd0bpDfES4s3IeLi8hyEcoGIZNSvAgMBAAGjUzBRMB0GA1UdDgQWBBSuW9GiTf0mehOy788xpaRcCxI8/DAfBgNVHSMEGDAWgBSuW9GiTf0mehOy788xpaRcCxI8/DAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQB/AoI88twgQiz//kkmPwkRL1IVFIUtVlx3JTNBmYGSpvQc/8nH5y9VF4RIGTk/TZ8hEBQWLhQKUthGtcZfhkAck/cBxMieXc1zGFJuYtW/40uXqT9IuDkB42hwX8XFnFU8Jckb4EZcgMI0WQDvV14aLijY4ssyWwpGwd8I5Cmv29Rwc8RBPcjC0exQW7pYxbOVayr7FCxgTQ46TK1drOEeLWpuQ0mOF3o0bw54fjMzSi54xCTs6AtC7bdft4VxV0R023TP2hpX4lrgbl9pA5KQPhQNhajFWR03pbMZvuduZRQ5qM3qPZOKSS4bSVC6T4YaaP2XAu/Pu5LwjZM5W8at",
+        "use": "Signing"
+      }
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ],
+    "signingBehavior": 2
+  },
+  {
+    "entityId": "https://disabled.example",
+    "enabled": false,
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://disabled.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "allowedScopes": [
+      "openid"
+    ]
+  },
+  {
+    "entityId": "https://unsigned.example",
+    "displayName": "Unsigned requests allowed",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://unsigned.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      },
+      {
+        "location": "https://unsigned.example/acs2",
+        "binding": "HttpPost",
+        "index": 1
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ],
+    "singleLogoutServiceUrls": [
+      {
+        "location": "https://unsigned.example/slo",
+        "binding": "HttpRedirect"
+      }
+    ],
+    "requireSignedLogoutResponses": false
+  },
+  {
+    "entityId": "https://nocerts.example",
+    "displayName": "Signed requests required, no certificates",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://nocerts.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": true,
+    "allowedScopes": [
+      "openid"
+    ]
+  },
+  {
+    "entityId": "https://twocerts.example",
+    "displayName": "Two signing certificates",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://twocerts.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": true,
+    "certificates": [
+      {
+        "certificate": "-----BEGIN CERTIFICATE-----\nMIIBjzCCATWgAwIBAgIUYb5GOKrKFj528GJGpgMEmMvl5y4wCgYIKoZIzj0EAwIw\nHTEbMBkGA1UEAwwScnVzdGlkLXRlc3QtaWRwLWVjMB4XDTI2MTAwMTIxMTU1MloX\nDTQ2MDkyNjIxMTU1MlowHTEbMBkGA1UEAwwScnVzdGlkLXRlc3QtaWRwLWVjMFkw\nEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE6G+GVy3OSzb5OpZn2g/ALstChCldX9HD\nXQYJcyMratdhRWxs/pAnYANePMchipqZJKdkLkVdFAmw9p2IV8BVJ6NTMFEwHQYD\nVR0OBBYEFIYBMxVMsk9bqYzxE9mJ4WrxHuQzMB8GA1UdIwQYMBaAFIYBMxVMsk9b\nqYzxE9mJ4WrxHuQzMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIg\nLLFZAV2eJncex0vXy2tRcVghIAyYu5/lAPcaCZK0FFYCIQCkKf4cevERjcXU8cOr\n1mffqJLHX87AlCZLApWa/RHA7A==\n-----END CERTIFICATE-----\n",
+        "use": "Signing"
+      },
+      {
+        "certificate": "-----BEGIN CERTIFICATE-----\nMIIDIzCCAgugAwIBAgIUQ1KJhTk+j/wu+zwFue/S90qzOzYwDQYJKoZIhvcNAQEL\nBQAwITEfMB0GA1UEAwwWcnVzdGlkLXRlc3Qtc3Atc2lnbmluZzAeFw0yNjEwMDEw\nOTE4NDNaFw00NjA5MjYwOTE4NDNaMCExHzAdBgNVBAMMFnJ1c3RpZC10ZXN0LXNw\nLXNpZ25pbmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCvOq1NEdfs\n0lm/E0XK4FFLqbCYJOSyOJj5G3JCLRQggrn/m1nc8IlWJlkn8shDAu7vFFt9PzKu\nbU6b878URgcqhwhJuPu2WJAPd6SAKp1KBgLwAvgbakQIUe40g/RpSNnbWX+MU+8E\n+EgQXE7hW7QBUx7k3Yb9G5vAhcuKPDXt626OZBJ37Yi6BPYQnRZizhNsk04tKyvj\n2KvaRtog2z+0q+JMSy72F5thMmG97sKTxBYG1dMPiVOmKiT5vLwYOCpeVMSHbUId\ngE+F0ux9RK5lTchbej+vGHd1wPtpEKXKAxom58Q+v1nc7XirCd0bpDfES4s3IeLi\n8hyEcoGIZNSvAgMBAAGjUzBRMB0GA1UdDgQWBBSuW9GiTf0mehOy788xpaRcCxI8\n/DAfBgNVHSMEGDAWgBSuW9GiTf0mehOy788xpaRcCxI8/DAPBgNVHRMBAf8EBTAD\nAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQB/AoI88twgQiz//kkmPwkRL1IVFIUtVlx3\nJTNBmYGSpvQc/8nH5y9VF4RIGTk/TZ8hEBQWLhQKUthGtcZfhkAck/cBxMieXc1z\nGFJuYtW/40uXqT9IuDkB42hwX8XFnFU8Jckb4EZcgMI0WQDvV14aLijY4ssyWwpG\nwd8I5Cmv29Rwc8RBPcjC0exQW7pYxbOVayr7FCxgTQ46TK1drOEeLWpuQ0mOF3o0\nbw54fjMzSi54xCTs6AtC7bdft4VxV0R023TP2hpX4lrgbl9pA5KQPhQNhajFWR03\npbMZvuduZRQ5qM3qPZOKSS4bSVC6T4YaaP2XAu/Pu5LwjZM5W8at\n-----END CERTIFICATE-----\n",
+        "use": "Signing"
+      }
+    ],
+    "allowedScopes": [
+      "openid"
+    ]
+  },
+  {
+    "entityId": "https://noacs.example",
+    "displayName": "No assertion consumer service (invalid)",
+    "assertionConsumerServiceUrls": [],
+    "requireSignedAuthnRequests": false,
+    "allowedScopes": [
+      "openid"
+    ]
+  },
+  {
+    "entityId": "https://badscope.example",
+    "displayName": "An allowed scope that isn't an identity resource",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://badscope.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "allowedScopes": [
+      "openid",
+      "api1"
+    ]
+  },
+  {
+    "entityId": "https://sha512only.example",
+    "displayName": "RSA-SHA512 signatures only",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://sha512only.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": true,
+    "certificates": [
+      {
+        "certificate": "-----BEGIN CERTIFICATE-----\nMIIDIzCCAgugAwIBAgIUQ1KJhTk+j/wu+zwFue/S90qzOzYwDQYJKoZIhvcNAQEL\nBQAwITEfMB0GA1UEAwwWcnVzdGlkLXRlc3Qtc3Atc2lnbmluZzAeFw0yNjEwMDEw\nOTE4NDNaFw00NjA5MjYwOTE4NDNaMCExHzAdBgNVBAMMFnJ1c3RpZC10ZXN0LXNw\nLXNpZ25pbmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCvOq1NEdfs\n0lm/E0XK4FFLqbCYJOSyOJj5G3JCLRQggrn/m1nc8IlWJlkn8shDAu7vFFt9PzKu\nbU6b878URgcqhwhJuPu2WJAPd6SAKp1KBgLwAvgbakQIUe40g/RpSNnbWX+MU+8E\n+EgQXE7hW7QBUx7k3Yb9G5vAhcuKPDXt626OZBJ37Yi6BPYQnRZizhNsk04tKyvj\n2KvaRtog2z+0q+JMSy72F5thMmG97sKTxBYG1dMPiVOmKiT5vLwYOCpeVMSHbUId\ngE+F0ux9RK5lTchbej+vGHd1wPtpEKXKAxom58Q+v1nc7XirCd0bpDfES4s3IeLi\n8hyEcoGIZNSvAgMBAAGjUzBRMB0GA1UdDgQWBBSuW9GiTf0mehOy788xpaRcCxI8\n/DAfBgNVHSMEGDAWgBSuW9GiTf0mehOy788xpaRcCxI8/DAPBgNVHRMBAf8EBTAD\nAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQB/AoI88twgQiz//kkmPwkRL1IVFIUtVlx3\nJTNBmYGSpvQc/8nH5y9VF4RIGTk/TZ8hEBQWLhQKUthGtcZfhkAck/cBxMieXc1z\nGFJuYtW/40uXqT9IuDkB42hwX8XFnFU8Jckb4EZcgMI0WQDvV14aLijY4ssyWwpG\nwd8I5Cmv29Rwc8RBPcjC0exQW7pYxbOVayr7FCxgTQ46TK1drOEeLWpuQ0mOF3o0\nbw54fjMzSi54xCTs6AtC7bdft4VxV0R023TP2hpX4lrgbl9pA5KQPhQNhajFWR03\npbMZvuduZRQ5qM3qPZOKSS4bSVC6T4YaaP2XAu/Pu5LwjZM5W8at\n-----END CERTIFICATE-----\n",
+        "use": "Signing"
+      }
+    ],
+    "allowedScopes": [
+      "openid"
+    ],
+    "allowedSignatureAlgorithms": [
+      "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512",
+      "http://www.w3.org/2001/04/xmlenc#sha512"
+    ]
+  },
+  {
+    "entityId": "https://zeroskew.example",
+    "displayName": "No clock skew",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://zeroskew.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "clockSkew": "00:00:00",
+    "allowedScopes": [
+      "openid"
+    ]
+  },
+  {
+    "entityId": "https://nosign.example",
+    "displayName": "DoNotSign",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://nosign.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ],
+    "signingBehavior": "DoNotSign"
+  },
+  {
+    "entityId": "https://signresponse.example",
+    "displayName": "SignResponse",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://signresponse.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ],
+    "signingBehavior": "SignResponse"
+  },
+  {
+    "entityId": "https://midflow-disabled.example",
+    "displayName": "Changed mid-flow (disabled) by the saml-signin-callback scenario",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://midflow-disabled.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ]
+  },
+  {
+    "entityId": "https://midflow-removed.example",
+    "displayName": "Changed mid-flow (removed) by the saml-signin-callback scenario",
+    "assertionConsumerServiceUrls": [
+      {
+        "location": "https://midflow-removed.example/acs",
+        "binding": "HttpPost",
+        "index": 0,
+        "isDefault": true
+      }
+    ],
+    "requireSignedAuthnRequests": false,
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ]
+  }
+]

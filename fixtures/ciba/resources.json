@@ -1,0 +1,55 @@
+{
+  "identityResources": [
+    {
+      "name": "openid",
+      "userClaims": [
+        "sub"
+      ]
+    },
+    {
+      "name": "profile",
+      "userClaims": [
+        "name",
+        "family_name",
+        "given_name",
+        "middle_name",
+        "nickname",
+        "preferred_username",
+        "profile",
+        "picture",
+        "website",
+        "gender",
+        "birthdate",
+        "zoneinfo",
+        "locale",
+        "updated_at"
+      ]
+    },
+    {
+      "name": "email",
+      "userClaims": [
+        "email",
+        "email_verified"
+      ]
+    }
+  ],
+  "apiScopes": [
+    {
+      "name": "scope1"
+    }
+  ],
+  "apiResources": [
+    {
+      "name": "urn:api1",
+      "scopes": [
+        "scope1"
+      ]
+    },
+    {
+      "name": "urn:api2",
+      "scopes": [
+        "scope1"
+      ]
+    }
+  ]
+}

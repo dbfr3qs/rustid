@@ -1,0 +1,67 @@
+# rustid-server for the OpenID Foundation dynamic registration plans
+# (scripts/conformance.sh dynamic 3rdparty): HTTPS on https://localhost:9447,
+# the main conformance instance (../rustid.toml) plus dynamic client
+# registration with RFC 7592 management. Registration is OPEN here, so the
+# suite can register without an initial access token: conformance only,
+# never a deployment.
+# Relative paths are resolved against this file's directory.
+listen = "127.0.0.1:9447"
+clients_file = "../clients.json"
+resources_file = "../resources.json"
+
+[log]
+format = "pretty"
+level = "info"
+
+[protocol.key_management]
+enabled = false
+
+[protocol.discovery.dynamic_client_registration]
+registration_endpoint_mode = "Inferred"
+
+# OP-request_uri-*: request objects by reference, fetched from the suite.
+[protocol.endpoints]
+enable_jwt_request_uri = true
+
+# The suite registers without a scope; registration gives such a client
+# default_scopes, which this instance sets.
+[dynamic_client_registration]
+enabled = true
+open = true
+client_management = true
+default_scopes = ["openid", "profile", "email", "address", "phone"]
+# The OIDC plans send no PKCE; registered clients would require it by default.
+require_pkce = false
+
+# The dynamic plan registers private_key_jwt clients.
+[client_authentication]
+private_key_jwt = true
+
+[[signing_keys]]
+kid = "conformance-rsa"
+alg = "RS256"
+key_file = "../../fixtures/signing-key.pem"
+
+[server_side_sessions]
+enabled = true
+
+[reference_ui]
+enabled = true
+interactive = true
+# The users file answers profile claims, so userinfo
+# has the user's claims.
+users_profile_service = true
+users_file = "../users.json"
+
+# Written by `rustid-demo certs --out target/conformance`; the suite's nginx
+# serves a certificate from the same CA, which back-channel logout trusts.
+[tls]
+cert_file = "../../target/conformance/cert.pem"
+key_file = "../../target/conformance/key.pem"
+
+[back_channel_logout]
+ca_file = "../../target/conformance/ca.pem"
+
+# The suite serves request objects over HTTPS from the same CA.
+[request_uri]
+ca_file = "../../target/conformance/ca.pem"

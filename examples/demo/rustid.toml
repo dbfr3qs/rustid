@@ -1,0 +1,97 @@
+# rustid-server configuration for the demo (scripts/demo.sh): HTTPS on
+# https://localhost:5443 with the interactive reference UI, and the
+# clients: the demo web app on HTTP://localhost:5002; demo.cli, which uses
+# the password grant (checked by a hook the demo web app hosts); demo.tv
+# (the device flow); and demo.ciba (CIBA, whose login hints a hook the demo
+# web app hosts resolves). Not
+# for real use: the signing key is the repository's test key and the users
+# are fixtures.
+# Relative paths are resolved against this file's directory.
+listen = "127.0.0.1:5443"
+clients_file = "clients.json"
+resources_file = "resources.json"
+
+[log]
+format = "pretty"
+level = "info"
+
+# The issuer tokens and hook JWTs carry; the password hook checks it.
+[protocol]
+issuer_uri = "https://localhost:5443"
+
+# Protocol events go to the log as JSON, to show what happened.
+[protocol.events]
+raise_success_events = true
+raise_failure_events = true
+raise_error_events = true
+
+[protocol.key_management]
+enabled = false
+
+# Sessions live on the server (the cookie holds only a key): /sessions on
+# the server lists yours and ends them. "Remember me" makes the cookie
+# persistent, and token use (a refresh) renews it.
+[server_side_sessions]
+enabled = true
+
+[protocol.authentication]
+cookie_sliding_expiration = true
+
+[[signing_keys]]
+kid = "demo-rsa"
+alg = "RS256"
+key_file = "../../fixtures/signing-key.pem"
+# A self-signed certificate for the key: SAML publishes and signs with
+# certificates (an RSA key without one can't serve SAML metadata).
+cert_file = "signing-cert.pem"
+
+# The login page asks for a username and password from users_file
+# (alice/alice, bob/bob).
+[reference_ui]
+enabled = true
+interactive = true
+# The users file answers profile claims, so userinfo
+# has the user's claims.
+users_profile_service = true
+users_file = "../../fixtures/users.json"
+
+# The password grant (demo.cli) asks this hook, which the demo web app
+# hosts, to check the username and password against fixtures/users.json.
+[hooks.password_grant]
+url = "http://localhost:5002/hooks/password"
+
+# CIBA (demo.ciba, `rustid-demo ciba`) asks this hook, which the demo web app
+# also hosts, which user a login hint names; the user allows the request on
+# https://localhost:5443/ciba.
+[hooks.ciba_user]
+url = "http://localhost:5002/hooks/ciba/user"
+
+# Written by `rustid-demo certs --out target/demo`.
+[tls]
+cert_file = "../../target/demo/cert.pem"
+key_file = "../../target/demo/key.pem"
+
+# The admin API under https://localhost:5443/admin, with a demo-only key.
+[admin]
+enabled = true
+api_keys = ["rustid-demo-admin-key-not-for-real-use"]
+# The extended properties API scopes may carry (an owner team).
+schemas_file = "schemas.json"
+
+# Dynamic client registration at https://localhost:5443/connect/dcr, with a
+# demo-only initial access token, and RFC 7592 read and delete of the
+# clients it registers.
+[dynamic_client_registration]
+enabled = true
+initial_access_tokens = ["rustid-demo-registration-token-not-for-real-use"]
+client_management = true
+
+[protocol.discovery.dynamic_client_registration]
+registration_endpoint_mode = "Inferred"
+
+# The SAML 2.0 IdP: metadata at https://localhost:5443/Saml2. The demo
+# client is also a SAML service provider (http://localhost:5002/saml), with
+# the repository's test SP key; it signs in and logs out over SAML.
+[saml]
+enabled = true
+service_providers_file = "saml-service-providers.json"

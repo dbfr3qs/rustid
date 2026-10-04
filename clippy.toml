@@ -1,0 +1,4 @@
+# TokenError (the token endpoint's protocol error) carries the error, its
+# description, custom response fields and a DPoP server nonce; it is
+# returned per request, not in a hot loop, so it isn't boxed.
+large-error-threshold = 160

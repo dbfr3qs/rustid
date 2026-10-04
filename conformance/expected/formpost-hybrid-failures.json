@@ -1,0 +1,73 @@
+[
+  {
+    "test-name": "oidcc-claims-essential",
+    "variant": "*",
+    "configuration-filename": "*/formpost-hybrid.json",
+    "current-block": "",
+    "condition": "EnsureUserInfoContainsName",
+    "expected-result": "warning",
+    "comment": "the claims request parameter isn't supported"
+  },
+  {
+    "test-name": "oidcc-codereuse-30seconds",
+    "variant": "*",
+    "configuration-filename": "*/formpost-hybrid.json",
+    "current-block": "Testing if access token was revoked after authorization code reuse (the AS 'should' have revoked the access token)",
+    "condition": "EnsureHttpStatusCodeIs4xx",
+    "expected-result": "warning",
+    "comment": "code reuse doesn't revoke the tokens already issued (a 'should')"
+  },
+  {
+    "test-name": "oidcc-ensure-request-with-acr-values-succeeds",
+    "variant": {
+      "response_type": "code id_token token"
+    },
+    "configuration-filename": "*/formpost-hybrid.json",
+    "current-block": "",
+    "condition": "ValidateIdTokenACRClaimAgainstAcrValuesRequest",
+    "expected-result": "warning",
+    "comment": "no acr claim is issued unless the UI sets one"
+  },
+  {
+    "test-name": "oidcc-ensure-request-with-acr-values-succeeds",
+    "variant": {
+      "response_type": "code token"
+    },
+    "configuration-filename": "*/formpost-hybrid.json",
+    "current-block": "",
+    "condition": "ValidateIdTokenACRClaimAgainstAcrValuesRequest",
+    "expected-result": "warning",
+    "comment": "no acr claim is issued unless the UI sets one"
+  },
+  {
+    "test-name": "oidcc-ensure-request-with-acr-values-succeeds",
+    "variant": {
+      "response_type": "code id_token"
+    },
+    "configuration-filename": "*/formpost-hybrid.json",
+    "current-block": "Verify authorization endpoint response",
+    "condition": "ValidateIdTokenACRClaimAgainstAcrValuesRequest",
+    "expected-result": "warning",
+    "comment": "no acr claim is issued unless the UI sets one"
+  },
+  {
+    "test-name": "oidcc-ensure-request-with-acr-values-succeeds",
+    "variant": {
+      "response_type": "code id_token token"
+    },
+    "configuration-filename": "*/formpost-hybrid.json",
+    "current-block": "Verify authorization endpoint response",
+    "condition": "ValidateIdTokenACRClaimAgainstAcrValuesRequest",
+    "expected-result": "warning",
+    "comment": "no acr claim is issued unless the UI sets one"
+  },
+  {
+    "test-name": "oidcc-server",
+    "variant": "*",
+    "configuration-filename": "*/formpost-hybrid.json",
+    "current-block": "",
+    "condition": "EnsureIdTokenDoesNotContainNonRequestedClaims",
+    "expected-result": "warning",
+    "comment": "idp (the identity provider that signed the user in) is in every id token"
+  }
+]

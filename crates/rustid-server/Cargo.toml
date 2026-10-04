@@ -1,0 +1,51 @@
+[package]
+name = "rustid-server"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[lib]
+name = "rustid_server"
+
+[features]
+default = ["saml"]
+# The SAML 2.0 IdP endpoints.
+saml = ["rustid-http/saml", "rustid-admin/saml"]
+
+[dependencies]
+chrono = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+base64 = { workspace = true }
+axum = { workspace = true }
+clap = { workspace = true }
+figment = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+rustid-core = { path = "../rustid-core" }
+rustid-saml = { path = "../rustid-saml" }
+rustid-admin = { path = "../rustid-admin", default-features = false }
+rustid-http = { path = "../rustid-http", default-features = false }
+rustid-hooks = { path = "../rustid-hooks" }
+rustid-store-memory = { path = "../rustid-store-memory" }
+rustid-store-postgres = { path = "../rustid-store-postgres" }
+reqwest = { workspace = true }
+rustls-pki-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-rustls = { workspace = true }
+tower = { workspace = true }
+tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+tracing-subscriber = { workspace = true }
+url = { workspace = true }
+pem = { workspace = true }
+
+[dev-dependencies]
+sqlx = { workspace = true }
+figment = { workspace = true, features = ["test"] }
+rcgen = { workspace = true, features = ["pem"] }
+tempfile = { workspace = true }

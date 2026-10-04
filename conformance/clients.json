@@ -1,0 +1,278 @@
+[
+  {
+    "clientId": "conformance-suite",
+    "clientName": "OIDF conformance suite",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "clientSecrets": [
+      {
+        "value": "Ogu7b8vOBJ7D9qchRxzWVSd9BEQ3qLBWD4beg5xcEhE="
+      }
+    ],
+    "requirePkce": false,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-oidcc/callback",
+      "https://localhost:8443/test/a/rustid-formpost/callback",
+      "https://localhost:8443/test/a/rustid-config/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false
+  },
+  {
+    "clientId": "conformance-suite-post",
+    "clientName": "OIDF conformance suite (post)",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "clientSecrets": [
+      {
+        "value": "2m1foA3aw5QtIC5NtMZ5SSuEFMYAR7uGzV6teOfJRow="
+      }
+    ],
+    "requirePkce": false,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-oidcc/callback",
+      "https://localhost:8443/test/a/rustid-formpost/callback",
+      "https://localhost:8443/test/a/rustid-config/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false
+  },
+  {
+    "clientId": "conformance-logout",
+    "clientName": "OIDF conformance suite (logout)",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "clientSecrets": [
+      {
+        "value": "Ogu7b8vOBJ7D9qchRxzWVSd9BEQ3qLBWD4beg5xcEhE="
+      }
+    ],
+    "requirePkce": false,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-logout/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "postLogoutRedirectUris": [
+      "https://localhost:8443/test/a/rustid-logout/post_logout_redirect"
+    ]
+  },
+  {
+    "clientId": "conformance-frontchannel",
+    "clientName": "OIDF conformance suite (front-channel)",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "clientSecrets": [
+      {
+        "value": "Ogu7b8vOBJ7D9qchRxzWVSd9BEQ3qLBWD4beg5xcEhE="
+      }
+    ],
+    "requirePkce": false,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-frontchannel/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "postLogoutRedirectUris": [
+      "https://localhost:8443/test/a/rustid-frontchannel/post_logout_redirect"
+    ],
+    "frontChannelLogoutUri": "https://localhost:8443/test/a/rustid-frontchannel/frontchannel_logout"
+  },
+  {
+    "clientId": "conformance-backchannel",
+    "clientName": "OIDF conformance suite (back-channel)",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "clientSecrets": [
+      {
+        "value": "Ogu7b8vOBJ7D9qchRxzWVSd9BEQ3qLBWD4beg5xcEhE="
+      }
+    ],
+    "requirePkce": false,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-backchannel/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "postLogoutRedirectUris": [
+      "https://localhost:8443/test/a/rustid-backchannel/post_logout_redirect"
+    ],
+    "backChannelLogoutUri": "https://localhost:8443/test/a/rustid-backchannel/backchannel_logout"
+  },
+  {
+    "clientId": "conformance-session",
+    "clientName": "OIDF conformance suite (session management)",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "clientSecrets": [
+      {
+        "value": "Ogu7b8vOBJ7D9qchRxzWVSd9BEQ3qLBWD4beg5xcEhE="
+      }
+    ],
+    "requirePkce": false,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-session/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false,
+    "postLogoutRedirectUris": [
+      "https://localhost:8443/test/a/rustid-session/post_logout_redirect"
+    ]
+  },
+  {
+    "clientId": "conformance-implicit",
+    "clientName": "OIDF conformance suite (implicit)",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "clientSecrets": [
+      {
+        "value": "Ogu7b8vOBJ7D9qchRxzWVSd9BEQ3qLBWD4beg5xcEhE="
+      }
+    ],
+    "requirePkce": false,
+    "allowAccessTokensViaBrowser": true,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-implicit/callback",
+      "https://localhost:8443/test/a/rustid-formpost-implicit/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": false,
+    "requireConsent": false
+  },
+  {
+    "clientId": "conformance-implicit-2",
+    "clientName": "OIDF conformance suite (implicit, second client)",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "clientSecrets": [
+      {
+        "value": "2m1foA3aw5QtIC5NtMZ5SSuEFMYAR7uGzV6teOfJRow="
+      }
+    ],
+    "requirePkce": false,
+    "allowAccessTokensViaBrowser": true,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-implicit/callback",
+      "https://localhost:8443/test/a/rustid-formpost-implicit/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": false,
+    "requireConsent": false
+  },
+  {
+    "clientId": "conformance-hybrid",
+    "clientName": "OIDF conformance suite (hybrid)",
+    "allowedGrantTypes": [
+      "hybrid"
+    ],
+    "clientSecrets": [
+      {
+        "value": "Ogu7b8vOBJ7D9qchRxzWVSd9BEQ3qLBWD4beg5xcEhE="
+      }
+    ],
+    "requirePkce": false,
+    "allowAccessTokensViaBrowser": true,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-hybrid/callback",
+      "https://localhost:8443/test/a/rustid-formpost-hybrid/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false
+  },
+  {
+    "clientId": "conformance-hybrid-post",
+    "clientName": "OIDF conformance suite (hybrid, post)",
+    "allowedGrantTypes": [
+      "hybrid"
+    ],
+    "clientSecrets": [
+      {
+        "value": "2m1foA3aw5QtIC5NtMZ5SSuEFMYAR7uGzV6teOfJRow="
+      }
+    ],
+    "requirePkce": false,
+    "allowAccessTokensViaBrowser": true,
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-hybrid/callback",
+      "https://localhost:8443/test/a/rustid-formpost-hybrid/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone"
+    ],
+    "allowOfflineAccess": true,
+    "requireConsent": false
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "test-name": "oidcc-3rd_party-init-login-nohttps",
+    "variant": "*",
+    "configuration-filename": "*/3rdparty.json",
+    "current-block": "*",
+    "condition": "EnsureHttpStatusCodeIs400",
+    "expected-result": "failure",
+    "comment": "a non-https initiate_login_uri is registered: registration stores initiate_login_uri without checking its scheme"
+  },
+  {
+    "test-name": "oidcc-3rd_party-init-login-nohttps",
+    "variant": "*",
+    "configuration-filename": "*/3rdparty.json",
+    "current-block": "*",
+    "condition": "CheckErrorFromDynamicRegistrationEndpointIsInvalidClientMetadata",
+    "expected-result": "failure",
+    "comment": "a non-https initiate_login_uri is registered: registration stores initiate_login_uri without checking its scheme"
+  }
+]

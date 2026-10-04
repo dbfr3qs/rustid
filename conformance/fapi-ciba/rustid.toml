@@ -1,0 +1,66 @@
+# rustid-server for the OpenID Foundation FAPI-CIBA ID1 plan
+# (scripts/conformance.sh fapi-ciba): HTTPS on https://localhost:9445 with
+# client certificates requested (FAPI-CIBA binds tokens to them), signed
+# CIBA requests, PS256, and CIBA hooks served by approver.py, which also
+# answers the suite's automated approval calls. Conformance only.
+# Relative paths are resolved against this file's directory.
+listen = "127.0.0.1:9445"
+clients_file = "clients.json"
+resources_file = "../resources.json"
+
+[log]
+format = "pretty"
+level = "info"
+
+[protocol]
+emit_scopes_as_space_delimited_string_in_jwt = true
+supported_client_assertion_signing_algorithms = ["PS256", "ES256"]
+supported_request_object_signing_algorithms = ["PS256", "ES256"]
+jwt_validation_clock_skew = 60
+
+[protocol.key_management]
+enabled = false
+
+# Tokens bound to the client certificate the connection presents. mTLS
+# client authentication (and so the /connect/mtls/* aliases) stays off: a
+# client assertion whose aud is the alias token URL isn't accepted,
+# so the suite uses the token endpoint itself.
+[protocol.mutual_tls]
+enabled = false
+always_emit_confirmation_claim = true
+
+[[signing_keys]]
+kid = "conformance-ps256"
+alg = "PS256"
+key_file = "../../fixtures/signing-key.pem"
+
+[client_authentication]
+private_key_jwt = true
+
+# The resource the plan calls with its certificate-bound access tokens.
+[protected_resource]
+path = "/fapi-ciba/resource"
+
+# The approver signs alice in here to complete requests.
+[reference_ui]
+enabled = true
+interactive = true
+users_profile_service = true
+users_file = "../users.json"
+
+[interaction]
+api_keys = ["fapi-ciba-approver-key"]
+
+[hooks.ciba_user]
+url = "http://127.0.0.1:5451/ciba/user"
+
+[hooks.ciba_notification]
+url = "http://127.0.0.1:5451/ciba/notify"
+
+[tls]
+cert_file = "../../target/conformance/cert.pem"
+key_file = "../../target/conformance/key.pem"
+client_certificates = "request"
+# FAPI's TLS 1.2 suites are ECDHE-RSA only and this certificate is ECDSA, so
+# the listener offers TLS 1.3 alone, which FAPI allows (as fapi2/rustid.toml).
+cipher_suites = "fapi"

@@ -1,0 +1,32 @@
+[
+  {
+    "test-name": "oidcc-idtoken-unsigned",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "comment": "unsigned id tokens (alg none) aren't offered: id_token_signing_alg_values_supported lists signing algorithms only"
+  },
+  {
+    "test-name": "oidcc-registration-sector-uri",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "comment": "pairwise subjects and sector_identifier_uri aren't supported (subject_types_supported is public)"
+  },
+  {
+    "test-name": "oidcc-registration-sector-bad",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "comment": "pairwise subjects and sector_identifier_uri aren't supported (subject_types_supported is public)"
+  },
+  {
+    "test-name": "oidcc-request-uri-unsigned",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "comment": "unsigned request objects aren't supported (request_object_signing_alg_values_supported has no none)"
+  },
+  {
+    "test-name": "oidcc-ensure-request-object-with-redirect-uri",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "comment": "unsigned request objects aren't supported (request_object_signing_alg_values_supported has no none)"
+  }
+]

@@ -1,0 +1,58 @@
+{
+  "identityResources": [
+    {
+      "name": "openid",
+      "required": true,
+      "userClaims": [
+        "sub"
+      ]
+    },
+    {
+      "name": "profile",
+      "userClaims": [
+        "name",
+        "family_name",
+        "given_name"
+      ]
+    },
+    {
+      "name": "email",
+      "userClaims": [
+        "email",
+        "email_verified"
+      ]
+    }
+  ],
+  "apiScopes": [
+    {
+      "name": "scope1"
+    },
+    {
+      "name": "scope2"
+    }
+  ],
+  "apiResources": [
+    {
+      "name": "api1",
+      "scopes": [
+        "scope1"
+      ],
+      "apiSecrets": [
+        {
+          "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+        }
+      ]
+    },
+    {
+      "name": "api2",
+      "scopes": [
+        "scope2"
+      ],
+      "apiSecrets": [
+        {
+          "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+        }
+      ]
+    }
+  ]
+}

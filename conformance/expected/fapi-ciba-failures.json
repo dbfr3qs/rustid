@@ -1,0 +1,236 @@
+[
+  {
+    "test-name": "fapi-ciba-id1-discovery-end-point-verification",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckTLSClientCertificateBoundAccessTokensTrue",
+    "expected-result": "failure",
+    "comment": "this instance leaves mTLS client authentication off (protocol.mutual_tls.enabled), so tls_client_certificate_bound_access_tokens isn't advertised: with it on, the suite authenticates at the /connect/mtls/token alias with that URL as the client assertion's aud, which rustid doesn't accept. Tokens are still bound to the presented certificate (always_emit_confirmation_claim)"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-aud-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-bad-aud-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-iss-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-bad-iss-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-exp-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-expired-exp-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-exp-is-70-minutes-in-future-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "ValidateErrorResponseFromBackchannelAuthenticationEndpoint",
+    "expected-result": "failure",
+    "comment": "request objects need exp but not iat or nbf, and have no 60-minute lifetime cap unless request_object_max_lifetime is set (it isn't here), so this request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-exp-is-70-minutes-in-future-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckBackchannelAuthenticationEndpointHttpStatus400",
+    "expected-result": "failure",
+    "comment": "likewise: the request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-exp-is-70-minutes-in-future-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-iat-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "ValidateErrorResponseFromBackchannelAuthenticationEndpoint",
+    "expected-result": "failure",
+    "comment": "request objects need exp but not iat or nbf, and have no 60-minute lifetime cap unless request_object_max_lifetime is set (it isn't here), so this request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-iat-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckBackchannelAuthenticationEndpointHttpStatus400",
+    "expected-result": "failure",
+    "comment": "likewise: the request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-iat-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-nbf-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "ValidateErrorResponseFromBackchannelAuthenticationEndpoint",
+    "expected-result": "failure",
+    "comment": "request objects need exp but not iat or nbf, and have no 60-minute lifetime cap unless request_object_max_lifetime is set (it isn't here), so this request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-nbf-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckBackchannelAuthenticationEndpointHttpStatus400",
+    "expected-result": "failure",
+    "comment": "likewise: the request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-nbf-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-nbf-is-10-minutes-in-future-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-nbf-is-70-minutes-in-past-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "ValidateErrorResponseFromBackchannelAuthenticationEndpoint",
+    "expected-result": "failure",
+    "comment": "request objects need exp but not iat or nbf, and have no 60-minute lifetime cap unless request_object_max_lifetime is set (it isn't here), so this request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-nbf-is-70-minutes-in-past-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckBackchannelAuthenticationEndpointHttpStatus400",
+    "expected-result": "failure",
+    "comment": "likewise: the request object is accepted"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-nbf-is-70-minutes-in-past-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-missing-jti-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-signature-algorithm-is-none-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-signature-algorithm-is-bad-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-signature-algorithm-is-RS256-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-request-object-signed-by-other-client-fails",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckErrorFromBackchannelAuthenticationEndpointErrorInvalidRequest",
+    "expected-result": "failure",
+    "comment": "an invalid request object is refused with invalid_request_object (or the request is accepted, below); FAPI-CIBA wants invalid_request"
+  },
+  {
+    "test-name": "fapi-ciba-id1-ensure-mtls-holder-of-key-required",
+    "variant": "*",
+    "configuration-filename": "*/fapi-ciba.json",
+    "current-block": "",
+    "condition": "CheckTokenEndpointReturnedInvalidClientGrantOrRequestError",
+    "expected-result": "failure",
+    "comment": "a private_key_jwt client's token request without a client certificate gets an unbound token: no client setting requires certificate binding"
+  }
+]

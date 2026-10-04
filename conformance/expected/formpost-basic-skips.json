@@ -1,0 +1,14 @@
+[
+  {
+    "test-name": "oidcc-unsigned-request-object-supported-correctly-or-rejected-as-unsupported",
+    "variant": "*",
+    "configuration-filename": "*/formpost-basic.json",
+    "comment": "unsigned request objects aren't supported (request_object_signing_alg_values_supported has no 'none')"
+  },
+  {
+    "test-name": "oidcc-ensure-request-object-with-redirect-uri",
+    "variant": "*",
+    "configuration-filename": "*/formpost-basic.json",
+    "comment": "likewise: needs unsigned request objects"
+  }
+]

@@ -1,0 +1,52 @@
+{
+  "signing_keys": [
+    {
+      "kid": "fixture-rsa-1",
+      "alg": "RS256",
+      "key_file": "../signing-key.pem"
+    }
+  ],
+  "resources_file": "../resources.json",
+  "clients_file": "../clients.json",
+  "placeholders": {
+    "password_grant": true
+  },
+  "client_authentication": {
+    "private_key_jwt": true
+  },
+  "protocol": {
+    "issuer_uri": "https://idsrv.test",
+    "endpoints": {
+      "enable_authorize_endpoint": false,
+      "enable_backchannel_authentication_endpoint": false,
+      "enable_device_authorization_endpoint": false,
+      "enable_pushed_authorization_endpoint": false
+    },
+    "discovery": {
+      "show_key_set": false,
+      "show_claims": false,
+      "show_api_scopes": false
+    },
+    "supported_client_assertion_signing_algorithms": [],
+    "supported_request_object_signing_algorithms": [],
+    "dpop": {
+      "supported_dpop_signing_algorithms": []
+    },
+    "key_management": {
+      "enabled": false
+    }
+  },
+  "reference_ui": {
+    "enabled": true,
+    "users_file": "../users.json",
+    "default_user": "alice"
+  },
+  "data_protection": {
+    "keys": [
+      {
+        "id": "fixture",
+        "secret": "cnVzdGlkIGZpeHR1cmUgZGF0YSBwcm90ZWN0aW9uISE="
+      }
+    ]
+  }
+}

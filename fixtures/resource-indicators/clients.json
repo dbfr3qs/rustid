@@ -1,0 +1,64 @@
+[
+  {
+    "clientId": "client1",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireConsent": false,
+    "requirePkce": false,
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "scope1",
+      "scope2",
+      "scope3",
+      "scope4"
+    ],
+    "redirectUris": [
+      "https://client1/callback"
+    ]
+  },
+  {
+    "clientId": "client2",
+    "allowedGrantTypes": [
+      "implicit"
+    ],
+    "requireConsent": false,
+    "allowAccessTokensViaBrowser": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "scope1",
+      "scope2",
+      "scope3",
+      "scope4"
+    ],
+    "redirectUris": [
+      "https://client2/callback"
+    ]
+  },
+  {
+    "clientId": "client",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "scope1",
+      "scope2",
+      "scope3",
+      "scope4"
+    ],
+    "allowOfflineAccess": true
+  }
+]

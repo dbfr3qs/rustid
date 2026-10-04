@@ -1,0 +1,20 @@
+[
+  {
+    "test-name": "fapi2-security-profile-id2-happy-flow",
+    "variant": "*",
+    "configuration-filename": "*/fapi2.json",
+    "current-block": "*",
+    "condition": "EnsureIdTokenDoesNotContainNonRequestedClaims",
+    "expected-result": "warning",
+    "comment": "idp (the identity provider that signed the user in) is in every id token"
+  },
+  {
+    "test-name": "fapi2-security-profile-id2-attempt-reuse-authorization-code-after-one-second",
+    "variant": "*",
+    "configuration-filename": "*/fapi2.json",
+    "current-block": "*",
+    "condition": "EnsureHttpStatusCodeIs4xx",
+    "expected-result": "warning",
+    "comment": "code reuse doesn't revoke the tokens already issued (a 'should')"
+  }
+]

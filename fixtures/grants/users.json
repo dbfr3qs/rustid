@@ -1,0 +1,136 @@
+[
+  {
+    "subjectId": "818727",
+    "username": "alice",
+    "password": "alice",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Alice Smith"
+      },
+      {
+        "type": "given_name",
+        "value": "Alice"
+      },
+      {
+        "type": "family_name",
+        "value": "Smith"
+      },
+      {
+        "type": "email",
+        "value": "AliceSmith@example.com"
+      },
+      {
+        "type": "email_verified",
+        "value": "true",
+        "valueType": "http://www.w3.org/2001/XMLSchema#boolean"
+      },
+      {
+        "type": "role",
+        "value": "Admin"
+      },
+      {
+        "type": "role",
+        "value": "Geek"
+      },
+      {
+        "type": "website",
+        "value": "http://alice.example.com"
+      },
+      {
+        "type": "address",
+        "value": "{\"street_address\": \"One Hacker Way\", \"locality\": \"Heidelberg\", \"postal_code\": 69118, \"country\": \"Germany\"}",
+        "valueType": "json"
+      }
+    ]
+  },
+  {
+    "subjectId": "88421113",
+    "username": "bob",
+    "password": "bob",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Bob Smith"
+      },
+      {
+        "type": "given_name",
+        "value": "Bob"
+      },
+      {
+        "type": "family_name",
+        "value": "Smith"
+      },
+      {
+        "type": "email",
+        "value": "BobSmith@example.com"
+      },
+      {
+        "type": "email_verified",
+        "value": "true",
+        "valueType": "http://www.w3.org/2001/XMLSchema#boolean"
+      },
+      {
+        "type": "role",
+        "value": "Developer"
+      },
+      {
+        "type": "role",
+        "value": "Geek"
+      },
+      {
+        "type": "website",
+        "value": "http://bob.example.com"
+      },
+      {
+        "type": "address",
+        "value": "{\"street_address\": \"One Hacker Way\", \"locality\": \"Heidelberg\", \"postal_code\": 69118, \"country\": \"Germany\"}",
+        "valueType": "json"
+      }
+    ]
+  },
+  {
+    "subjectId": "88421113",
+    "username": "bob_no_password",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Bob Smith"
+      },
+      {
+        "type": "given_name",
+        "value": "Bob"
+      },
+      {
+        "type": "family_name",
+        "value": "Smith"
+      },
+      {
+        "type": "email",
+        "value": "BobSmith@example.com"
+      },
+      {
+        "type": "email_verified",
+        "value": "true",
+        "valueType": "http://www.w3.org/2001/XMLSchema#boolean"
+      },
+      {
+        "type": "role",
+        "value": "Developer"
+      },
+      {
+        "type": "role",
+        "value": "Geek"
+      },
+      {
+        "type": "website",
+        "value": "http://bob.example.com"
+      },
+      {
+        "type": "address",
+        "value": "{\"street_address\": \"One Hacker Way\", \"locality\": \"Heidelberg\", \"postal_code\": 69118, \"country\": \"Germany\"}",
+        "valueType": "json"
+      }
+    ]
+  }
+]

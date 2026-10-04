@@ -1,0 +1,45 @@
+{
+  "signing_keys": [
+    {
+      "kid": "fixture-rsa-1",
+      "alg": "RS256",
+      "key_file": "../signing-key.pem"
+    }
+  ],
+  "resources_file": "../resources.json",
+  "clients_file": "../clients.json",
+  "placeholders": {
+    "password_grant": true
+  },
+  "protocol": {
+    "issuer_uri": "https://idsrv.test",
+    "key_management": {
+      "enabled": false
+    },
+    "server_side_sessions": {
+      "remove_expired_sessions": false
+    }
+  },
+  "reference_ui": {
+    "enabled": true,
+    "users_file": "../users.json",
+    "default_user": "alice"
+  },
+  "localization": {
+    "supported_ui_cultures": [
+      "en-US",
+      "nb-NO"
+    ]
+  },
+  "data_protection": {
+    "keys": [
+      {
+        "id": "fixture",
+        "secret": "cnVzdGlkIGZpeHR1cmUgZGF0YSBwcm90ZWN0aW9uISE="
+      }
+    ]
+  },
+  "server_side_sessions": {
+    "enabled": true
+  }
+}

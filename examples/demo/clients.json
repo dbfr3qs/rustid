@@ -1,0 +1,89 @@
+[
+  {
+    "clientId": "demo",
+    "clientName": "rustid demo client",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "clientSecrets": [
+      {
+        "description": "secret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "requirePkce": true,
+    "redirectUris": [
+      "http://localhost:5002/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "api1"
+    ],
+    "requireConsent": true,
+    "allowOfflineAccess": true,
+    "postLogoutRedirectUris": [
+      "http://localhost:5002/signed-out"
+    ],
+    "frontChannelLogoutUri": "http://localhost:5002/frontchannel-logout"
+  },
+  {
+    "clientId": "demo.cli",
+    "clientName": "rustid demo command line",
+    "allowedGrantTypes": [
+      "password"
+    ],
+    "clientSecrets": [
+      {
+        "description": "secret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "api1"
+    ],
+    "allowOfflineAccess": true
+  },
+  {
+    "clientId": "demo.tv",
+    "clientName": "rustid demo TV",
+    "allowedGrantTypes": [
+      "urn:ietf:params:oauth:grant-type:device_code"
+    ],
+    "clientSecrets": [
+      {
+        "description": "secret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "api1"
+    ]
+  },
+  {
+    "clientId": "demo.ciba",
+    "clientName": "rustid demo backchannel app",
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "clientSecrets": [
+      {
+        "description": "secret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "api1"
+    ]
+  }
+]

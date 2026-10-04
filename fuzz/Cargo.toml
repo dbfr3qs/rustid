@@ -1,0 +1,64 @@
+[package]
+name = "rustid-fuzz-targets"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+rustid-fuzz = { path = "../crates/rustid-fuzz" }
+
+# Not part of the main workspace: built on nightly by cargo-fuzz only.
+[workspace]
+
+[[bin]]
+name = "jws"
+path = "fuzz_targets/jws.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "form"
+path = "fuzz_targets/form.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "xml"
+path = "fuzz_targets/xml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "saml_redirect"
+path = "fuzz_targets/saml_redirect.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "saml_post"
+path = "fuzz_targets/saml_post.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "certificate"
+path = "fuzz_targets/certificate.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "http"
+path = "fuzz_targets/http.rs"
+test = false
+doc = false
+bench = false

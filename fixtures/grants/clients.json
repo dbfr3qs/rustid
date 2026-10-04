@@ -1,0 +1,108 @@
+[
+  {
+    "clientId": "client",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "api1",
+      "api2",
+      "other_api"
+    ]
+  },
+  {
+    "clientId": "client.and.ro",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "password",
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "openid",
+      "api1",
+      "api2"
+    ]
+  },
+  {
+    "clientId": "roclient",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "password"
+    ],
+    "refreshTokenUsage": "OneTimeOnly",
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "email",
+      "address",
+      "roles",
+      "api1",
+      "api2",
+      "api4.with.roles"
+    ]
+  },
+  {
+    "clientId": "roclient.reference",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "password"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "api1",
+      "api2"
+    ],
+    "accessTokenType": "Reference"
+  },
+  {
+    "clientId": "client.custom",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "custom",
+      "custom.nosubject"
+    ],
+    "allowedScopes": [
+      "api1",
+      "api2"
+    ],
+    "allowOfflineAccess": true
+  },
+  {
+    "clientId": "client.dynamic",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "dynamic"
+    ],
+    "allowedScopes": [
+      "api1",
+      "api2"
+    ],
+    "alwaysSendClientClaims": true
+  }
+]

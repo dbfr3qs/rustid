@@ -1,0 +1,71 @@
+{
+  "alias": "rustid-3rdparty",
+  "description": "rustid OIDC 3rd party initiated login",
+  "server": {
+    "discoveryUrl": "https://localhost:9447/.well-known/openid-configuration"
+  },
+  "client": {
+    "client_name": "rustid conformance client"
+  },
+  "browser": [
+    {
+      "match": "https://localhost:9447/connect/authorize*",
+      "tasks": [
+        {
+          "task": "Login",
+          "optional": true,
+          "match": "https://localhost:9447/Account/Login*",
+          "commands": [
+            [
+              "text",
+              "id",
+              "username",
+              "alice",
+              "optional"
+            ],
+            [
+              "text",
+              "id",
+              "password",
+              "alice",
+              "optional"
+            ],
+            [
+              "click",
+              "xpath",
+              "//button[@value='login']"
+            ]
+          ]
+        },
+        {
+          "task": "Consent",
+          "optional": true,
+          "match": "https://localhost:9447/consent*",
+          "commands": [
+            [
+              "click",
+              "xpath",
+              "//button[@value='yes']"
+            ]
+          ]
+        },
+        {
+          "task": "Verify Complete",
+          "match": "*/test/*/callback*",
+          "commands": [
+            [
+              "wait",
+              "id",
+              "submission_complete",
+              10
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "override": {},
+  "client2": {
+    "client_name": "rustid conformance client 2"
+  }
+}

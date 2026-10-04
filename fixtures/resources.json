@@ -1,0 +1,111 @@
+{
+  "identityResources": [
+    {
+      "name": "openid",
+      "displayName": "Your user identifier",
+      "required": true,
+      "userClaims": [
+        "sub"
+      ]
+    },
+    {
+      "name": "profile",
+      "displayName": "User profile",
+      "description": "Your user profile information (first name, last name, etc.)",
+      "emphasize": true,
+      "userClaims": [
+        "name",
+        "family_name",
+        "given_name",
+        "middle_name",
+        "nickname",
+        "preferred_username",
+        "profile",
+        "picture",
+        "website",
+        "gender",
+        "birthdate",
+        "zoneinfo",
+        "locale",
+        "updated_at"
+      ]
+    },
+    {
+      "name": "custom_identity",
+      "displayName": "Custom identity",
+      "showInDiscoveryDocument": false,
+      "userClaims": [
+        "foo"
+      ]
+    }
+  ],
+  "apiScopes": [
+    {
+      "name": "api1",
+      "displayName": "API 1"
+    },
+    {
+      "name": "api2"
+    },
+    {
+      "name": "other_api"
+    },
+    {
+      "name": "api.es256"
+    }
+  ],
+  "apiResources": [
+    {
+      "name": "api1-resource",
+      "displayName": "API 1 resource",
+      "scopes": [
+        "api1"
+      ],
+      "userClaims": [
+        "role",
+        "name"
+      ]
+    },
+    {
+      "name": "api",
+      "scopes": [
+        "api1",
+        "api2"
+      ],
+      "apiSecrets": [
+        {
+          "type": "SharedSecret",
+          "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+        }
+      ]
+    },
+    {
+      "name": "other_api",
+      "scopes": [
+        "other_api"
+      ]
+    },
+    {
+      "name": "api.es256",
+      "scopes": [
+        "api.es256"
+      ],
+      "allowedAccessTokenSigningAlgorithms": [
+        "ES256"
+      ]
+    },
+    {
+      "name": "api.disabled",
+      "enabled": false,
+      "scopes": [
+        "api1"
+      ],
+      "apiSecrets": [
+        {
+          "type": "SharedSecret",
+          "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+        }
+      ]
+    }
+  ]
+}

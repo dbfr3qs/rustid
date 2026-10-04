@@ -1,0 +1,119 @@
+[
+  {
+    "test-name": "oidcc-userinfo-rs256",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "EnsureContentTypeApplicationJwt",
+    "expected-result": "failure",
+    "comment": "signed userinfo isn't supported: registration ignores userinfo_signed_response_alg and userinfo answers JSON"
+  },
+  {
+    "test-name": "oidcc-userinfo-rs256",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "ValidateUserInfoResponseSignature",
+    "expected-result": "failure",
+    "comment": "signed userinfo isn't supported: registration ignores userinfo_signed_response_alg and userinfo answers JSON"
+  },
+  {
+    "test-name": "oidcc-userinfo-rs256",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "ExtractSignedUserInfoFromUserInfoEndpointResponse",
+    "expected-result": "failure",
+    "comment": "signed userinfo isn't supported: registration ignores userinfo_signed_response_alg and userinfo answers JSON"
+  },
+  {
+    "test-name": "oidcc-redirect-uri-regfrag",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "EnsureHttpStatusCodeIs400",
+    "expected-result": "failure",
+    "comment": "a redirect URI with a fragment is registered: registration only requires redirect URIs to be absolute"
+  },
+  {
+    "test-name": "oidcc-registration-jwks-uri",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "EnsureHttpStatusCodeIs201",
+    "expected-result": "failure",
+    "comment": "jwks_uri isn't supported: registration accepts jwks_uri but never fetches it, and refuses private_key_jwt without jwks (\"Missing jwks parameter\")"
+  },
+  {
+    "test-name": "oidcc-registration-jwks-uri",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "ExtractDynamicRegistrationResponse",
+    "expected-result": "failure",
+    "comment": "jwks_uri isn't supported: registration accepts jwks_uri but never fetches it, and refuses private_key_jwt without jwks (\"Missing jwks parameter\")"
+  },
+  {
+    "test-name": "oidcc-server-rotate-keys",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "VerifyNewJwksHasNewSigningKey",
+    "expected-result": "failure",
+    "comment": "the module needs the server's signing key rotated by hand while it waits; the conformance instance has one static key (key management off)"
+  },
+  {
+    "test-name": "oidcc-refresh-token-rp-key-rotation",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "EnsureHttpStatusCodeIs201",
+    "expected-result": "failure",
+    "comment": "needs jwks_uri for the RP's rotated key, which registration doesn't support (private_key_jwt needs jwks)"
+  },
+  {
+    "test-name": "oidcc-refresh-token-rp-key-rotation",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "ExtractDynamicRegistrationResponse",
+    "expected-result": "failure",
+    "comment": "needs jwks_uri for the RP's rotated key, which registration doesn't support (private_key_jwt needs jwks)"
+  },
+  {
+    "test-name": "oidcc-request-uri-signed-rs256",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "WebRunner",
+    "expected-result": "failure",
+    "comment": "the suite's request object has no exp, which request objects require"
+  },
+  {
+    "test-name": "oidcc-request-uri-signed-rs256",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "oidcc-request-uri-signed-rs256",
+    "expected-result": "failure",
+    "comment": "the suite's request object has no exp, which request objects require"
+  },
+  {
+    "test-name": "oidcc-redirect-uri-regfrag",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "CheckErrorFromDynamicRegistrationEndpointIsInvalidRedirectUriOrInvalidClientMetadata",
+    "expected-result": "warning",
+    "comment": "a redirect URI with a fragment is registered: registration only requires redirect URIs to be absolute"
+  },
+  {
+    "test-name": "oidcc-server",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "EnsureIdTokenDoesNotContainNonRequestedClaims",
+    "expected-result": "warning",
+    "comment": "idp (the identity provider that signed the user in) is in every id token"
+  }
+]

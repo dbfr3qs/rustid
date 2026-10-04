@@ -1,0 +1,15 @@
+{
+  "identityResources": [
+    { "name": "openid", "displayName": "Your user identifier", "required": true, "userClaims": ["sub"] },
+    {
+      "name": "profile",
+      "displayName": "User profile",
+      "userClaims": ["name", "family_name", "given_name", "preferred_username", "updated_at"]
+    },
+    { "name": "email", "displayName": "Your email address", "userClaims": ["email", "email_verified"] }
+  ],
+  "apiScopes": [{ "name": "api1", "displayName": "API 1" }],
+  "apiResources": [
+    { "name": "api1", "displayName": "API 1", "scopes": ["api1"], "userClaims": ["name", "role"] }
+  ]
+}

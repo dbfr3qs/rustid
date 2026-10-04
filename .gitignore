@@ -1,0 +1,35 @@
+# Build output.
+/target
+TestResults/
+
+# Local working state: executor ledgers and scratch (git-ignored on purpose).
+/.superpowers/
+
+# Secrets and local overrides. The keys committed under fixtures/,
+# conformance/ and examples/ are test-only; never commit a real one. Keys the
+# scripts generate at run time (demo, conformance) go to target/.
+.env
+.env.*
+*.local.toml
+*.local.json
+
+# Logs, coverage and profiling.
+*.log
+*.profraw
+*.profdata
+lcov.info
+
+# Python.
+__pycache__/
+*.pyc
+.venv/
+
+# Editors and OS.
+*.user
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

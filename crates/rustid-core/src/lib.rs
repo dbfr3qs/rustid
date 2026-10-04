@@ -1,0 +1,55 @@
+#![forbid(unsafe_code)]
+
+//! Protocol engine. No HTTP or database types live here.
+
+pub mod access_tokens;
+pub mod admin;
+pub mod authorize;
+pub mod ciba;
+pub mod claims;
+pub mod client_assertion;
+pub mod client_auth;
+pub mod client_certificate;
+pub mod clients;
+pub mod consent;
+pub mod data_protection;
+pub mod dcr;
+pub mod device_flow;
+pub mod discovery;
+pub mod dpop;
+pub mod end_session;
+pub mod events;
+pub mod form;
+pub mod grant_validation;
+pub mod grants;
+pub mod introspection;
+pub mod issuance;
+pub mod issuer;
+pub mod jwt;
+pub mod key_management;
+pub mod key_service;
+pub mod keys;
+pub mod logout;
+pub mod options;
+pub mod outbox;
+pub mod params;
+pub mod profile;
+pub mod protected_resource;
+pub mod purge;
+pub mod pushed_authorization;
+pub mod reference_tokens;
+pub mod refresh_tokens;
+pub mod replay;
+pub mod request_uri;
+pub mod resources;
+pub mod revocation;
+pub mod scopes;
+pub mod secrets;
+pub mod server_side_sessions;
+pub mod session;
+pub mod stores;
+pub mod telemetry;
+pub mod token;
+pub mod token_request;
+pub mod tokens;
+pub mod userinfo;

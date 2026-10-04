@@ -1,0 +1,74 @@
+[
+  {
+    "test-name": "fapi2-security-profile-final-happy-flow",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "*",
+    "condition": "EnsureIdTokenDoesNotContainNonRequestedClaims",
+    "expected-result": "warning",
+    "comment": "idp (the identity provider that signed the user in) is in every id token"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-attempt-reuse-authorization-code-after-one-second",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "*",
+    "condition": "EnsureHttpStatusCodeIs4xx",
+    "expected-result": "warning",
+    "comment": "code reuse doesn't revoke the tokens already issued (a 'should')"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-ensure-invalid-client-assertions-fail",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Client assertion with PAR endpoint as aud",
+    "condition": "EnsureHttpStatusCodeIs400or401",
+    "expected-result": "failure",
+    "comment": "FAPI2-SP-FINAL-5.3.2.1-8 wants the issuer as the only client assertion audience; rustid also accepts the token, PAR and CIBA endpoint URLs and an audience array containing one of them, as FAPI 2 ID2 required, and checks issuer-only audiences when the assertion is typed client-authentication+jwt (RFC 7523bis) or strict_client_assertion_audience_validation is on, which needs that typ the suite doesn't send"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-ensure-invalid-client-assertions-fail",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Client assertion with PAR endpoint as aud",
+    "condition": "CheckErrorFromParEndpointResponseErrorInvalidClientOrInvalidRequest",
+    "expected-result": "failure",
+    "comment": "FAPI2-SP-FINAL-5.3.2.1-8 wants the issuer as the only client assertion audience; rustid also accepts the token, PAR and CIBA endpoint URLs and an audience array containing one of them, as FAPI 2 ID2 required, and checks issuer-only audiences when the assertion is typed client-authentication+jwt (RFC 7523bis) or strict_client_assertion_audience_validation is on, which needs that typ the suite doesn't send"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-ensure-invalid-client-assertions-fail",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Client assertion with token endpoint as aud",
+    "condition": "EnsureHttpStatusCodeIs400or401",
+    "expected-result": "failure",
+    "comment": "FAPI2-SP-FINAL-5.3.2.1-8 wants the issuer as the only client assertion audience; rustid also accepts the token, PAR and CIBA endpoint URLs and an audience array containing one of them, as FAPI 2 ID2 required, and checks issuer-only audiences when the assertion is typed client-authentication+jwt (RFC 7523bis) or strict_client_assertion_audience_validation is on, which needs that typ the suite doesn't send"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-ensure-invalid-client-assertions-fail",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Client assertion with token endpoint as aud",
+    "condition": "CheckErrorFromParEndpointResponseErrorInvalidClientOrInvalidRequest",
+    "expected-result": "failure",
+    "comment": "FAPI2-SP-FINAL-5.3.2.1-8 wants the issuer as the only client assertion audience; rustid also accepts the token, PAR and CIBA endpoint URLs and an audience array containing one of them, as FAPI 2 ID2 required, and checks issuer-only audiences when the assertion is typed client-authentication+jwt (RFC 7523bis) or strict_client_assertion_audience_validation is on, which needs that typ the suite doesn't send"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-ensure-invalid-client-assertions-fail",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Client assertion with array as aud",
+    "condition": "EnsureHttpStatusCodeIs400or401",
+    "expected-result": "failure",
+    "comment": "FAPI2-SP-FINAL-5.3.2.1-8 wants the issuer as the only client assertion audience; rustid also accepts the token, PAR and CIBA endpoint URLs and an audience array containing one of them, as FAPI 2 ID2 required, and checks issuer-only audiences when the assertion is typed client-authentication+jwt (RFC 7523bis) or strict_client_assertion_audience_validation is on, which needs that typ the suite doesn't send"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-ensure-invalid-client-assertions-fail",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Client assertion with array as aud",
+    "condition": "CheckErrorFromParEndpointResponseErrorInvalidClientOrInvalidRequest",
+    "expected-result": "failure",
+    "comment": "FAPI2-SP-FINAL-5.3.2.1-8 wants the issuer as the only client assertion audience; rustid also accepts the token, PAR and CIBA endpoint URLs and an audience array containing one of them, as FAPI 2 ID2 required, and checks issuer-only audiences when the assertion is typed client-authentication+jwt (RFC 7523bis) or strict_client_assertion_audience_validation is on, which needs that typ the suite doesn't send"
+  }
+]

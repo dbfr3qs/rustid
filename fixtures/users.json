@@ -1,0 +1,63 @@
+[
+  {
+    "subjectId": "1",
+    "username": "alice",
+    "password": "alice",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Alice Smith"
+      },
+      {
+        "type": "given_name",
+        "value": "Alice"
+      },
+      {
+        "type": "family_name",
+        "value": "Smith"
+      },
+      {
+        "type": "email",
+        "value": "alice@example.test"
+      },
+      {
+        "type": "role",
+        "value": "admin"
+      }
+    ]
+  },
+  {
+    "subjectId": "2",
+    "username": "bob",
+    "password": "bob",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Bob Jones"
+      },
+      {
+        "type": "given_name",
+        "value": "Bob"
+      },
+      {
+        "type": "family_name",
+        "value": "Jones"
+      },
+      {
+        "type": "email",
+        "value": "bob@example.test"
+      }
+    ]
+  },
+  {
+    "subjectId": "3",
+    "username": "carol",
+    "password": "carol",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Carol White"
+      }
+    ]
+  }
+]

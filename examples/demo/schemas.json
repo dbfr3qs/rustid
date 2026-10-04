@@ -1,0 +1,14 @@
+[
+  {
+    "schemaId": "api-scope",
+    "displayName": "API scope",
+    "description": "Extended properties for the demo's API scopes.",
+    "attributeDefinitions": [
+      {
+        "code": "owner",
+        "attributeType": { "kind": "scalar", "dataType": "String" },
+        "displayName": "Owning team"
+      }
+    ]
+  }
+]

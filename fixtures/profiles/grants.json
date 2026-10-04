@@ -1,0 +1,55 @@
+{
+  "signing_keys": [
+    {
+      "kid": "fixture-rsa-1",
+      "alg": "RS256",
+      "key_file": "../signing-key.pem"
+    }
+  ],
+  "resources_file": "../grants/resources.json",
+  "clients_file": "../grants/clients.json",
+  "protocol": {
+    "issuer_uri": "https://idsrv.test",
+    "key_management": {
+      "enabled": false
+    }
+  },
+  "reference_ui": {
+    "enabled": true,
+    "users_file": "../grants/users.json",
+    "default_user": "alice"
+  },
+  "localization": {
+    "supported_ui_cultures": [
+      "en-US",
+      "nb-NO"
+    ]
+  },
+  "hooks": {
+    "password_grant": {
+      "url": "http://127.0.0.1:5190/password"
+    },
+    "extension_grants": {
+      "custom": {
+        "url": "http://127.0.0.1:5190/grant/custom"
+      },
+      "custom2": {
+        "url": "http://127.0.0.1:5190/grant/custom2"
+      },
+      "custom.nosubject": {
+        "url": "http://127.0.0.1:5190/grant/custom.nosubject"
+      },
+      "dynamic": {
+        "url": "http://127.0.0.1:5190/grant/dynamic"
+      }
+    }
+  },
+  "data_protection": {
+    "keys": [
+      {
+        "id": "fixture",
+        "secret": "cnVzdGlkIGZpeHR1cmUgZGF0YSBwcm90ZWN0aW9uISE="
+      }
+    ]
+  }
+}

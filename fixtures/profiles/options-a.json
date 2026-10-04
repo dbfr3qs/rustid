@@ -1,0 +1,85 @@
+{
+  "signing_keys": [
+    {
+      "kid": "fixture-rsa-1",
+      "alg": "RS256",
+      "key_file": "../signing-key.pem"
+    }
+  ],
+  "resources_file": "../resources.json",
+  "clients_file": "../clients.json",
+  "placeholders": {
+    "password_grant": true
+  },
+  "client_authentication": {
+    "private_key_jwt": true
+  },
+  "protocol": {
+    "issuer_uri": "https://idsrv.test",
+    "endpoints": {
+      "enable_user_info_endpoint": false,
+      "enable_introspection_endpoint": false
+    },
+    "discovery": {
+      "response_cache_interval": 60,
+      "custom_entries": {
+        "foo": "bar",
+        "relative": "~/custom/path",
+        "nested": {
+          "a": 1,
+          "b": [
+            true,
+            "x"
+          ]
+        },
+        "issuer": "ignored"
+      }
+    },
+    "user_interaction": {
+      "create_account_url": "/account/create",
+      "prompt_values_supported": [
+        "none",
+        "login",
+        "consent",
+        "select_account",
+        "custom-prompt"
+      ]
+    },
+    "supported_client_assertion_signing_algorithms": [
+      "RS256",
+      "ES256"
+    ],
+    "supported_request_object_signing_algorithms": [
+      "RS256"
+    ],
+    "dpop": {
+      "supported_dpop_signing_algorithms": [
+        "ES256"
+      ]
+    },
+    "key_management": {
+      "enabled": false
+    },
+    "validate_tenant_on_authorization": true,
+    "emit_state_hash": true
+  },
+  "reference_ui": {
+    "enabled": true,
+    "users_file": "../users.json",
+    "default_user": "alice"
+  },
+  "localization": {
+    "supported_ui_cultures": [
+      "en-US",
+      "nb-NO"
+    ]
+  },
+  "data_protection": {
+    "keys": [
+      {
+        "id": "fixture",
+        "secret": "cnVzdGlkIGZpeHR1cmUgZGF0YSBwcm90ZWN0aW9uISE="
+      }
+    ]
+  }
+}

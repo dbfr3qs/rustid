@@ -1,0 +1,213 @@
+{
+  "alias": "rustid-dynamic",
+  "description": "rustid OIDC dynamic registration",
+  "server": {
+    "discoveryUrl": "https://localhost:9447/.well-known/openid-configuration"
+  },
+  "client": {
+    "client_name": "rustid conformance client"
+  },
+  "browser": [
+    {
+      "match": "https://localhost:9447/connect/authorize*",
+      "tasks": [
+        {
+          "task": "Login",
+          "optional": true,
+          "match": "https://localhost:9447/Account/Login*",
+          "commands": [
+            [
+              "text",
+              "id",
+              "username",
+              "alice",
+              "optional"
+            ],
+            [
+              "text",
+              "id",
+              "password",
+              "alice",
+              "optional"
+            ],
+            [
+              "click",
+              "xpath",
+              "//button[@value='login']"
+            ]
+          ]
+        },
+        {
+          "task": "Consent",
+          "optional": true,
+          "match": "https://localhost:9447/consent*",
+          "commands": [
+            [
+              "click",
+              "xpath",
+              "//button[@value='yes']"
+            ]
+          ]
+        },
+        {
+          "task": "Verify Complete",
+          "match": "*/test/*/callback*",
+          "commands": [
+            [
+              "wait",
+              "id",
+              "submission_complete",
+              10
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "override": {
+    "oidcc-ensure-redirect-uri-in-authorization-request": {
+      "browser": [
+        {
+          "comment": "expect an error page",
+          "match": "https://localhost:9447/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Expect error page",
+              "match": "https://localhost:9447/home/error*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "could not be completed",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "oidcc-redirect-uri-query-added": {
+      "browser": [
+        {
+          "comment": "expect an error page",
+          "match": "https://localhost:9447/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Expect error page",
+              "match": "https://localhost:9447/home/error*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "could not be completed",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "oidcc-redirect-uri-query-mismatch": {
+      "browser": [
+        {
+          "comment": "expect an error page",
+          "match": "https://localhost:9447/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Expect error page",
+              "match": "https://localhost:9447/home/error*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "could not be completed",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "oidcc-registration-logo-uri": {
+      "browser": [
+        {
+          "match": "https://localhost:9447/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Screenshot the login page",
+              "match": "https://localhost:9447/Account/Login*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "Sign in",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "oidcc-registration-policy-uri": {
+      "browser": [
+        {
+          "match": "https://localhost:9447/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Screenshot the login page",
+              "match": "https://localhost:9447/Account/Login*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "Sign in",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "oidcc-registration-tos-uri": {
+      "browser": [
+        {
+          "match": "https://localhost:9447/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Screenshot the login page",
+              "match": "https://localhost:9447/Account/Login*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "Sign in",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "client2": {
+    "client_name": "rustid conformance client 2"
+  }
+}

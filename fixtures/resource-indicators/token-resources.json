@@ -1,0 +1,51 @@
+{
+  "identityResources": [
+    {
+      "name": "openid",
+      "userClaims": [
+        "sub"
+      ]
+    }
+  ],
+  "apiScopes": [
+    {
+      "name": "scope1"
+    },
+    {
+      "name": "scope2"
+    },
+    {
+      "name": "scope3"
+    },
+    {
+      "name": "scope4"
+    }
+  ],
+  "apiResources": [
+    {
+      "name": "urn:api1",
+      "scopes": [
+        "scope1",
+        "scope3"
+      ]
+    },
+    {
+      "name": "urn:api2",
+      "scopes": [
+        "scope2"
+      ]
+    },
+    {
+      "name": "urn:api3",
+      "scopes": [
+        "scope1",
+        "scope3"
+      ],
+      "requireResourceIndicator": true
+    },
+    {
+      "name": "urn:api4",
+      "requireResourceIndicator": true
+    }
+  ]
+}

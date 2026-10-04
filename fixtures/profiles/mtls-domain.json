@@ -1,0 +1,52 @@
+{
+  "signing_keys": [
+    {
+      "kid": "fixture-rsa-1",
+      "alg": "RS256",
+      "key_file": "../signing-key.pem"
+    }
+  ],
+  "resources_file": "../dpop/resources.json",
+  "clients_file": "../mtls/clients.json",
+  "placeholders": {
+    "password_grant": true
+  },
+  "protocol": {
+    "issuer_uri": "https://idsrv.test",
+    "key_management": {
+      "enabled": false
+    },
+    "mutual_tls": {
+      "enabled": true,
+      "domain_name": "mtls.idsrv.test"
+    }
+  },
+  "reference_ui": {
+    "enabled": true,
+    "users_file": "../users.json",
+    "default_user": "alice"
+  },
+  "localization": {
+    "supported_ui_cultures": [
+      "en-US",
+      "nb-NO"
+    ]
+  },
+  "data_protection": {
+    "keys": [
+      {
+        "id": "fixture",
+        "secret": "cnVzdGlkIGZpeHR1cmUgZGF0YSBwcm90ZWN0aW9uISE="
+      }
+    ]
+  },
+  "forwarded_headers": {
+    "trusted_proxies": [
+      "127.0.0.1"
+    ]
+  },
+  "mutual_tls": {
+    "forwarded_certificate_header": "X-Client-Cert",
+    "client_ca_file": "../mtls/ca.pem"
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "subjectId": "123",
+    "username": "bob",
+    "password": "bob",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Bob Loblaw"
+      },
+      {
+        "type": "email",
+        "value": "bob@loblaw.com"
+      },
+      {
+        "type": "role",
+        "value": "Attorney"
+      }
+    ]
+  },
+  {
+    "subjectId": "456",
+    "username": "inactive",
+    "password": "inactive",
+    "claims": [
+      {
+        "type": "name",
+        "value": "Inactive User"
+      }
+    ]
+  }
+]

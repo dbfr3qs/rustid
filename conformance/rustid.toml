@@ -1,0 +1,39 @@
+# rustid-server for the OpenID Foundation conformance suite
+# (scripts/conformance.sh): HTTPS on https://localhost:9443 with the
+# interactive reference UI, which the suite's browser fills in as alice.
+# Relative paths are resolved against this file's directory.
+listen = "127.0.0.1:9443"
+clients_file = "clients.json"
+resources_file = "resources.json"
+
+[log]
+format = "pretty"
+level = "info"
+
+[protocol.key_management]
+enabled = false
+
+[[signing_keys]]
+kid = "conformance-rsa"
+alg = "RS256"
+key_file = "../fixtures/signing-key.pem"
+
+[server_side_sessions]
+enabled = true
+
+[reference_ui]
+enabled = true
+interactive = true
+# The users file answers profile claims, so userinfo
+# has the user's claims.
+users_profile_service = true
+users_file = "users.json"
+
+# Written by `rustid-demo certs --out target/conformance`; the suite's nginx
+# serves a certificate from the same CA, which back-channel logout trusts.
+[tls]
+cert_file = "../target/conformance/cert.pem"
+key_file = "../target/conformance/key.pem"
+
+[back_channel_logout]
+ca_file = "../target/conformance/ca.pem"

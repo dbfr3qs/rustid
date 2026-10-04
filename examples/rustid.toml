@@ -1,0 +1,502 @@
+# Sample configuration for rustid-server. Every key can be overridden with an
+# environment variable: RUSTID_LISTEN, RUSTID_LOG__LEVEL,
+# RUSTID_PROTOCOL__ISSUER_URI, and so on (`__` separates nesting levels).
+# Relative paths are resolved against this file's directory.
+# GET /health is liveness; GET /ready checks the store and the signing key.
+listen = "127.0.0.1:8080"
+resources_file = "../fixtures/resources.json"
+# Clients in the fixture format (fixtures/clients.json).
+# clients_file = "clients.json"
+# A path prefix, as a path base: requests may arrive with or
+# without it. Starts with "/", doesn't end with one.
+# path_base = "/identity"
+
+# Accept and advertise private_key_jwt client authentication
+# AddJwtBearerClientAuthentication).
+# [client_authentication]
+# private_key_jwt = false
+
+# Stand-ins for validators registered in code, for shared
+# profiles: password_grant advertises the password grant; extension_grants
+# lists extension grant types. Hooks ([hooks.password_grant],
+# [hooks.extension_grants.*]) do the actual validation.
+# [placeholders]
+# password_grant = false
+# extension_grants = []
+
+# Server-side sessions (AddServerSideSessions): the session lives in the
+# store and the cookie holds its key. Its options are in the
+# protocol.server_side_sessions section.
+# [server_side_sessions]
+# enabled = false
+
+# Back-channel logout delivery: CA certificates (PEM) to trust, besides the
+# system's, when posting logout tokens to clients.
+# [back_channel_logout]
+# ca_file = "client-ca.pem"
+
+# Fetching request objects by reference (protocol.endpoints.enable_jwt_request_uri):
+# CA certificates to trust besides the system's.
+# [request_uri]
+# ca_file = "request-object-hosts-ca.pem"
+
+# A protected resource the server serves itself (bearer and DPoP-bound
+# tokens), for conformance runs.
+# [protected_resource]
+# path = "/fapi2/resource"
+
+[log]
+format = "pretty"
+level = "info"
+
+[protocol]
+issuer_uri = "https://idsrv.test"
+# Add s_hash (the hash of the authorize request's state) to identity tokens.
+emit_state_hash = false
+# lower_case_issuer_uri = true                       # an issuer from the request is lower-cased
+# emit_issuer_identification_response_parameter = true   # iss on authorize responses (RFC 9207)
+# validate_tenant_on_authorization = false           # acr_values tenant:x must match the session's
+# emit_static_audience_claim = false                 # every access token gets {issuer}/resources
+# emit_scopes_as_space_delimited_string_in_jwt = false
+# access_token_jwt_type = "at+jwt"                   # "" omits the typ header
+# logout_token_jwt_type = "logout+jwt"
+# jwt_validation_clock_skew = "00:05:00"             # client assertions, request objects
+# strict_client_assertion_audience_validation = false   # typ client-authentication+jwt, issuer-only aud
+# strict_jar_validation = false                      # request objects typed oauth-authz-req+jwt
+# supported_client_assertion_signing_algorithms = ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]
+# supported_request_object_signing_algorithms = ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]
+# request_object_max_lifetime = "01:00:00"         # unset by default; when set, request objects
+#                                                    # need nbf, exp at most this after it, and nbf
+#                                                    # at most this old (FAPI 2 Message Signing;
+#                                                    # CIBA's signed requests too)
+
+# Which endpoints are served (all on, except request objects by reference).
+# [protocol.endpoints]
+# enable_authorize_endpoint = true
+# enable_jwt_request_uri = false      # fetch request_uri request objects over HTTP
+# enable_token_endpoint = true
+# enable_user_info_endpoint = true
+# enable_discovery_endpoint = true
+# enable_end_session_endpoint = true
+# enable_check_session_endpoint = true
+# enable_token_revocation_endpoint = true
+# enable_introspection_endpoint = true
+# enable_device_authorization_endpoint = true
+# enable_backchannel_authentication_endpoint = true
+# enable_pushed_authorization_endpoint = true
+# enable_oauth2_metadata_endpoint = true   # /.well-known/oauth-authorization-server
+
+# What the discovery document shows; custom_entries are appended (keys that
+# collide with standard ones are ignored); response_cache_interval (seconds)
+# sets Cache-Control: max-age.
+# [protocol.discovery]
+# show_endpoints = true
+# show_key_set = true
+# show_identity_scopes = true
+# show_api_scopes = true
+# show_claims = true
+# show_response_types = true
+# show_response_modes = true
+# show_grant_types = true
+# show_extension_grant_types = true
+# show_token_endpoint_authentication_methods = true
+# show_revocation_endpoint_authentication_methods = true
+# show_introspection_endpoint_authentication_methods = true
+# expand_relative_paths_in_custom_entries = true
+# response_cache_interval = 3600
+# custom_entries = { "custom_key" = "value" }
+
+# The registration_endpoint entry (dynamic client registration).
+# [protocol.discovery.dynamic_client_registration]
+# registration_endpoint_mode = "None"          # "Static" (the URL below) or "Inferred" ({base}/connect/dcr)
+# static_registration_endpoint = "https://example.com/register"
+
+# Content Security Policy on the pages the server renders: level "One" adds
+# 'unsafe-inline' for browsers without hash support.
+# [protocol.csp]
+# level = "Two"
+# add_deprecated_header = true        # also X-Content-Security-Policy
+
+# Pushed authorization requests (RFC 9126).
+# [protocol.pushed_authorization]
+# required = false
+# lifetime = 600                      # seconds
+# allow_unregistered_pushed_redirect_uris = false   # clients with a secret only
+
+# DPoP (RFC 9449).
+# [protocol.dpop]
+# proof_token_validity_duration = "00:01:00"   # by iat, and server nonces
+# server_clock_skew = "00:00:00"
+# supported_dpop_signing_algorithms = ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]
+
+# Device flow (RFC 8628).
+# [protocol.device_flow]
+# default_user_code_type = "Numeric"
+# interval = 5                        # seconds between polls
+
+# JARM: signed authorization responses (response_mode=jwt, query.jwt,
+# fragment.jwt, form_post.jwt). Off by default.
+# [protocol.jarm]
+# enabled = false
+# lifetime = 300                      # seconds until the response JWT expires
+
+# CIBA (poll mode).
+# [protocol.ciba]
+# default_lifetime = 300              # seconds
+# default_polling_interval = 5
+
+# Longest accepted inputs, in characters.
+# [protocol.input_length_restrictions]
+# client_id = 100
+# client_secret = 100
+# scope = 300
+# grant_type = 100
+# redirect_uri = 400
+# nonce = 300
+# ui_locale = 100
+# login_hint = 100
+# acr_values = 300
+# dpop_key_thumbprint = 100
+# dpop_proof_token = 4000
+# device_code = 100
+# user_code = 100
+# login_hint_token = 4000
+# id_token_hint = 4000
+# binding_message = 100
+# authentication_request_id = 100
+# authorization_code = 100
+# jwt = 51200
+# resource_indicator_max_length = 512
+# token_handle = 100                  # reference tokens
+# refresh_token = 100
+# user_name = 100                     # the password grant
+# password = 100
+
+# With [server_side_sessions] enabled: the display name claim, and the job
+# that removes expired sessions (through the outbox, below).
+# [protocol.server_side_sessions]
+# user_display_name_claim_type = "name"   # unset by default
+# remove_expired_sessions = true
+# expired_sessions_trigger_backchannel_logout = false   # every client, not only coordinated ones
+# remove_expired_sessions_frequency = "00:10:00"
+# fuzz_expired_session_removal_start = true
+# remove_expired_sessions_batch_size = 100
+
+# How persisted grants behave.
+# [protocol.persistent_grants]
+# delete_one_time_only_refresh_tokens_on_use = true   # else marked consumed
+
+# Client and resource lookups (Postgres store) and CORS answers are cached.
+# [protocol.caching]
+# client_store_expiration = "00:15:00"
+# resource_store_expiration = "00:15:00"
+# cors_expiration = "00:15:00"
+
+# Where the authorize endpoint sends the browser. Paths are relative to
+# the server; a URL on another
+# site gets an absolute return URL. prompt=create is supported once
+# create_account_url is set.
+# The browser session: the idsrv cookie lasts cookie_lifetime after sign-in;
+# the check session cookie (idsrv.session) holds the session id for
+# JavaScript clients.
+[protocol.authentication]
+cookie_lifetime = "10:00:00"
+check_session_cookie_name = "idsrv.session"
+# cookie_sliding_expiration = false                  # renew past half the lifetime
+# require_authenticated_user_for_sign_out_message = false
+# coordinate_client_lifetimes_with_user_session = false   # refresh tokens end with the session
+# require_csp_frame_src_for_signout = true
+
+[protocol.user_interaction]
+login_url = "/Account/Login"
+login_return_url_parameter = "ReturnUrl"
+error_url = "/home/error"
+error_id_parameter = "errorId"
+# create_account_url = "/account/create"
+# create_account_return_url_parameter = "returnUrl"
+# logout_url = "/Account/Logout"
+# logout_id_parameter = "logoutId"
+# consent_url = "/consent"
+# consent_return_url_parameter = "returnUrl"
+# custom_redirect_return_url_parameter = "returnUrl"
+# prompt_values_supported = ["none", "login", "consent", "select_account"]
+# device_verification_url = "/device"
+# device_verification_user_code_parameter = "userCode"
+
+# Events are written to the log as JSON when their
+# type is enabled; all are off by default.
+[protocol.events]
+raise_success_events = false
+raise_failure_events = false
+raise_information_events = false
+raise_error_events = false
+
+# Automatic key management creates, rotates and retires signing keys. It is on
+# by default; this example signs with the static
+# key below instead. Keys are kept in key_path (memory store) or Postgres,
+# protected with the data protection key ring.
+[protocol.key_management]
+enabled = false
+# signing_algorithms = [{ name = "RS256" }, { name = "ES256" }]
+# signing_algorithms = [{ name = "RS256", use_x509_certificate = true }]   # create keys with a self-signed certificate
+# rotation_interval = "90.00:00:00"
+# propagation_time = "14.00:00:00"
+# retention_duration = "14.00:00:00"
+# key_path = "keys"
+# rsa_key_size = 2048
+# initialization_duration = "00:05:00"              # a new deployment's first keys
+# initialization_synchronization_delay = "00:00:05"
+# initialization_key_cache_duration = "00:01:00"
+# key_cache_duration = "1.00:00:00"
+# delete_retired_keys = true
+# data_protect_keys = true                          # protect stored keys with the key ring
+
+# The data protection key ring also seals the messages passed to the UI (the
+# error page's errorId). Without one they are sealed with a per-process key,
+# which doesn't survive a restart or reach other instances.
+# [[data_protection.keys]]
+# id = "2026-09"
+# secret = "<32 random bytes, base64>"
+
+# The UI app reads interaction contexts and completes logins through the
+# interaction API (/interaction/*) with one of these bearer keys (each at least
+# 16 characters). No keys disables the API.
+[interaction]
+api_keys = []
+
+# ui_locales values that select a culture for the UI: the first match is sent
+# in the .AspNetCore.Culture cookie on redirects to local UI pages.
+[localization]
+supported_ui_cultures = ["en-US"]
+
+# The built-in reference UI (/home/error, /account/login): completes every
+# interaction without asking anything, signing in users from users_file
+# (default_user unless the login URL names ?user=). With interactive = true
+# the login page asks for a username and password from users_file instead,
+# and errors are shown as pages: enough to try the server in a browser.
+# Tests and demos only.
+[reference_ui]
+enabled = false
+# users_file = "../fixtures/users.json"
+# default_user = "alice"
+# interactive = false
+# users_profile_service = false   # the users file answers profile claims (AddTestUsers)
+
+# The admin HTTP API under /admin:
+# create, read, update (If-Match: "<version>"), delete and query clients, API
+# resources, API scopes, identity resources and data extension schemas (which
+# define the extendedProperties each kind accepts). Off by default. Callers send
+# Authorization: Bearer <one of api_keys>; keys must be at least 32
+# characters. Serve it over TLS. Writes take effect at once on this
+# instance; other instances see them when their caches expire.
+# [admin]
+# enabled = true
+# api_keys = ["generate-a-long-random-key-for-each-caller"]
+# Data extension schemas, a JSON array registered at start. With it,
+# /admin/schemas only reads;
+# without it, schemas are managed through /admin/schemas.
+# schemas_file = "schemas.json"
+
+# Dynamic client registration (RFC 7591):
+# POST {path} registers authorization_code and client_credentials clients.
+# Callers send one of initial_access_tokens as a bearer token; open = true lets
+# anyone register (for conformance runs, never production). Publish the
+# endpoint in discovery with [protocol.discovery.dynamic_client_registration].
+# [dynamic_client_registration]
+# enabled = false
+# path = "/connect/dcr"
+# open = false
+# initial_access_tokens = ["generate-a-long-random-token-for-each-caller"]   # at least 32 characters
+# secret_lifetime = "30.00:00:00"     # generated secrets expire after this; unset, never
+# default_scopes = ["openid"]        # for a registration without scope (none by default)
+# require_pkce = true                # registered clients must use PKCE (the client default)
+# client_management = false           # RFC 7592: GET and DELETE {path}/{client_id} with the
+#                                     # registration access token the response carries
+
+# The SAML 2.0 IdP: metadata, SSO (SP- and IdP-initiated) and single logout.
+# service_providers_file holds the service providers in the fixture format
+# (fixtures/saml-service-providers.json); with the Postgres store it is
+# imported at start. The other keys are the SAML options,
+# with their defaults shown.
+# [saml]
+# enabled = true
+# service_providers_file = "saml-service-providers.json"
+# entity_id = "https://idp.example.com/saml"
+# entity_id_path = "/Saml2"              # entity_id = issuer + this, unless entity_id is set
+# email_name_id_claim_type = "email"
+# supported_name_id_formats = ["urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress", "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"]
+# default_claim_mappings = { "email" = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", "name" = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", "role" = "http://schemas.xmlsoap.org/ws/2005/05/identity/role" }
+# default_authn_context_mappings = { "pwd" = "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport", "external" = "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified" }
+# want_authn_requests_signed = true
+# require_signed_logout_responses = true
+# default_signing_behavior = "SignAssertion"   # DoNotSign, SignResponse, SignAssertion, SignBoth
+# default_clock_skew = "00:05:00"
+# default_request_max_age = "00:05:00"
+# default_assertion_lifetime = "00:05:00"
+# signin_state_lifetime = "00:15:00"
+# logout_session_lifetime = "00:05:00"
+# max_relay_state_length = 80
+# max_message_size = 1048576
+# [saml.endpoints]
+# single_sign_on_service_path = "/Saml2/SSO"
+# single_sign_on_service_bindings = ["urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect", "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]
+# single_sign_on_callback_path = "/Saml2/SSO/Callback"
+# single_logout_service_path = "/Saml2/SLO"
+# single_logout_service_bindings = ["urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect", "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]
+# single_logout_callback_path = "/Saml2/SLO/Callback"
+# state_id_parameter_name = "samlStateId"
+# [saml.metadata]
+# cache_duration = "12:00:00"
+# expiry_duration = "5.00:00:00"
+
+[[signing_keys]]
+kid = "fixture-rsa-1"
+alg = "RS256"
+# Test-only key. Generate your own for any real deployment.
+key_file = "../fixtures/signing-key.pem"
+# cert_file = "signing-cert.pem"   # the chain, leaf first (SAML needs a certificate)
+
+# Keys published in the JWKS but never used to sign (a retired key, or one a
+# migration brought): the same keys as signing_keys.
+# [[validation_keys]]
+# kid = "old-rsa-1"
+# alg = "RS256"
+# key_file = "old-key.pem"
+# cert_file = "old-cert.pem"
+
+# Where clients, resources and grants live. The default, "memory", serves the
+# clients_file and resources_file and keeps grants in process memory. With
+# "postgres", those files (when set) are upserted into the database at
+# startup, and client and resource lookups are cached for the durations under
+# [protocol.caching] (15 minutes each by default).
+[store]
+kind = "memory"
+# The storage purge removes expired grants; it can also remove consumed ones
+# (spent codes, rotated refresh tokens), kept this many seconds first.
+# remove_consumed_grants = false
+# consumed_grant_cleanup_delay = 0
+
+# [store.postgres]
+# url = "postgres://rustid:secret@localhost:5432/rustid"
+# max_connections = 10
+# create_database = false
+# run_migrations = true
+
+# The storage purge: expired grants, pushed authorization requests, device
+# codes, and replay and throttling entries, in batches, on every instance.
+# [protocol.storage_purge]
+# enable_purge = true
+# purge_interval = "01:00:00"
+# batch_size = 100
+# fuzz_startup = true
+
+# With server-side sessions, expired sessions go through an outbox: the
+# processor sends their back-channel logouts and revokes their tokens,
+# retrying failures (60 s, doubling, at most 30 min) and dropping an event
+# after max_retries failed attempts. Safe on every instance.
+# [protocol.outbox_processor]
+# enable_processor = true
+# process_interval = "00:00:30"
+# batch_size = 100
+# max_retries = 3
+# retry_delay = "00:01:00"
+# retry_backoff_multiplier = 2.0
+# max_retry_delay = "00:30:00"
+# fuzz_startup = true
+
+# OpenTelemetry: logs always go to stdout; with [telemetry.otlp], traces and
+# metrics (tokenservice.token_issued, tokenservice.introspection, ...) are
+# exported over OTLP/HTTP.
+[telemetry]
+service_name = "rustid"
+metrics_interval = "00:01:00"
+# [telemetry.otlp]
+# endpoint = "http://localhost:4318"
+# headers = { "x-api-key" = "..." }
+
+# Serve HTTPS on `listen`. Browsers only keep the session cookies
+# (SameSite=None) when they are Secure, which needs HTTPS; behind a TLS
+# terminating proxy, leave this out.
+# [tls]
+# cert_file = "cert.pem"   # the chain, leaf first
+# key_file = "key.pem"
+# client_certificates = "request"   # ask clients for a certificate (mTLS)
+# cipher_suites = "default"         # or "fapi" (FAPI 2.0: TLS 1.2 limited to its suites, and 1.3)
+
+# Behind a reverse proxy: requests from these addresses or networks may say,
+# with X-Forwarded-Proto, X-Forwarded-Host and X-Forwarded-For (the rightmost
+# value of each), which scheme, host and client the proxy saw. URLs, the
+# issuer and Secure cookies follow them. Anyone else's headers are ignored.
+# [forwarded_headers]
+# trusted_proxies = ["127.0.0.1", "10.0.0.0/8"]
+
+# mTLS (RFC 8705): with protocol.mutual_tls.enabled, clients may
+# authenticate with a certificate (X509Thumbprint or X509Name secrets) and
+# get certificate-bound tokens; /connect/mtls/* (or the mTLS domain) needs
+# one. Certificates come from the TLS listener (tls.client_certificates =
+# "request" asks for one without requiring it) or, behind a proxy that
+# terminates TLS, from a header only a trusted proxy may set. X509Name
+# secrets only match certificates chaining to client_ca_file.
+# [protocol.mutual_tls]
+# enabled = true
+# domain_name = "mtls.example.com"   # else path aliases under /connect/mtls
+# always_emit_confirmation_claim = false
+# client_certificate_authentication_scheme = "Certificate"   # accepted for compatibility
+# [mutual_tls]
+# forwarded_certificate_header = "X-Client-Cert"   # URL-encoded PEM, PEM or base64 DER
+# client_ca_file = "client-ca.pem"
+
+# Hooks replace extension points. The profile hooks decide which claims describe a user in tokens
+# and userinfo, and whether the user is still active. Each is an HTTPS POST
+# (http only to a loopback address) of JSON with "version": 1, carrying a
+# JWT (typ hook+jwt) the server signs with its signing key (audience: the
+# hook URL; iss: protocol.issuer_uri, so set it when hooks check it).
+# failure_policy "fail_closed" (the default) fails the request when the hook
+# does; "fail_open" falls back to the default behaviour. cache_duration
+# reuses answers per caller, client, subject (and requested claim types).
+# timeout, failure_policy and cache_duration (shown once, under
+# profile_claims) are settings of every hook below.
+# [hooks.profile_claims]
+# url = "https://hooks.example.com/profile"
+# timeout = "00:00:05"
+# failure_policy = "fail_closed"
+# cache_duration = "00:00:00"
+# [hooks.subject_active]
+# url = "https://hooks.example.com/active"
+# the token request hook sees every token request that passed validation
+# ({grant_type, client_id, subject_id, scopes, parameters}, without secrets)
+# and may answer an "error" (refusing it) and a "custom_response" object
+# whose fields are added to the token response or error.
+# [hooks.token_request]
+# url = "https://hooks.example.com/token"
+# the password grant hook enables the password grant: it gets
+# {client_id, username, password, parameters} (parameters without secrets
+# or the password) and answers a "subject" ({sub, amr, idp?, claims?}; sub
+# and amr are required) or an "error" (and error_description), either with
+# an optional "custom_response". An extension grant hook per grant type gets
+# {grant_type, client_id, parameters} and answers the same, or no subject
+# for a client token; it may also answer client_id (impersonation: the
+# token's client_id claim), access_token_lifetime, access_token_type
+# ("jwt" | "reference") and client_claims for this token. A failing grant
+# hook fails the request whatever its failure_policy: a 500 for the password
+# grant, invalid_grant for an extension grant.
+# [hooks.password_grant]
+# url = "https://hooks.example.com/password"
+# [hooks.extension_grants.delegation]
+# url = "https://hooks.example.com/grants/delegation"
+#
+# The CIBA hooks supply the backchannel authentication services. The
+# user hook gets {client_id, login_hint, login_hint_token, id_token_hint,
+# id_token_hint_claims, user_code, binding_message} and answers
+# {subject: {sub, claims}} or {error, error_description}. The notification
+# hook gets the pending login request (its internal_id is what the UI's
+# /ciba?id= page completes). The request hook gets {client_id, subject_id,
+# scopes, binding_message, parameters} and answers {error?, properties?}.
+# A failing CIBA hook fails the request (a 500) whatever its failure_policy.
+# Without them, no user is known and notifications are only logged.
+# [hooks.ciba_user]
+# url = "https://hooks.example.com/ciba/user"
+# [hooks.ciba_notification]
+# url = "https://hooks.example.com/ciba/notify"
+# [hooks.ciba_request]
+# url = "https://hooks.example.com/ciba/request"

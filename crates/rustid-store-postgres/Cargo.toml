@@ -1,0 +1,19 @@
+[package]
+name = "rustid-store-postgres"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[lib]
+name = "rustid_store_postgres"
+
+[dependencies]
+async-trait = { workspace = true }
+chrono = { workspace = true }
+rustid-core = { path = "../rustid-core" }
+rustid-saml = { path = "../rustid-saml" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

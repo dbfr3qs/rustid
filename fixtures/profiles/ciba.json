@@ -1,0 +1,44 @@
+{
+  "signing_keys": [
+    {
+      "kid": "fixture-rsa-1",
+      "alg": "RS256",
+      "key_file": "../signing-key.pem"
+    }
+  ],
+  "resources_file": "../ciba/resources.json",
+  "clients_file": "../ciba/clients.json",
+  "protocol": {
+    "issuer_uri": "https://idsrv.test",
+    "key_management": {
+      "enabled": false
+    }
+  },
+  "reference_ui": {
+    "enabled": true,
+    "users_file": "../ciba/users.json",
+    "default_user": "bob"
+  },
+  "hooks": {
+    "subject_active": {
+      "url": "http://127.0.0.1:5190/ciba/active"
+    },
+    "ciba_user": {
+      "url": "http://127.0.0.1:5190/ciba/user"
+    },
+    "ciba_notification": {
+      "url": "http://127.0.0.1:5190/ciba/notify"
+    },
+    "ciba_request": {
+      "url": "http://127.0.0.1:5190/ciba/request"
+    }
+  },
+  "data_protection": {
+    "keys": [
+      {
+        "id": "fixture",
+        "secret": "cnVzdGlkIGZpeHR1cmUgZGF0YSBwcm90ZWN0aW9uISE="
+      }
+    ]
+  }
+}

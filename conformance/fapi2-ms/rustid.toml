@@ -1,0 +1,66 @@
+# rustid-server for the OpenID Foundation FAPI 2.0 Message Signing plan
+# (scripts/conformance.sh fapi2-ms): HTTPS on https://localhost:9446, the
+# FAPI 2 instance (../fapi2/rustid.toml) plus signed requests and JARM
+# responses.
+# Relative paths are resolved against this file's directory.
+listen = "127.0.0.1:9446"
+clients_file = "clients.json"
+resources_file = "../resources.json"
+
+[log]
+format = "pretty"
+level = "info"
+
+[protocol]
+emit_scopes_as_space_delimited_string_in_jwt = true
+# FAPI 2 requires PS256 client assertions, and their nbf no more than 60
+# seconds ahead: a 60-second skew rather than five minutes.
+supported_client_assertion_signing_algorithms = ["PS256"]
+jwt_validation_clock_skew = 60
+# FAPI 2 Message Signing 5.3.1: request objects carry nbf, live at most an
+# hour, and are signed with PS256 or ES256.
+request_object_max_lifetime = "01:00:00"
+supported_request_object_signing_algorithms = ["PS256", "ES256"]
+
+# Signed authorization responses (response_mode=jwt and friends).
+[protocol.jarm]
+enabled = true
+
+[protocol.key_management]
+enabled = false
+
+# FAPI2-SP-ID2-5.4: DPoP proofs signed with PS or ES algorithms only.
+[protocol.dpop]
+supported_dpop_signing_algorithms = ["PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]
+
+# Short, so the expired request_uri module finishes within its timeout.
+[protocol.pushed_authorization]
+lifetime = 65
+
+# FAPI 2 requires PS256 id tokens.
+[[signing_keys]]
+kid = "conformance-ps256"
+alg = "PS256"
+key_file = "../../fixtures/signing-key.pem"
+
+[client_authentication]
+private_key_jwt = true
+
+# The resource the plan calls with its DPoP-bound access tokens (a local
+# API in DPoPAndBearer mode).
+[protected_resource]
+path = "/fapi2/resource"
+
+[reference_ui]
+enabled = true
+interactive = true
+users_profile_service = true
+users_file = "../users.json"
+
+# FAPI2-SP-ID2-5.2.2's TLS 1.2 cipher suites are ECDHE-RSA only and this
+# certificate is ECDSA, so the listener offers TLS 1.3 alone, which FAPI 2
+# allows.
+[tls]
+cert_file = "../../target/conformance/cert.pem"
+key_file = "../../target/conformance/key.pem"
+cipher_suites = "fapi"

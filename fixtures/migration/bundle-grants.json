@@ -1,0 +1,109 @@
+[
+  {
+    "key": "B6B34B6C1E3F4F9C9A1E0C6E0C3F2C2D1A6B7E8F9A0B1C2D3E4F5A6B7C8D9E0F-1",
+    "type": "refresh_token",
+    "subject_id": "alice",
+    "session_id": "9A4F2E1B8C7D6E5F4A3B2C1D0E9F8A7B",
+    "client_id": "web",
+    "description": null,
+    "creation_time": "2026-10-03T08:00:00Z",
+    "expiration": "2026-11-02T08:00:00Z",
+    "consumed_time": null,
+    "data": {
+      "CreationTime": "2026-10-03T08:00:00Z",
+      "Lifetime": 2592000,
+      "AccessTokens": {
+        "": {
+          "AllowedSigningAlgorithms": [],
+          "Audiences": ["api1-resource"],
+          "Issuer": "https://idsrv.test",
+          "CreationTime": "2026-10-03T08:00:00Z",
+          "Lifetime": 3600,
+          "Type": "access_token",
+          "ClientId": "web",
+          "AccessTokenType": 0,
+          "IncludeJwtId": true,
+          "Claims": [
+            { "Type": "client_id", "Value": "web" },
+            { "Type": "sub", "Value": "alice" },
+            { "Type": "auth_time", "Value": "1790928000", "ValueType": "http://www.w3.org/2001/XMLSchema#integer64" },
+            { "Type": "idp", "Value": "local" },
+            { "Type": "amr", "Value": "pwd" },
+            { "Type": "amr", "Value": "mfa" },
+            { "Type": "sid", "Value": "9A4F2E1B8C7D6E5F4A3B2C1D0E9F8A7B" },
+            { "Type": "jti", "Value": "6C2D9F0E1A2B3C4D5E6F7A8B9C0D1E2F" },
+            { "Type": "scope", "Value": "openid" },
+            { "Type": "scope", "Value": "api1" },
+            { "Type": "scope", "Value": "offline_access" }
+          ],
+          "Version": 5
+        }
+      },
+      "Subject": {
+        "AuthenticationType": "idsrv",
+        "Claims": [
+          { "Type": "sub", "Value": "alice" },
+          { "Type": "name", "Value": "Alice Smith" },
+          { "Type": "tenant", "Value": "t1" },
+          { "Type": "auth_time", "Value": "1790928000", "ValueType": "http://www.w3.org/2001/XMLSchema#integer64" },
+          { "Type": "idp", "Value": "local" },
+          { "Type": "amr", "Value": "pwd" },
+          { "Type": "amr", "Value": "mfa" },
+          { "Type": "sid", "Value": "9A4F2E1B8C7D6E5F4A3B2C1D0E9F8A7B" }
+        ]
+      },
+      "Version": 5,
+      "ClientId": "web",
+      "SessionId": "9A4F2E1B8C7D6E5F4A3B2C1D0E9F8A7B",
+      "AuthorizedScopes": ["openid", "api1", "offline_access"],
+      "ProofType": 0
+    }
+  },
+  {
+    "key": "0F1E2D3C4B5A69788796A5B4C3D2E1F00F1E2D3C4B5A69788796A5B4C3D2E1F0-1",
+    "type": "reference_token",
+    "subject_id": "alice",
+    "session_id": "9A4F2E1B8C7D6E5F4A3B2C1D0E9F8A7B",
+    "client_id": "web",
+    "description": "laptop",
+    "creation_time": "2026-10-03T08:00:00Z",
+    "expiration": "2026-10-03T09:00:00Z",
+    "consumed_time": null,
+    "data": {
+      "AllowedSigningAlgorithms": [],
+      "Audiences": ["api1-resource"],
+      "Issuer": "https://idsrv.test",
+      "CreationTime": "2026-10-03T08:00:00Z",
+      "Lifetime": 3600,
+      "Type": "access_token",
+      "ClientId": "web",
+      "AccessTokenType": 1,
+      "Description": "laptop",
+      "IncludeJwtId": false,
+      "Claims": [
+        { "Type": "client_id", "Value": "web" },
+        { "Type": "sub", "Value": "alice" },
+        { "Type": "sid", "Value": "9A4F2E1B8C7D6E5F4A3B2C1D0E9F8A7B" },
+        { "Type": "scope", "Value": "api1" }
+      ],
+      "Version": 5
+    }
+  },
+  {
+    "key": "A1B2C3D4E5F60718293A4B5C6D7E8F90A1B2C3D4E5F60718293A4B5C6D7E8F90-1",
+    "type": "user_consent",
+    "subject_id": "alice",
+    "session_id": null,
+    "client_id": "web",
+    "description": null,
+    "creation_time": "2026-10-03T08:00:00Z",
+    "expiration": null,
+    "consumed_time": null,
+    "data": {
+      "SubjectId": "alice",
+      "ClientId": "web",
+      "Scopes": ["openid", "api1"],
+      "CreationTime": "2026-10-03T08:00:00Z"
+    }
+  }
+]

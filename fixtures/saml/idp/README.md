@@ -1,0 +1,1 @@
+Test-only IdP signing keys and certificates (RSA 2048 and EC P-256, self-signed, 20 years) for the `saml*` fixture profiles, so both hosts publish the same certificates in SAML metadata. Never use them anywhere else.

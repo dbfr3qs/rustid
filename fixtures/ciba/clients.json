@@ -1,0 +1,238 @@
+[
+  {
+    "clientId": "client1",
+    "clientName": "CIBA client (CibaTestsBase)",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"client-jwt-rsa\",\"alg\":\"RS256\",\"e\":\"AQAB\",\"n\":\"yNvI-ZZMJn8dUhiVX_p1jfWbVXsyq6pvhi3USE4lBup5B9YhUaAp04xdwBz3KjJDgKPkkvoawj4RJ8aRALhWOEv9-j_lLUhNz6AuqHJ3EZfIE_MfpU8z2qw6biJqfGN-Rj-dft35jkiPmdjFV8-yfKM-Mt33gPdbO4IHaXeCSoxTM8rZDlAsiZnspwTjUEqdMyy_kULzjEBOGNDgBhd7i3sCyUhgvG-QTYMdtffiIdwXn2-rvfRxDB12r7QNSsJUaDFaIcvw8Dd1JwmAAQeTCpiv7YPxEpblWBqryj6cMrw9EN1CR4OFB4yHc-4rdh5AyJn-Gc7PsWK7GBnW2aVT_w\"}"
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "client2",
+    "clientName": "Another CIBA client",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "client3",
+    "clientName": "Client credentials only",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "ciba.jar",
+    "clientName": "CIBA client requiring request objects",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      },
+      {
+        "type": "JWK",
+        "value": "{\"kty\":\"RSA\",\"use\":\"sig\",\"kid\":\"client-jwt-rsa\",\"alg\":\"RS256\",\"e\":\"AQAB\",\"n\":\"yNvI-ZZMJn8dUhiVX_p1jfWbVXsyq6pvhi3USE4lBup5B9YhUaAp04xdwBz3KjJDgKPkkvoawj4RJ8aRALhWOEv9-j_lLUhNz6AuqHJ3EZfIE_MfpU8z2qw6biJqfGN-Rj-dft35jkiPmdjFV8-yfKM-Mt33gPdbO4IHaXeCSoxTM8rZDlAsiZnspwTjUEqdMyy_kULzjEBOGNDgBhd7i3sCyUhgvG-QTYMdtffiIdwXn2-rvfRxDB12r7QNSsJUaDFaIcvw8Dd1JwmAAQeTCpiv7YPxEpblWBqryj6cMrw9EN1CR4OFB4yHc-4rdh5AyJn-Gc7PsWK7GBnW2aVT_w\"}"
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ],
+    "requireRequestObject": true
+  },
+  {
+    "clientId": "ciba.nokeys",
+    "clientName": "CIBA client without keys",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "ciba.badkey",
+    "clientName": "CIBA client with an invalid key",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      },
+      {
+        "type": "JWK",
+        "value": "invalid"
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "ciba.400",
+    "clientName": "CIBA client with a 400 second lifetime",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ],
+    "cibaLifetime": 400
+  },
+  {
+    "clientId": "ciba.idp",
+    "clientName": "CIBA client restricted to idp y",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ],
+    "identityProviderRestrictions": [
+      "y"
+    ]
+  },
+  {
+    "clientId": "ciba.short",
+    "clientName": "CIBA client with one second requests",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ],
+    "cibaLifetime": 1
+  },
+  {
+    "clientId": "ciba.poll",
+    "clientName": "CIBA client polling every two seconds",
+    "clientSecrets": [
+      {
+        "type": "SharedSecret",
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "urn:openid:params:grant-type:ciba"
+    ],
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "scope1"
+    ],
+    "pollingInterval": 2
+  },
+  {
+    "clientId": "web",
+    "clientName": "Web client for signing in",
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "redirectUris": [
+      "https://client.test/callback"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile"
+    ],
+    "requireConsent": false
+  }
+]

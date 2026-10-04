@@ -1,0 +1,1 @@
+	{"entityId": "https://fuzz.example", "assertionConsumerServiceUrls": [{"location": "https://fuzz.example/acs", "binding": "HttpPost", "index": 0, "isDefault": true}], "allowedScopes": ["openid"]}

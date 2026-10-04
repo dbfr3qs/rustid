@@ -1,0 +1,1 @@
+Test-only signing key and certificate for the fixture SAML service provider `https://sp.example` (`fixtures/saml-service-providers.json`). Scenarios sign AuthnRequests and LogoutResponses with it. Never use it anywhere else.

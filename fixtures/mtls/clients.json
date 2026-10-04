@@ -1,0 +1,85 @@
+[
+  {
+    "clientId": "mtls.thumbprint",
+    "clientSecrets": [
+      {
+        "type": "X509Thumbprint",
+        "value": "7E9358B6957DC9C49827834EE335EEC77D1221C1"
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials",
+      "authorization_code"
+    ],
+    "redirectUris": [
+      "https://mtls.thumbprint/callback"
+    ],
+    "requirePkce": false,
+    "requireConsent": false,
+    "allowOfflineAccess": true,
+    "allowedScopes": [
+      "openid",
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "mtls.name",
+    "clientSecrets": [
+      {
+        "type": "X509Name",
+        "value": "CN=mtls-client, O=rustid, C=US"
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "mtls.reference",
+    "clientSecrets": [
+      {
+        "type": "X509Thumbprint",
+        "value": "7E9358B6957DC9C49827834EE335EEC77D1221C1"
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "accessTokenType": "Reference",
+    "allowedScopes": [
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "client",
+    "clientSecrets": [
+      {
+        "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "scope1"
+    ]
+  },
+  {
+    "clientId": "mtls.name.complex",
+    "clientSecrets": [
+      {
+        "type": "X509Name",
+        "value": "CN=\"a \"\"quoted\"\" name\", OU=Ops + OU=R&D, O=\"Acme, Inc.\", L=Oslo, S=Oslo, C=NO"
+      }
+    ],
+    "allowedGrantTypes": [
+      "client_credentials"
+    ],
+    "allowedScopes": [
+      "scope1"
+    ]
+  }
+]

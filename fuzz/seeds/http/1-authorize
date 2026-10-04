@@ -1,0 +1,1 @@
+client_id=web&response_type=code&scope=openid%20profile&redirect_uri=https%3A%2F%2Fclient.test%2Fcallback&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&state=s&nonce=n

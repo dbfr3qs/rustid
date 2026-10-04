@@ -1,0 +1,71 @@
+{
+  "identityResources": [
+    {
+      "name": "openid",
+      "userClaims": [
+        "sub"
+      ]
+    },
+    {
+      "name": "email",
+      "userClaims": [
+        "email",
+        "email_verified"
+      ]
+    },
+    {
+      "name": "address",
+      "userClaims": [
+        "address"
+      ]
+    },
+    {
+      "name": "roles",
+      "userClaims": [
+        "role"
+      ]
+    }
+  ],
+  "apiScopes": [
+    {
+      "name": "api1"
+    },
+    {
+      "name": "api2"
+    },
+    {
+      "name": "api3"
+    },
+    {
+      "name": "api4.with.roles",
+      "userClaims": [
+        "role"
+      ]
+    },
+    {
+      "name": "other_api"
+    }
+  ],
+  "apiResources": [
+    {
+      "name": "api",
+      "scopes": [
+        "api1",
+        "api2",
+        "api3",
+        "api4.with.roles"
+      ],
+      "apiSecrets": [
+        {
+          "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols="
+        }
+      ]
+    },
+    {
+      "name": "other_api",
+      "scopes": [
+        "other_api"
+      ]
+    }
+  ]
+}

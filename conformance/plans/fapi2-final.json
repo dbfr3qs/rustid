@@ -1,0 +1,379 @@
+{
+  "alias": "rustid-fapi2",
+  "description": "rustid FAPI 2.0 Security Profile (final)",
+  "server": {
+    "discoveryUrl": "https://localhost:9444/.well-known/openid-configuration"
+  },
+  "client": {
+    "client_name": "OIDF Conformance Suite",
+    "redirect_uri": "https://localhost:8443/test/a/rustid-fapi2/callback",
+    "client_id": "fapi2-conformance-client",
+    "scope": "openid profile offline_access",
+    "jwks": {
+      "keys": [
+        {
+          "kty": "RSA",
+          "use": "sig",
+          "alg": "PS256",
+          "kid": "fapi2-client1-key",
+          "n": "zgJULGjAC6c7LVKfn3eF69NsmwCPZQpaRjwRh8B3NxChBnJz-Q9JowI9v35HvFlMYvR1C6mhUAptYISkB2tuxDk5xHPkxJSiFpk1v3yOhc_b5tBEKDgBXZapvCpwBJWvNOoJnxVdBwwPuNVXQOhphL_7xtxJcIV1jZePF463zRS6GtISToYvA-Xz3iwWuqikPZ_flko7S0Vw7rRZgZ_05h6Bm-qg9J9D4-NG-eD57vxaqUfuO8VxSESLgaQB4EA1U7A06BbU9S8Ul8zz3pkgs3Wp2iQol0qNcaEfhOuRoTQLpFtjP5vlZ8w6-rygJQd-O-NA9Xmo4GVqkUTKuaHuSw",
+          "e": "AQAB",
+          "d": "Uywvz74xyxTwT25nup7iYIrEzmIQFRaY7jAJLPyaAI8RmJsKpUyZEtud7ekgVmrbx6oz4G9An0cEKwX0oVNjLkOjReRf-GvAvBXWHWcaI6MjgLFL98xbnDaTUMBjwpqsWQwkaJYAnaDlk4NqNtzDKwxX0XHVomFkJtiubOayBVCxztsN5PQqin-YHFK8jGFly1w-B2RtnQVMpme29PuDX5FYz5ofnyzRbjaJMq3PAi0wn_XVzruUXnebAbxO01nBCqfvAhVNApiXvZNM4Td4qhC54k41DN2vXZCBWGR_Wm3RL9JhxwS--MJP6nkkVFDbVx6cver63QYJqDvezWvJ",
+          "p": "5647v22mvwPVgJc7O-6sGnPmm7MFLECBMymg91_aeC_ctZmtyC3LM8H7ZsPRwBc3QP5g3OVbKPvlZJVLKx6cRhIDgaTcvrg42veChqbLDf0m--ac3xxxVwgSX2Xkfv-Bqjt828xKLVAXx7pvhmdUkQwuDUb55Gnk90d-vikZLgk",
+          "q": "46I-6eCtCv49wp64RAb21W343V98ilb3w3NdI6rs1jxWTf1pD8ZEBiPzoq_0UXB8mmzJRILUiSbtGm0u1m2Qzp3lBXoHm5RwCyXNEVT0TWPF1vHboLQqXaVEw-IRMVZVyMvz8Vr5YRK9H6qhK5FlruDcawvWQvhZxf3pMAkATrM",
+          "dp": "mQj0Gny5uk80Bl7fF7WOJWMNnydfcV2iekMzOnQsgVtMNQCwVBw7r5KhF76dnH85VksxfHhcAPRzED-1iWQM4hQgENDvp2NU2v7HT155nmHsEFTCpnXJQC3qxO0vQ9xOsD3fOej1znyrWJkD9gnnSHB9MvQBOSnhvp2RUNcg9NE",
+          "dq": "qtkHJzo-JlYTvJKr8kLX1_CmLGCSdLI5WzSm3zJWd6Tpkbd0tyYzv_gT0DMHyGgI3U5w8T7Qje_tXTw9PysU2D6hua6RLzAFuBgzBaMhiUQtJNp54O_YLFjyd6KhDMqjsAWDnc6OBVGvKKlENhL2on6acK19rt3_Yx7jee4HkQk",
+          "qi": "JOUjBgFrzYJo6no0ECtw7fl-NtX7123lkWLA8LzpGfqXxQoHIyJmdFYw1AmIDBSL5mtaA4yC0ofBD2yQYBEpTb2y4UcGY_SgT-mGfgN8jMjVAKt90RPWCDz_IaDiIhM7dUY16dlBgmWEYhipChTjjx1joChePhutaHYoToFKzT0"
+        }
+      ]
+    }
+  },
+  "browser": [
+    {
+      "match": "https://localhost:9444/connect/authorize*",
+      "tasks": [
+        {
+          "task": "Login",
+          "optional": true,
+          "match": "https://localhost:9444/Account/Login*",
+          "commands": [
+            [
+              "text",
+              "id",
+              "username",
+              "alice",
+              "optional"
+            ],
+            [
+              "text",
+              "id",
+              "password",
+              "alice",
+              "optional"
+            ],
+            [
+              "click",
+              "xpath",
+              "//button[@value='login']"
+            ]
+          ]
+        },
+        {
+          "task": "Consent",
+          "optional": true,
+          "match": "https://localhost:9444/consent*",
+          "commands": [
+            [
+              "click",
+              "xpath",
+              "//button[@value='yes']"
+            ]
+          ]
+        },
+        {
+          "task": "Verify Complete",
+          "match": "*/test/*/callback*",
+          "commands": [
+            [
+              "wait",
+              "id",
+              "submission_complete",
+              10
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "override": {
+    "fapi2-security-profile-final-ensure-unsigned-authorization-request-without-using-par-fails": {
+      "browser": [
+        {
+          "comment": "expect an error page",
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Expect error page",
+              "match": "https://localhost:9444/home/error*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "could not be completed",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "fapi2-security-profile-final-par-attempt-to-use-request_uri-for-different-client": {
+      "browser": [
+        {
+          "comment": "expect an error page",
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Expect error page",
+              "match": "https://localhost:9444/home/error*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "could not be completed",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "fapi2-security-profile-final-par-attempt-to-use-expired-request_uri": {
+      "browser": [
+        {
+          "comment": "expect an error page",
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Expect error page",
+              "match": "https://localhost:9444/home/error*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "could not be completed",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "fapi2-security-profile-final-par-attempt-reuse-request_uri": {
+      "browser": [
+        {
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Login",
+              "optional": true,
+              "match": "https://localhost:9444/Account/Login*",
+              "commands": [
+                [
+                  "text",
+                  "id",
+                  "username",
+                  "alice",
+                  "optional"
+                ],
+                [
+                  "text",
+                  "id",
+                  "password",
+                  "alice",
+                  "optional"
+                ],
+                [
+                  "click",
+                  "xpath",
+                  "//button[@value='login']"
+                ]
+              ]
+            },
+            {
+              "task": "Consent",
+              "optional": true,
+              "match": "https://localhost:9444/consent*",
+              "commands": [
+                [
+                  "click",
+                  "xpath",
+                  "//button[@value='yes']"
+                ]
+              ]
+            },
+            {
+              "task": "Verify Complete",
+              "match": "*/test/*/callback*",
+              "commands": [
+                [
+                  "wait",
+                  "id",
+                  "submission_complete",
+                  10
+                ]
+              ]
+            }
+          ],
+          "match-limit": 1
+        },
+        {
+          "comment": "expect an error page",
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Expect error page",
+              "match": "https://localhost:9444/home/error*",
+              "commands": [
+                [
+                  "wait",
+                  "xpath",
+                  "//*",
+                  10,
+                  "could not be completed",
+                  "update-image-placeholder"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "fapi2-security-profile-final-par-ensure-reused-request-uri-prior-to-auth-completion-succeeds": {
+      "browser": [
+        {
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Show the login page without signing in",
+              "match": "https://localhost:9444/Account/Login*",
+              "commands": [
+                [
+                  "wait",
+                  "id",
+                  "username",
+                  10
+                ]
+              ]
+            }
+          ],
+          "match-limit": 1
+        },
+        {
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Login",
+              "optional": true,
+              "match": "https://localhost:9444/Account/Login*",
+              "commands": [
+                [
+                  "text",
+                  "id",
+                  "username",
+                  "alice",
+                  "optional"
+                ],
+                [
+                  "text",
+                  "id",
+                  "password",
+                  "alice",
+                  "optional"
+                ],
+                [
+                  "click",
+                  "xpath",
+                  "//button[@value='login']"
+                ]
+              ]
+            },
+            {
+              "task": "Consent",
+              "optional": true,
+              "match": "https://localhost:9444/consent*",
+              "commands": [
+                [
+                  "click",
+                  "xpath",
+                  "//button[@value='yes']"
+                ]
+              ]
+            },
+            {
+              "task": "Verify Complete",
+              "match": "*/test/*/callback*",
+              "commands": [
+                [
+                  "wait",
+                  "id",
+                  "submission_complete",
+                  10
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "fapi2-security-profile-final-user-rejects-authentication": {
+      "browser": [
+        {
+          "match": "https://localhost:9444/connect/authorize*",
+          "tasks": [
+            {
+              "task": "Cancel",
+              "match": "https://localhost:9444/Account/Login*",
+              "commands": [
+                [
+                  "click",
+                  "xpath",
+                  "//button[@value='cancel']"
+                ]
+              ]
+            },
+            {
+              "task": "Verify Complete",
+              "match": "*/test/*/callback*",
+              "commands": [
+                [
+                  "wait",
+                  "id",
+                  "submission_complete",
+                  10
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "client2": {
+    "client_name": "OIDF Conformance Suite 2",
+    "redirect_uri": "https://localhost:8443/test/a/rustid-fapi2/callback",
+    "client_id": "fapi2-conformance-client-2",
+    "scope": "openid profile offline_access",
+    "jwks": {
+      "keys": [
+        {
+          "kty": "RSA",
+          "use": "sig",
+          "alg": "PS256",
+          "kid": "fapi2-client2-key",
+          "n": "nBdSOoG1p2DSvQmY_P397fYQZgTrn1FVr1e52GFNYZH2K8KKnOBhP-OeFTuKU9oupse1dlToIM6UvC8b1hGPm--0VLl8st8cwx8d-g4F8geG9A-ZUW_-t_7ujBhHOOt72jcTWN0qsI4APLydPV2b0wCDGbulcEyDXef6woEIWTwQLyj6DTIg-PrA_W5PaBIZO9OBEJ9vYdLE-wP1qmjzsVxxeegHXgTU2kqvd35iBl5KEV7ezgNA-5XtmABoxyOEtjmC5TnaTyUQrfVQtBvv3dRBsX8dIaR6zO-iLqgVpTn3MjhYUFlWogRQrbLIBm20uR2Buv3vGISMI5TTqJr-Qw",
+          "e": "AQAB",
+          "d": "Qm9EnsU1QRubJj0vAcLC8KSRvzIp7QGro_kFDvz-99-tdFuVLobrrUseLfBNBDpxL6gBam9h6xCxylSMlvSbeGWyDXtzARin_74_Pn34dtZQUJFREpHFyp80_aiZq7bCXJKjZ-eeM04E-NTYYdV1LH3jzrCIjf7qzK2fE2ji2kNlNYiH7l5vPYu5KmCpuroTFUqSXuElsW1cUR8IttddFn9KDPUJTK6xwiswhnzWrtOeo9bk4vq2MuTFpRsuL00b0AZ_xHFcG_jf5KWULJRR6Tj4eKboN7Nr55G6wyHwXcIKLcyv2PUo-WuDBIxoodvDU0OKvDAQJCHHxvWxyjyUbQ",
+          "p": "0_uRe5e-Doc30m93LLHuBnB07f_Q-gjSunlUfMTrpxoDb1ZFLq5IJrVLs_H-uQeKlnJ55OleJ-Lna7YpuB_WznHu3WkGgsjSNgOj72ufelNje5oUV_JFhUPzylPntKBdI5mfs525ax0Dk2Bd8fzFHLMeGiL1JQskjxU-qHmKl_8",
+          "q": "vIC0q6DKw6PB9i9YHIkuS2r5VBaY9Lh4q92aJQbN1IPjKlhAXwmrheDaAhKhic2izYVNSwtKpRoti645d7lYVHn4L6SnrJciBBM_Xstl2rmqcfGqWuHxAi6gn1DuhSxJW9nE0Ii1sw_RFHQeB4bAoiC-LtFwQs6RULMwGNaPOb0",
+          "dp": "M9Y-uzReG3thYSo0wE86X4S8cz6tQZdKwKLO0DvvTEuGL4GvJT0lE6IdwwEYQvLfJu8Tc7DFf4dzA9nl1cqjYpRlzurR1sV48hBt1CxDMUyW9TC2bNMnwPDe-skNzhOw8vWsIeYd412S9EUKdBRVtzDt2YJW5BoXdI3DZrth8s0",
+          "dq": "nH-Wf-8sqCRqwgMoefiCUObtPRzNvE7zEG0YrqjpdghRLzS5rK2Qk8PL-3CQYKIzCcIkG6uyO0Ryj8cDuxxL80aYAKYI90c6XHvGXuMrGt6OXa8vqehveUpQ3DQK8tGDzhgMSL1XbOQyx3JoBAOiJnhcrO4A79Yj2wYJZnWrz1k",
+          "qi": "Y70-8YciPAsyghqWYCixl0jKYgObrWKBAbGsBHJIJXqBCUo9uxcx8KOVlYKZe5DAUXiJ19Bsol0se_Zq3KQB0Z_kanrfSIuyhG2HopY8E3YJeYnBzG5J5FkxAb8Nc24j3QaOajROuxisYGGzj528Gn0QJR7cf8x5Up8qxmCnVB8"
+        }
+      ]
+    }
+  },
+  "resource": {
+    "resourceUrl": "https://localhost:9444/fapi2/resource"
+  },
+  "waitTimeoutSeconds": 30
+}

@@ -1,0 +1,66 @@
+[
+  {
+    "clientId": "fapi2-conformance-client",
+    "clientName": "OIDF Conformance Suite FAPI2 message signing",
+    "clientSecrets": [
+      {
+        "type": "JWK",
+        "value": "{\"kty\": \"RSA\", \"use\": \"sig\", \"alg\": \"PS256\", \"kid\": \"fapi2-client1-key\", \"n\": \"zgJULGjAC6c7LVKfn3eF69NsmwCPZQpaRjwRh8B3NxChBnJz-Q9JowI9v35HvFlMYvR1C6mhUAptYISkB2tuxDk5xHPkxJSiFpk1v3yOhc_b5tBEKDgBXZapvCpwBJWvNOoJnxVdBwwPuNVXQOhphL_7xtxJcIV1jZePF463zRS6GtISToYvA-Xz3iwWuqikPZ_flko7S0Vw7rRZgZ_05h6Bm-qg9J9D4-NG-eD57vxaqUfuO8VxSESLgaQB4EA1U7A06BbU9S8Ul8zz3pkgs3Wp2iQol0qNcaEfhOuRoTQLpFtjP5vlZ8w6-rygJQd-O-NA9Xmo4GVqkUTKuaHuSw\", \"e\": \"AQAB\"}"
+      }
+    ],
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone",
+      "offline_access"
+    ],
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-fapi2-ms/callback",
+      "https://localhost:8443/test/a/rustid-fapi2-ms/callback?dummy1=lorem&dummy2=ipsum"
+    ],
+    "requirePkce": true,
+    "requirePushedAuthorization": true,
+    "requireDPoP": true,
+    "requireConsent": false,
+    "allowOfflineAccess": true,
+    "authorizationCodeLifetime": 60,
+    "requireRequestObject": true
+  },
+  {
+    "clientId": "fapi2-conformance-client-2",
+    "clientName": "OIDF Conformance Suite FAPI2 (2) message signing",
+    "clientSecrets": [
+      {
+        "type": "JWK",
+        "value": "{\"kty\": \"RSA\", \"use\": \"sig\", \"alg\": \"PS256\", \"kid\": \"fapi2-client2-key\", \"n\": \"nBdSOoG1p2DSvQmY_P397fYQZgTrn1FVr1e52GFNYZH2K8KKnOBhP-OeFTuKU9oupse1dlToIM6UvC8b1hGPm--0VLl8st8cwx8d-g4F8geG9A-ZUW_-t_7ujBhHOOt72jcTWN0qsI4APLydPV2b0wCDGbulcEyDXef6woEIWTwQLyj6DTIg-PrA_W5PaBIZO9OBEJ9vYdLE-wP1qmjzsVxxeegHXgTU2kqvd35iBl5KEV7ezgNA-5XtmABoxyOEtjmC5TnaTyUQrfVQtBvv3dRBsX8dIaR6zO-iLqgVpTn3MjhYUFlWogRQrbLIBm20uR2Buv3vGISMI5TTqJr-Qw\", \"e\": \"AQAB\"}"
+      }
+    ],
+    "allowedGrantTypes": [
+      "authorization_code"
+    ],
+    "allowedScopes": [
+      "openid",
+      "profile",
+      "email",
+      "address",
+      "phone",
+      "offline_access"
+    ],
+    "redirectUris": [
+      "https://localhost:8443/test/a/rustid-fapi2-ms/callback",
+      "https://localhost:8443/test/a/rustid-fapi2-ms/callback?dummy1=lorem&dummy2=ipsum"
+    ],
+    "requirePkce": true,
+    "requirePushedAuthorization": true,
+    "requireDPoP": true,
+    "requireConsent": false,
+    "allowOfflineAccess": true,
+    "authorizationCodeLifetime": 60,
+    "requireRequestObject": true
+  }
+]

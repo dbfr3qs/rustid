@@ -1,0 +1,17 @@
+{
+  "claims": [
+    {
+      "type": "foo",
+      "value": "bar"
+    }
+  ],
+  "active": true,
+  "custom_response": {
+    "custom": "custom"
+  },
+  "users_file": "../grants/users.json",
+  "ciba_users_file": "../ciba/users.json",
+  "inactive_subjects": [
+    "456"
+  ]
+}

@@ -15,6 +15,21 @@ The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Si
 
 **Not supported:** upstream federation (signing in through external identity providers), dynamic identity providers, and SAML assertion encryption.
 
+## Quick start
+
+With Docker (x86_64 or arm64):
+
+    docker run --rm -p 8080:8080 -e RUSTID_PROTOCOL__ISSUER_URI=http://localhost:8080 ghcr.io/dbfr3qs/rustid:0.1.0
+    curl http://localhost:8080/.well-known/openid-configuration
+
+Or download the binary for your architecture (`x86_64` or `aarch64`, static, any Linux) from the [releases page](https://github.com/dbfr3qs/rustid/releases), with `SHA256SUMS`:
+
+    sha256sum -c SHA256SUMS --ignore-missing
+    tar xzf rustid-server-0.1.0-x86_64-unknown-linux-musl.tar.gz
+    rustid-server-0.1.0-x86_64-unknown-linux-musl/rustid-server --version
+
+Either way it starts on the memory store with no clients. [docs/operations.md](docs/operations.md) covers configuration, clients, stores and TLS; [examples/rustid.toml](examples/rustid.toml) lists every setting.
+
 ## Try it in a browser
 
     scripts/demo.sh
@@ -55,6 +70,9 @@ Then try:
 | [docs/migration.md](docs/migration.md) | Importing a migration bundle |
 | [docs/conformance.md](docs/conformance.md) | OpenID Foundation conformance runs |
 | [docs/fuzzing.md](docs/fuzzing.md) | Fuzz targets and campaigns |
+| [CHANGELOG.md](CHANGELOG.md) | What changed in each release |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contributing: checks, sign-off (DCO) and licensing |
+| [SECURITY.md](SECURITY.md) | Reporting a vulnerability |
 
 ## Layout
 
@@ -76,7 +94,7 @@ Then try:
     cargo run -p rustid-server -- --config fixtures/profiles/default.json   # http://127.0.0.1:8080
     scripts/ci-local.sh                                                     # everything CI runs
 
-`scripts/ci-local.sh` runs fmt, clippy and the Rust tests (store contracts on memory and Postgres), then the container check.
+`scripts/ci-local.sh` runs fmt, clippy and the Rust tests (store contracts on memory and Postgres), the release script tests, then the container check.
 
 Other checks, outside CI:
 - `scripts/conformance.sh` runs the conformance plans (needs Docker);

@@ -291,7 +291,7 @@ async fn signing_in_through_a_second_rustid() {
         .build()
         .unwrap();
     let authorize = browser
-        .get(format!("{down}/connect/authorize?client_id=web&redirect_uri=https%3A%2F%2Fclient.test%2Fcallback&response_type=code&scope=openid%20profile&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"))
+        .get(format!("{down}/connect/authorize?client_id=logout.front&redirect_uri=https%3A%2F%2Fclient.test%2Fcallback&response_type=code&scope=openid%20profile&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"))
         .send()
         .await
         .unwrap();
@@ -377,7 +377,7 @@ async fn signing_in_through_a_second_rustid() {
         .post(format!("{down}/connect/token"))
         .form(&[
             ("grant_type", "authorization_code"),
-            ("client_id", "web"),
+            ("client_id", "logout.front"),
             ("code", &code),
             ("redirect_uri", "https://client.test/callback"),
             (
@@ -399,18 +399,31 @@ async fn signing_in_through_a_second_rustid() {
         Some(rustid_core::federation::session::subject_for(&up, "1").as_str())
     );
 
-    // Signing out ends both sessions: rustid's, then the upstream's.
-    let raw_id_token = tokens["id_token"].as_str().unwrap();
-    let end = browser
-        .get(format!("{down}/connect/endsession?id_token_hint={raw_id_token}"))
+    // Signing out from the login UI (no logoutId) ends both sessions:
+    // rustid's, then the upstream's, and the client is told through the
+    // front channel afterwards.
+    let prompt = browser
+        .get(format!("{down}/account/logout"))
         .send()
         .await
         .unwrap();
-    let logout_page = url::Url::parse(&down).unwrap().join(&location(&end)).unwrap();
-    let to_upstream = browser.get(logout_page.as_str()).send().await.unwrap();
-    assert!(to_upstream.status().is_redirection(), "{}", to_upstream.text().await.unwrap());
+    assert_eq!(prompt.status(), 200);
+    let to_upstream = browser
+        .post(format!("{down}/account/logout"))
+        .form(&[("logoutId", "")])
+        .send()
+        .await
+        .unwrap();
+    assert!(
+        to_upstream.status().is_redirection(),
+        "{}",
+        to_upstream.text().await.unwrap()
+    );
     let upstream_end = location(&to_upstream);
-    assert!(upstream_end.starts_with(&format!("{up}/connect/endsession?")), "{upstream_end}");
+    assert!(
+        upstream_end.starts_with(&format!("{up}/connect/endsession?")),
+        "{upstream_end}"
+    );
     // The upstream signs out through its own logout page, which links back.
     let mut url = url::Url::parse(&upstream_end).unwrap();
     let mut reply = browser.get(url.as_str()).send().await.unwrap();
@@ -427,20 +440,49 @@ async fn signing_in_through_a_second_rustid() {
         .next()
         .unwrap()
         .replace("&amp;", "&");
-    assert!(back.starts_with(&format!("{down}/federation/up/signout-callback?state=")), "{back}");
+    assert!(
+        back.starts_with(&format!("{down}/federation/up/signout-callback?state=")),
+        "{back}"
+    );
     let done = browser.get(&back).send().await.unwrap();
     assert_eq!(done.status(), 302);
-    let done_url = url::Url::parse(&down).unwrap().join(&location(&done)).unwrap();
+    let done_url = url::Url::parse(&down)
+        .unwrap()
+        .join(&location(&done))
+        .unwrap();
     assert_eq!(done_url.path(), "/account/logout/done");
-    let signed_out = browser.get(done_url.as_str()).send().await.unwrap().text().await.unwrap();
-    assert!(signed_out.contains("You are now signed out"), "{signed_out}");
+    let signed_out = browser
+        .get(done_url.as_str())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    assert!(
+        signed_out.contains("You are now signed out"),
+        "{signed_out}"
+    );
+    assert!(
+        signed_out
+            .contains("id=\"signout-iframe\" src=\"/connect/endsession/callback?endSessionId="),
+        "the front-channel iframe survives the upstream leg: {signed_out}"
+    );
     // Both sessions are gone: each server asks for a sign-in again.
     let again = browser.get(&upstream_authorize).send().await.unwrap();
-    assert!(location(&again).contains("/Account/Login"), "{}", location(&again));
+    assert!(
+        location(&again).contains("/Account/Login"),
+        "{}",
+        location(&again)
+    );
     let again = browser
-        .get(format!("{down}/connect/authorize?client_id=web&redirect_uri=https%3A%2F%2Fclient.test%2Fcallback&response_type=code&scope=openid%20profile&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"))
+        .get(format!("{down}/connect/authorize?client_id=logout.front&redirect_uri=https%3A%2F%2Fclient.test%2Fcallback&response_type=code&scope=openid%20profile&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"))
         .send()
         .await
         .unwrap();
-    assert!(location(&again).contains("/Account/Login"), "{}", location(&again));
+    assert!(
+        location(&again).contains("/Account/Login"),
+        "{}",
+        location(&again)
+    );
 }

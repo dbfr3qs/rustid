@@ -147,7 +147,7 @@ With `signOut`, signing out of rustid also signs the user out of the provider, f
    - `post_logout_redirect_uri` set to `<rustid issuer>/federation/<scheme>/signout-callback`;
    - a `state` bound to the browser by a sealed cookie;
    - `id_token_hint`, but only with server-side sessions: only they keep the provider's id token, which would make a session cookie too large.
-3. The provider returns the browser to the signout callback, which checks `state` and continues to the return URL the login UI gave the logout call. The login UI's signed-out page (with its front-channel iframes) is shown then.
+3. The provider returns the browser to the signout callback, which checks `state` and continues to the return URL the login UI gave the logout call (kept server side, so the cookie stays small). The login UI's signed-out page, with its front-channel iframes, is shown then. Its UI must have worked out the iframe URL before signing out ([interaction-api.md](interaction-api.md#logout)).
 
 Register the signout callback with the provider as a post-logout redirect URI.
 

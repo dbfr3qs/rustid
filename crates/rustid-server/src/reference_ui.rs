@@ -682,12 +682,25 @@ async fn sign_out(
     page: &Page,
     caller: &Caller,
     logout_id: Option<&str>,
+    iframe: Option<&str>,
     mut response: Response,
 ) -> Response {
     let base = page.ui.path_base.clone().unwrap_or_default();
-    let return_url = match logout_id {
-        Some(id) => format!("{base}/account/logout/done?logoutId={}", url_encode(id)),
-        None => format!("{base}/account/logout/done"),
+    // The front-channel iframe is worked out from the session, which is
+    // gone by the time the done page shows; its sealed id goes along.
+    let mut query: Vec<String> = Vec::new();
+    if let Some(id) = logout_id {
+        query.push(format!("logoutId={}", url_encode(id)));
+    }
+    if let Some(end_session_id) = iframe.and_then(|url| {
+        Params::parse_query(url.split_once('?').map_or("", |(_, q)| q)).get("endSessionId")
+    }) {
+        query.push(format!("endSessionId={}", url_encode(&end_session_id)));
+    }
+    let return_url = if query.is_empty() {
+        format!("{base}/account/logout/done")
+    } else {
+        format!("{base}/account/logout/done?{}", query.join("&"))
     };
     let body = json!({ "returnUrl": return_url });
     let continue_url = match page
@@ -738,7 +751,14 @@ async fn logout(State(page): State<Arc<Page>>, request: Request) -> Response {
         if context["showSignoutPrompt"] == true {
             return logout_prompt(logout_id.as_deref());
         }
-        return sign_out(&page, &caller, logout_id.as_deref(), signed_out_page(&context)).await;
+        return sign_out(
+            &page,
+            &caller,
+            logout_id.as_deref(),
+            context["signOutIFrameUrl"].as_str(),
+            signed_out_page(&context),
+        )
+        .await;
     }
     let answer = json_response(
         StatusCode::OK,
@@ -748,7 +768,14 @@ async fn logout(State(page): State<Arc<Page>>, request: Request) -> Response {
             "signOutIFrameUrl": context["signOutIFrameUrl"],
         }),
     );
-    sign_out(&page, &caller, logout_id.as_deref(), answer).await
+    sign_out(
+        &page,
+        &caller,
+        logout_id.as_deref(),
+        context["signOutIFrameUrl"].as_str(),
+        answer,
+    )
+    .await
 }
 
 #[derive(Deserialize)]
@@ -778,7 +805,14 @@ async fn logout_submit(State(page): State<Arc<Page>>, request: Request) -> Respo
         Ok(context) => context,
         Err(response) => return *response,
     };
-    sign_out(&page, &caller, logout_id.as_deref(), signed_out_page(&context)).await
+    sign_out(
+        &page,
+        &caller,
+        logout_id.as_deref(),
+        context["signOutIFrameUrl"].as_str(),
+        signed_out_page(&context),
+    )
+    .await
 }
 
 /// `/account/logout/done?logoutId=…`: where a sign-out ends, after an
@@ -788,10 +822,20 @@ async fn logout_done(State(page): State<Arc<Page>>, request: Request) -> Respons
     let params = Params::parse_query(request.uri().query().unwrap_or_default());
     let logout_id = params.get("logoutId");
     let caller = Caller::of(&request);
-    match logout_context(&page, &caller, logout_id.as_deref()).await {
-        Ok(context) => signed_out_page(&context),
-        Err(response) => *response,
+    let mut context = match logout_context(&page, &caller, logout_id.as_deref()).await {
+        Ok(context) => context,
+        Err(response) => return *response,
+    };
+    if context["signOutIFrameUrl"].is_null()
+        && let Some(id) = params.get("endSessionId")
+    {
+        let base = page.ui.path_base.clone().unwrap_or_default();
+        context["signOutIFrameUrl"] = Value::String(format!(
+            "{base}/connect/endsession/callback?endSessionId={}",
+            url_encode(&id)
+        ));
     }
+    signed_out_page(&context)
 }
 
 fn logout_prompt(logout_id: Option<&str>) -> Response {

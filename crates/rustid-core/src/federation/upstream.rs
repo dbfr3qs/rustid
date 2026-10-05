@@ -83,11 +83,13 @@ impl Metadata {
             ));
         }
         let userinfo = self.userinfo_endpoint.as_ref();
+        let end_session = self.end_session_endpoint.as_ref();
         for (name, url) in [
             ("authorization_endpoint", Some(&self.authorization_endpoint)),
             ("token_endpoint", Some(&self.token_endpoint)),
             ("jwks_uri", Some(&self.jwks_uri)),
             ("userinfo_endpoint", userinfo),
+            ("end_session_endpoint", end_session),
         ]
         .into_iter()
         .filter_map(|(name, url)| url.map(|u| (name, u)))

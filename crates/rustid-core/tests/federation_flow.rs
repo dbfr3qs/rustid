@@ -702,8 +702,9 @@ fn sign_out_flag_signout_correlation_and_end_session_url() {
     let mut cfg = config();
     cfg.sign_out = true;
     let protector = DataProtector::new([("k", [7u8; 32].as_slice())]).unwrap();
-    let c = SignoutCorrelation::new("up", "/signed-out?id=1", NOW);
+    let c = SignoutCorrelation::new("up", "handle-1", NOW);
     assert!(c.state.len() >= 43);
+    assert_eq!(c.handle, "handle-1");
     let sealed = c.seal(&protector);
     assert_eq!(
         SignoutCorrelation::open(&protector, &sealed, NOW + 600),
@@ -780,4 +781,41 @@ fn sessions_carry_the_upstream_id_token_only_when_set() {
     );
     let json = serde_json::to_value(&without).unwrap();
     assert!(json.get("upstream_id_token").is_none(), "{json}");
+}
+
+#[tokio::test]
+async fn signout_return_urls_are_kept_server_side_and_taken_once() {
+    use rustid_core::federation::challenge::{store_signout_return, take_signout_return};
+    let stores = rustid_store_memory::stores(Default::default(), Default::default());
+    let grants = stores.grants.as_ref();
+    let now = chrono::Utc::now();
+    let long = format!("/signed-out?logoutId={}", "x".repeat(6000));
+    let handle = store_signout_return(grants, &long, now).await.unwrap();
+    assert!(handle.len() < 100, "a short handle");
+    assert_eq!(
+        take_signout_return(grants, &handle, now)
+            .await
+            .unwrap()
+            .as_deref(),
+        Some(long.as_str())
+    );
+    assert_eq!(
+        take_signout_return(grants, &handle, now).await.unwrap(),
+        None,
+        "once"
+    );
+    let handle = store_signout_return(grants, "/x", now).await.unwrap();
+    let later = now + chrono::Duration::seconds(601);
+    assert_eq!(
+        take_signout_return(grants, &handle, later).await.unwrap(),
+        None,
+        "expired"
+    );
+}
+
+#[test]
+fn metadata_end_session_endpoint_must_be_https() {
+    let mut m = metadata();
+    m.end_session_endpoint = Some("http://up.example/endsession".into());
+    assert!(m.check(AUTHORITY, false).is_err());
 }

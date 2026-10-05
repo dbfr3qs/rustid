@@ -112,24 +112,26 @@ pub fn authorization_url(
 pub const SIGNOUT_COOKIE: &str = "idsrv.federation.signout";
 pub const SIGNOUT_PURPOSE: &str = "rustid.federation.signout";
 
-/// A sign-out sent upstream, sealed into its own cookie: where the browser
-/// goes once the provider sends it back.
+/// A sign-out sent upstream, sealed into its own cookie. Where the browser
+/// goes once the provider sends it back is kept server side under
+/// `handle` ([`store_signout_return`]), so the cookie stays small whatever
+/// the return URL.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignoutCorrelation {
     pub scheme: String,
     pub state: String,
-    pub return_url: String,
+    pub handle: String,
     /// Seconds since the epoch.
     pub created: i64,
 }
 
 impl SignoutCorrelation {
-    pub fn new(scheme: &str, return_url: &str, now: i64) -> SignoutCorrelation {
+    pub fn new(scheme: &str, handle: &str, now: i64) -> SignoutCorrelation {
         SignoutCorrelation {
             scheme: scheme.to_owned(),
             state: random_value(),
-            return_url: return_url.to_owned(),
+            handle: handle.to_owned(),
             created: now,
         }
     }
@@ -172,4 +174,51 @@ pub fn end_session_url(
         .collect::<Vec<_>>()
         .join("&");
     Some(add_query_string(endpoint, &query))
+}
+
+/// The persisted grant type of a sign-out's return URL.
+pub const SIGNOUT_RETURN: &str = "federation_signout_return";
+
+/// Keeps a sign-out's return URL for the cookie's lifetime, and returns
+/// the handle that takes it back.
+pub async fn store_signout_return(
+    grants: &dyn crate::stores::PersistedGrantStore,
+    return_url: &str,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<String, crate::stores::StoreError> {
+    let handle = crate::grants::new_handle();
+    grants
+        .store(crate::grants::PersistedGrant {
+            key: crate::grants::hashed_key(&handle, SIGNOUT_RETURN),
+            grant_type: SIGNOUT_RETURN.to_owned(),
+            client_id: String::new(),
+            subject_id: None,
+            session_id: None,
+            description: None,
+            creation_time: now,
+            expiration: Some(now + chrono::Duration::seconds(CORRELATION_LIFETIME_SECONDS)),
+            consumed_time: None,
+            data: return_url.to_owned(),
+        })
+        .await?;
+    Ok(handle)
+}
+
+/// Takes a sign-out's return URL back: at most once, and only before it
+/// expires.
+pub async fn take_signout_return(
+    grants: &dyn crate::stores::PersistedGrantStore,
+    handle: &str,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<Option<String>, crate::stores::StoreError> {
+    let Some(grant) = grants
+        .take(&crate::grants::hashed_key(handle, SIGNOUT_RETURN))
+        .await?
+    else {
+        return Ok(None);
+    };
+    if grant.grant_type != SIGNOUT_RETURN || grant.expiration.is_none_or(|e| e <= now) {
+        return Ok(None);
+    }
+    Ok(Some(grant.data))
 }

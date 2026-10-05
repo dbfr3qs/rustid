@@ -14,7 +14,8 @@ use rustid_core::consent::InteractionError;
 use rustid_core::events::{Event, EventDetails, RequestInfo};
 use rustid_core::federation::challenge::{
     CORRELATION_COOKIE, CORRELATION_LIFETIME_SECONDS, Correlation, SIGNOUT_COOKIE,
-    SignoutCorrelation, authorization_url, end_session_url,
+    SignoutCorrelation, authorization_url, end_session_url, store_signout_return,
+    take_signout_return,
 };
 use rustid_core::federation::flow::Failure;
 use rustid_core::federation::provider::Provider;
@@ -67,7 +68,7 @@ pub(crate) async fn handle(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
     if let Leg::SignoutCallback = leg {
-        return signout_callback(state, incoming, scheme);
+        return signout_callback(state, incoming, scheme).await;
     }
     let Some(provider) = state.stores.federation.providers.find(scheme) else {
         return page(StatusCode::NOT_FOUND, "There is no such sign-in provider.");
@@ -515,7 +516,20 @@ pub(crate) async fn upstream_sign_out(
             return None;
         }
     };
-    let correlation = SignoutCorrelation::new(scheme, return_url, now);
+    let handle = match store_signout_return(
+        state.stores.grants.as_ref(),
+        return_url,
+        chrono::Utc::now(),
+    )
+    .await
+    {
+        Ok(handle) => handle,
+        Err(error) => {
+            tracing::warn!(%scheme, %error, "signing out upstream skipped: the return URL couldn't be kept");
+            return None;
+        }
+    };
+    let correlation = SignoutCorrelation::new(scheme, &handle, now);
     let issuer = current_issuer(&state.options, &route.origin);
     let location = end_session_url(
         &provider.config,
@@ -540,7 +554,11 @@ pub(crate) async fn upstream_sign_out(
 /// out upstream, on to where the sign-out was going. A missing or wrong
 /// state shows the signed-out page; it never redirects to a URL from the
 /// query.
-fn signout_callback(state: &ProtocolState, incoming: &Incoming<'_>, scheme: &str) -> Response {
+async fn signout_callback(
+    state: &ProtocolState,
+    incoming: &Incoming<'_>,
+    scheme: &str,
+) -> Response {
     let Incoming { route, headers, .. } = *incoming;
     let now = chrono::Utc::now().timestamp();
     let params = Params::parse_query(&route.query);
@@ -552,8 +570,15 @@ fn signout_callback(state: &ProtocolState, incoming: &Incoming<'_>, scheme: &str
                 .get("state")
                 .is_some_and(|s| constant_time_eq(s.as_bytes(), c.state.as_bytes()))
         });
-    let mut response = match correlation {
-        Some(c) => found(&c.return_url),
+    let return_url = match correlation {
+        Some(c) => take_signout_return(state.stores.grants.as_ref(), &c.handle, chrono::Utc::now())
+            .await
+            .ok()
+            .flatten(),
+        None => None,
+    };
+    let mut response = match return_url {
+        Some(url) => found(&url),
         None => page(StatusCode::OK, "You are signed out."),
     };
     crate::cookies::append(&mut response, &signout_cookie(route, scheme, None));

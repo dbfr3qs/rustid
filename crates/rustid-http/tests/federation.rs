@@ -646,6 +646,10 @@ async fn signed_in_upstream(f: &Federated, b: &mut Browser) {
 /// The UI's logout call and its continuation, returning the continuation's
 /// answer.
 async fn sign_out(b: &mut Browser) -> Reply {
+    sign_out_to(b, "/signed-out?x=1").await
+}
+
+async fn sign_out_to(b: &mut Browser, return_url: &str) -> Reply {
     let bearer = format!("Bearer {API_KEY}");
     let cookie: Vec<String> = b.cookies.iter().map(|(k, v)| format!("{k}={v}")).collect();
     let mut ui = Browser::new(&b.app);
@@ -658,7 +662,7 @@ async fn sign_out(b: &mut Browser) -> Reply {
                 ("content-type", "application/json"),
                 ("cookie", &cookie.join("; ")),
             ],
-            &serde_json::json!({ "returnUrl": "/signed-out?x=1" }).to_string(),
+            &serde_json::json!({ "returnUrl": return_url }).to_string(),
         )
         .await;
     assert_eq!(reply.status, StatusCode::OK, "{}", reply.body);
@@ -807,4 +811,28 @@ async fn local_session_sign_out_is_unchanged() {
     let reply = sign_out(&mut b).await;
     assert_eq!(reply.status, StatusCode::FOUND);
     assert_eq!(reply.location(), "/signed-out?x=1");
+}
+
+#[tokio::test]
+async fn a_long_return_url_keeps_the_signout_cookie_small() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let long = format!("/signed-out?logoutId={}", "x".repeat(6000));
+    let reply = sign_out_to(&mut b, &long).await;
+    let cookie = reply
+        .set_cookies()
+        .into_iter()
+        .find(|c| c.starts_with("idsrv.federation.signout="))
+        .unwrap();
+    assert!(cookie.len() < 1024, "{} bytes", cookie.len());
+    let state = query(&reply.location(), "state").unwrap();
+    let back = b
+        .get(&format!(
+            "/federation/up/signout-callback?state={}",
+            encode(&state)
+        ))
+        .await;
+    assert_eq!(back.status, StatusCode::FOUND);
+    assert_eq!(back.location(), long);
 }

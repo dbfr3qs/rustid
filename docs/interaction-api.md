@@ -66,7 +66,7 @@ The reference UI also refuses cross-site form posts: it checks `Sec-Fetch-Site`,
 3. `POST /interaction/logout` with `{"returnUrl": "/local/path"}` (a local URL) answers `{"continueUrl": ".../connect/interaction/logout?token=…"}`.
 4. The browser visits it. The server signs the session out (back-channel notifications sent, coordinated clients' tokens removed, both session cookies deleted) and redirects to `returnUrl`.
 
-   For a session signed in through an upstream provider with `signOut` ([federation.md](federation.md#signing-out)), the redirect goes to that provider first, and the browser reaches `returnUrl` once the provider sends it back. Keep the `logoutId` in `returnUrl` (for example `/signed-out?logoutId=…`): `GET /interaction/logout?logoutId=…` still answers with the post-logout redirect URI and the iframe URL after the session has gone.
+   For a session signed in through an upstream provider with `signOut` ([federation.md](federation.md#signing-out)), the redirect goes to that provider first, and the browser reaches `returnUrl` once the provider sends it back. Get the logout context (step 2) before the logout call and keep what the signed-out page needs: the iframe URL may be worked out from the session, which is gone by then. The reference UI keeps the `logoutId` and the iframe's `endSessionId` in its `returnUrl` (`/account/logout/done?logoutId=…&endSessionId=…`).
 
 ## The current session
 

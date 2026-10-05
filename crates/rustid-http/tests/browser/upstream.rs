@@ -87,7 +87,7 @@ impl UpstreamClient for FakeUpstream {
         let mut s = self.state.lock().unwrap();
         s.gets.push(url.to_owned());
         match url {
-            "https://up.example/.well-known/openid-configuration" => Ok(s.discovery.clone()),
+            u if u.ends_with("/.well-known/openid-configuration") => Ok(s.discovery.clone()),
             "https://up.example/jwks" => {
                 Ok(json!({ "keys": [serde_json::to_value(&self.key.jwk).unwrap()] }))
             }

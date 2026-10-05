@@ -836,3 +836,49 @@ async fn a_long_return_url_keeps_the_signout_cookie_small() {
     assert_eq!(back.status, StatusCode::FOUND);
     assert_eq!(back.location(), long);
 }
+
+const TENANT: &str = "11111111-1111-1111-1111-111111111111";
+
+fn entra(p: &mut rustid_core::federation::provider::IdentityProvider) {
+    p.authority = "https://up.example/organizations/v2.0".into();
+    p.multi_tenant = Some(rustid_core::federation::provider::MultiTenant {
+        tenants: vec![TENANT.into()],
+    });
+}
+
+fn tenant(f: &Federated, tid: &str) {
+    f.fake.edit(|s| {
+        s.discovery["issuer"] = "https://up.example/{tenantid}/v2.0".into();
+        s.claims["iss"] = format!("https://up.example/{tid}/v2.0").into();
+        s.claims["tid"] = tid.into();
+    });
+}
+
+#[tokio::test]
+async fn multi_tenant_sign_in_end_to_end() {
+    let f = federated_custom(Default::default(), entra, false);
+    tenant(&f, TENANT);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let s = session(&mut b).await;
+    assert_eq!(
+        s["subjectId"],
+        subject_for(
+            &format!("https://up.example/{TENANT}/v2.0"),
+            "upstream-user"
+        )
+    );
+    assert_eq!(s["idp"], "up");
+}
+
+#[tokio::test]
+async fn tenant_not_allowed_is_502() {
+    let f = federated_custom(Default::default(), entra, false);
+    tenant(&f, "22222222-2222-2222-2222-222222222222");
+    let mut b = Browser::new(&f.app);
+    let (_, upstream) = start(&mut b).await;
+    let reply = callback(&f, &mut b, &upstream).await;
+    assert_eq!(reply.status, StatusCode::BAD_GATEWAY);
+    let failure = &f.events.named("User Login Failure")[0];
+    assert_eq!(failure["Reason"], "tenant_not_allowed");
+}

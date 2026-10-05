@@ -43,6 +43,7 @@ identity_providers_file = "identity-providers.json"
 | `scopes` | `["openid", "profile", "email"]` by default. Must contain `openid` |
 | `claims` | The id token claims copied into the session. By default these are the OpenID Connect standard claims (`name`, `email`, `email_verified`, `preferred_username` and the others) |
 | `userinfo` | `false` by default. When `true`, rustid also calls the provider's userinfo endpoint with the access token, and its claims join the id token's |
+| `multiTenant` | `{"tenants": ["<tenant id>", …]}`: one entry for a shared multi-tenant endpoint, accepting the tenants listed (see Entra ID with many tenants) |
 | `signOut` | `false` by default. When `true`, signing out of rustid also signs the user out of the provider (see Signing out) |
 
 ### Client authentication
@@ -72,9 +73,35 @@ rustid's redirect URI at each provider is `<rustid issuer>/federation/<scheme>/c
 ### Examples
 
 - **Entra ID (one tenant):** set `authority` to `https://login.microsoftonline.com/<tenant-id>/v2.0`, register the redirect URI as a Web platform redirect, and use a client secret or a certificate with `private_key_jwt`.
+- **Entra ID (many tenants):** see below.
 - **Okta:** set `authority` to `https://<your-domain>.okta.com/oauth2/default` for the default authorization server, or to your custom authorization server's issuer.
 - **Keycloak:** set `authority` to `https://<host>/realms/<realm>`.
 - **Google Workspace:** set `authority` to `https://accounts.google.com`. This endpoint signs in *any* Google account, not only your organisation's (see Who can sign in, below). Add `hd`, the hosted domain, to `claims` and refuse other domains.
+
+### Entra ID with many tenants
+
+One provider entry can use Entra ID's shared `organizations` (or `common`) endpoint, and accept users from a list of tenants:
+
+```json
+{
+  "scheme": "entra",
+  "displayName": "Work account",
+  "authority": "https://login.microsoftonline.com/organizations/v2.0",
+  "clientId": "<multi-tenant application id>",
+  "clientAuthentication": { "secretEnv": "ENTRA_SECRET" },
+  "multiTenant": {
+    "tenants": ["<tenant id>", "<tenant id>"]
+  }
+}
+```
+
+The shared endpoint's discovery document names its issuer as `https://login.microsoftonline.com/{tenantid}/v2.0`. With `multiTenant`, rustid accepts that issuer: the authority with one path segment replaced by `{tenantid}`. For each sign-in:
+1. the id token's `tid` must be one of `tenants`, otherwise the sign-in fails as `tenant_not_allowed`;
+2. the token's `iss` must be the template with that tenant id, so `https://login.microsoftonline.com/<tid>/v2.0`.
+
+The list is required, and there is no wildcard: "any tenant" would let anyone with an Entra ID tenant of their own sign in. Tenant ids are compared without case.
+
+The subject is derived from the per-tenant issuer, so the same user id in two tenants gives two subjects.
 
 ## Who can sign in
 
@@ -133,6 +160,7 @@ An upstream `access_denied` (the user refused, or the provider did) goes back to
 | `token_request_failed` | The token endpoint refused the code, or answered without an id token |
 | `id_token_invalid` | The id token failed a check (named in `Detail`) |
 | `userinfo_failed` | The userinfo call failed, or its `sub` didn't match |
+| `tenant_not_allowed` | A multi-tenant provider's token came from a tenant that isn't listed, or has no `tid` |
 | `stale_authentication` | `max_age` was sent, and the provider's `auth_time` is missing or older |
 
 A successful sign-in raises `User Login Success` (id 1000), with `Provider`, `ProviderUserId` and `SubjectId`.
@@ -159,7 +187,6 @@ The logout continuation (`/connect/interaction/logout?token=…`) may now redire
 
 These are not supported yet:
 - logout started by the provider (its front-channel or back-channel logout to rustid);
-- Entra ID's multi-tenant endpoints;
 - managing providers through the admin API.
 
 Upstream providers must answer in the query response mode.

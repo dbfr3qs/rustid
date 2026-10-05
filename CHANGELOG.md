@@ -7,6 +7,12 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-05
+
+### Added
+
+- Multi-tenant providers: with `multiTenant: { "tenants": [...] }`, one provider entry uses Entra ID's shared `organizations` or `common` endpoint and accepts the listed tenants. Each token's `tid` must be listed, and its `iss` must be that tenant's issuer. A token from any other tenant fails as `tenant_not_allowed`.
+
 ## [0.3.0] - 2026-10-05
 
 ### Added
@@ -58,7 +64,8 @@ The first release.
 - Static Linux binaries (x86_64 and aarch64, musl) and a multi-arch container image on `ghcr.io/dbfr3qs/rustid`.
 - The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included.
 
-[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/dbfr3qs/rustid/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/dbfr3qs/rustid/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/dbfr3qs/rustid/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/dbfr3qs/rustid/compare/v0.1.1...v0.1.2

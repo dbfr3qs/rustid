@@ -20,14 +20,14 @@ The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Si
 
 With Docker (x86_64 or arm64):
 
-    docker run --rm -p 8080:8080 -e RUSTID_PROTOCOL__ISSUER_URI=http://localhost:8080 ghcr.io/dbfr3qs/rustid:0.3.0
+    docker run --rm -p 8080:8080 -e RUSTID_PROTOCOL__ISSUER_URI=http://localhost:8080 ghcr.io/dbfr3qs/rustid:0.4.0
     curl http://localhost:8080/.well-known/openid-configuration
 
 Or download the binary for your architecture (`x86_64` or `aarch64`, static, any Linux) from the [releases page](https://github.com/dbfr3qs/rustid/releases), with `SHA256SUMS`:
 
     sha256sum -c SHA256SUMS --ignore-missing
-    tar xzf rustid-server-0.3.0-x86_64-unknown-linux-musl.tar.gz
-    rustid-server-0.3.0-x86_64-unknown-linux-musl/rustid-server --version
+    tar xzf rustid-server-0.4.0-x86_64-unknown-linux-musl.tar.gz
+    rustid-server-0.4.0-x86_64-unknown-linux-musl/rustid-server --version
 
 Either way it starts on the memory store with no clients. [docs/operations.md](docs/operations.md) covers configuration, clients, stores and TLS; [examples/rustid.toml](examples/rustid.toml) lists every setting.
 

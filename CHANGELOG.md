@@ -7,6 +7,16 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-05
+
+### Added
+
+- Upstream sign-out: with `"signOut": true`, signing out of rustid also signs the user out of the upstream provider (OpenID Connect RP-Initiated Logout 1.0), and comes back through `/federation/<scheme>/signout-callback`. The provider's id token is kept as `id_token_hint` when server-side sessions are on.
+
+### Changed
+
+- The logout continuation can redirect to an upstream provider before the return URL. The reference UI follows that redirect and shows its signed-out page at `/account/logout/done` afterwards.
+
 ## [0.2.0] - 2026-10-05
 
 ### Added
@@ -48,7 +58,8 @@ The first release.
 - Static Linux binaries (x86_64 and aarch64, musl) and a multi-arch container image on `ghcr.io/dbfr3qs/rustid`.
 - The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included.
 
-[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/dbfr3qs/rustid/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/dbfr3qs/rustid/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/dbfr3qs/rustid/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/dbfr3qs/rustid/compare/v0.1.0...v0.1.1

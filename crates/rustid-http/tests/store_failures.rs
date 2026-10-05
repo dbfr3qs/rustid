@@ -102,6 +102,7 @@ async fn status(
             grant_validation: Arc::new(rustid_core::grant_validation::NoGrantValidator),
             ciba: Arc::new(rustid_core::ciba::NopCibaService),
             sessions: None,
+            federation: Default::default(),
         },
         events: Default::default(),
         path_base: None,

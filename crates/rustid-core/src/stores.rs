@@ -556,6 +556,8 @@ pub struct Stores {
     pub grant_validation: Arc<dyn crate::grant_validation::GrantValidator>,
     /// Server-side sessions, when enabled.
     pub sessions: Option<Arc<crate::server_side_sessions::ServerSideSessions>>,
+    /// Upstream identity providers and how they are reached.
+    pub federation: Arc<crate::federation::Federation>,
 }
 
 impl std::fmt::Debug for Stores {

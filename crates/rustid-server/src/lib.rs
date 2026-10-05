@@ -719,6 +719,7 @@ async fn build_stores(
                     grant_validation: Arc::new(rustid_core::grant_validation::NoGrantValidator),
                     ciba: Arc::new(rustid_core::ciba::NopCibaService),
                     sessions: None,
+                    federation: Default::default(),
                 },
                 Some(store),
                 None,

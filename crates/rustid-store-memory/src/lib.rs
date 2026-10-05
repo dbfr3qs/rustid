@@ -201,6 +201,7 @@ pub fn stores_with(configuration: Arc<InMemoryConfiguration>) -> Stores {
         grant_validation: Arc::new(rustid_core::grant_validation::NoGrantValidator),
         ciba: Arc::new(rustid_core::ciba::NopCibaService),
         sessions: None,
+        federation: Default::default(),
     }
 }
 

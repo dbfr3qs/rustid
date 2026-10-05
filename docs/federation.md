@@ -194,6 +194,5 @@ The logout continuation (`/connect/interaction/logout?token=…`) may now redire
 These are not supported yet:
 - logout started by the provider (its front-channel or back-channel logout to rustid);
 - SAML upstream providers;
-- managing providers through the admin API.
 
 Upstream providers must answer in the query response mode.

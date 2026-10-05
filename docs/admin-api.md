@@ -51,10 +51,10 @@ SAML service providers (`/admin/saml-service-providers`, and `GET /admin/saml-se
 
 Upstream identity providers (`/admin/identity-providers`, and `GET /admin/identity-providers/by-scheme/{scheme}`) take the JSON of `identity_providers_file` ([federation.md](federation.md)), keyed by `scheme`, which can't change after creation.
 
-- **Secrets and keys:** `clientAuthentication.secret`, and for `private_key_jwt` an inline `key` (a PKCS#8 PEM, with an optional `certificate` PEM), are stored encrypted with the data protection key ring. Reads never show them: they show `hasSecret` and `hasKey` instead. `secretEnv` and `keyFile` work as in the file.
-- **Updates:** a `PUT` without `secret` (or `key`) keeps the stored one when the method is unchanged. A `PUT` that switches to `private_key_jwt` must send a key.
-- **Checks:** every write passes the same checks as the file (an https authority, the scheme's form, `openid` in the scopes), and the credential must resolve: a `secretEnv` that is set, a key that parses.
-- **Postgres:** inline secrets and keys need `data_protection.keys` configured, since a per-process key couldn't open them after a restart. Without one, use `secretEnv` or `keyFile`.
+- **Secrets and keys:** `clientAuthentication.secret`, and for `private_key_jwt` an inline `key` (a PKCS#8 PEM, with an optional `certificate` PEM), are stored encrypted with the data protection key ring. Reads never show them: they show `hasSecret` and `hasKey` instead. `secretEnv`, `keyFile` and `certificateFile` are refused through the admin API: the server would read an environment variable or a file on the caller's behalf and send it to a provider the caller chose. They work in `identity_providers_file`.
+- **Updates:** a `PUT` without `secret` (or `key`) keeps the stored one when the method is unchanged. A `PUT` that changes the method must send the new method's secret or key.
+- **Checks:** every write passes the same checks as the file (an https authority, the scheme's form, `openid` in the scopes), and a key must parse.
+- **Postgres:** secrets and keys stored through admin need `data_protection.keys` configured, since a per-process key couldn't open them after a restart. Without one, manage providers in `identity_providers_file`.
 - **Queries** filter by `scheme`, `displayName` and `enabled`, and sort by `scheme`, `displayName` or `enabled`.
 - **Effect:** a new, changed, disabled or deleted provider takes effect at the next sign-in, without a restart.
 

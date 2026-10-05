@@ -430,7 +430,11 @@ async fn build_federation(
         let providers =
             federation::load_providers(path, insecure, &|name| std::env::var(name).ok())
                 .with_context(|| format!("loading {}", path.display()))?;
-        let base = path.parent().unwrap_or(Path::new("."));
+        // Absolute, whatever the working directory: stored providers resolve
+        // their files later, away from it.
+        let absolute =
+            std::path::absolute(path).with_context(|| format!("resolving {}", path.display()))?;
+        let base = absolute.parent().unwrap_or(Path::new("/"));
         let configs: Vec<rustid_core::federation::provider::IdentityProvider> = providers
             .iter()
             .map(|p| {

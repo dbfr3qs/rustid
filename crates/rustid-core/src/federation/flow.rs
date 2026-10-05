@@ -38,7 +38,7 @@ enum Source {
     Store {
         configuration: Arc<dyn crate::stores::ConfigurationStore>,
         protector: Arc<crate::data_protection::DataProtector>,
-        resolved: Mutex<HashMap<String, (i32, Arc<Provider>)>>,
+        resolved: Mutex<HashMap<String, (crate::admin::EntityId, i32, Arc<Provider>)>>,
     },
 }
 
@@ -163,11 +163,14 @@ impl Federation {
     /// resolved (its secret's environment variable has gone, say) is
     /// logged and left out.
     fn resolved(
-        resolved: &Mutex<HashMap<String, (i32, Arc<Provider>)>>,
+        resolved: &Mutex<HashMap<String, (crate::admin::EntityId, i32, Arc<Provider>)>>,
         protector: &crate::data_protection::DataProtector,
         entity: &crate::stores::StoredEntity,
     ) -> Option<Arc<Provider>> {
-        if let Some((version, provider)) = resolved.lock().unwrap().get(&entity.key)
+        // The id too: a provider deleted and created again starts at
+        // version 1 again.
+        if let Some((id, version, provider)) = resolved.lock().unwrap().get(&entity.key)
+            && *id == entity.id
             && *version == entity.version
         {
             return Some(provider.clone());
@@ -177,10 +180,10 @@ impl Federation {
         }) {
             Ok(provider) => {
                 let provider = Arc::new(provider);
-                resolved
-                    .lock()
-                    .unwrap()
-                    .insert(entity.key.clone(), (entity.version, provider.clone()));
+                resolved.lock().unwrap().insert(
+                    entity.key.clone(),
+                    (entity.id, entity.version, provider.clone()),
+                );
                 Some(provider)
             }
             Err(error) => {

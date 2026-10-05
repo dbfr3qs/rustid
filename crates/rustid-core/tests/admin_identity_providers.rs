@@ -169,15 +169,6 @@ async fn validation_and_credentials_are_checked_on_write() {
         admin.create(&store, input(bad)).await.unwrap().unwrap_err()[0].code,
         "validation_failed"
     );
-    let mut env = provider("env");
-    env["clientAuthentication"] = json!({ "secretEnv": "RUSTID_TEST_SURELY_UNSET_VARIABLE" });
-    let errors = admin.create(&store, input(env)).await.unwrap().unwrap_err();
-    assert_eq!(errors[0].code, "validation_failed");
-    assert!(
-        errors[0]
-            .message
-            .contains("RUSTID_TEST_SURELY_UNSET_VARIABLE")
-    );
     let mut garbage = provider("jwt");
     garbage["clientAuthentication"] =
         json!({ "method": "private_key_jwt", "keyId": "k", "key": "not a key" });
@@ -267,10 +258,71 @@ async fn without_a_configured_key_ring_inline_secrets_are_refused() {
         "{}",
         errors[0].message
     );
-    // SAFETY: only this test reads the variable.
-    let name = "RUSTID_TEST_IDP_SECRET_FOR_INLINE_CHECK";
-    unsafe { std::env::set_var(name, "from-env") };
-    let mut env = provider("env");
-    env["clientAuthentication"] = json!({ "secretEnv": name });
-    admin.create(&store, input(env)).await.unwrap().unwrap();
+}
+
+#[tokio::test]
+async fn a_recreated_provider_is_never_served_from_the_old_one() {
+    use rustid_core::federation::Federation;
+    use rustid_core::federation::upstream::NoUpstream;
+    let store: Arc<dyn ConfigurationStore> = Arc::new(InMemoryConfiguration::default());
+    let p = protector(&[("a", [1; 32])]);
+    let admin = IdentityProviderAdmin::new(p.clone());
+    let federation = Federation::from_store(store.clone(), p, Arc::new(NoUpstream), false);
+    let mut old = provider("up");
+    old["authority"] = "https://old.example".into();
+    old["clientAuthentication"]["secret"] = "old".into();
+    let saved = admin
+        .create(store.as_ref(), input(old))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        federation
+            .find("up")
+            .await
+            .unwrap()
+            .unwrap()
+            .config
+            .authority,
+        "https://old.example"
+    );
+    admin
+        .delete(store.as_ref(), &saved.id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(federation.find("up").await.unwrap().is_none());
+    // The same scheme again, at version 1 again.
+    let mut new = provider("up");
+    new["authority"] = "https://new.example".into();
+    new["clientAuthentication"]["secret"] = "new".into();
+    admin
+        .create(store.as_ref(), input(new))
+        .await
+        .unwrap()
+        .unwrap();
+    let found = federation.find("up").await.unwrap().unwrap();
+    assert_eq!(found.config.authority, "https://new.example");
+    assert!(matches!(&found.credential, Credential::Basic(s) if s == "new"));
+}
+
+#[tokio::test]
+async fn the_admin_api_never_reads_environment_variables_or_files() {
+    let store = InMemoryConfiguration::default();
+    let admin = IdentityProviderAdmin::new(protector(&[("a", [1; 32])]));
+    for auth in [
+        json!({ "secretEnv": "PATH" }),
+        json!({ "method": "private_key_jwt", "keyId": "k", "keyFile": "/etc/hostname" }),
+        json!({ "method": "private_key_jwt", "keyId": "k", "key": pem_key(), "certificateFile": "/etc/hostname" }),
+    ] {
+        let mut p = provider("up");
+        p["clientAuthentication"] = auth.clone();
+        let errors = admin.create(&store, input(p)).await.unwrap().unwrap_err();
+        assert_eq!(errors[0].code, "validation_failed", "{auth}");
+        assert!(
+            errors[0].message.contains("identity_providers_file"),
+            "{}",
+            errors[0].message
+        );
+    }
 }

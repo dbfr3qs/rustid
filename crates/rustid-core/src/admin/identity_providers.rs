@@ -184,6 +184,14 @@ impl IdentityProviderAdmin {
     /// The provider rules, then its credential must resolve.
     fn check(&self, config: &IdentityProvider) -> Option<AdminError> {
         let auth = &config.client_authentication;
+        // An environment variable or a file would be read on the admin's
+        // behalf and sent to a provider the admin chose: those forms are
+        // for identity_providers_file only.
+        if auth.secret_env.is_some() || auth.key_file.is_some() || auth.certificate_file.is_some() {
+            return Some(AdminError::validation_failed(
+                "secretEnv, keyFile and certificateFile can only be set in identity_providers_file; give the secret, key or certificate itself.",
+            ));
+        }
         if !self.inline_secrets && (auth.secret.is_some() || auth.key.is_some()) {
             return Some(AdminError::validation_failed(
                 "Storing a secret or key needs data_protection.keys to be configured; use secretEnv or keyFile instead.",

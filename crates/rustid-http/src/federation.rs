@@ -363,11 +363,26 @@ async fn callback_answer(
         Ok(metadata) => metadata,
         Err(failure) => return refusal.failure(state, info, &failure),
     };
+    // RFC 9207: the response's issuer, when there is one or the provider
+    // promises one. A multi-tenant provider names the tenant's issuer,
+    // which must be a listed tenant's, and later the id token's.
     let iss = params.get("iss");
-    if (metadata.authorization_response_iss_parameter_supported || iss.is_some())
-        && iss.as_deref() != Some(provider.config.authority.as_str())
-    {
-        return refusal.answer(state, info, StatusCode::BAD_REQUEST, "issuer_mismatch", iss);
+    let mut response_issuer = None;
+    if metadata.authorization_response_iss_parameter_supported || iss.is_some() {
+        let accepted = match (&provider.config.multi_tenant, iss.as_deref()) {
+            (None, Some(i)) => i == provider.config.authority,
+            (Some(multi), Some(i)) => multi.tenants.iter().any(|t| {
+                metadata
+                    .issuer
+                    .replace(rustid_core::federation::upstream::TENANT_PLACEHOLDER, t)
+                    .eq_ignore_ascii_case(i)
+            }),
+            (_, None) => false,
+        };
+        if !accepted {
+            return refusal.answer(state, info, StatusCode::BAD_REQUEST, "issuer_mismatch", iss);
+        }
+        response_issuer = iss;
     }
     let local = local_return_url(route, &correlation.return_url).to_owned();
     if let Some(error) = params.get("error") {
@@ -414,6 +429,20 @@ async fn callback_answer(
         Ok(token) => token,
         Err(failure) => return refusal.failure(state, info, &failure),
     };
+    if let Some(i) = &response_issuer
+        && !token.issuer.eq_ignore_ascii_case(i)
+    {
+        return refusal.answer(
+            state,
+            info,
+            StatusCode::BAD_REQUEST,
+            "issuer_mismatch",
+            Some(format!(
+                "the response named {i}, the id token {}",
+                token.issuer
+            )),
+        );
+    }
     // With a max_age sent, the provider's auth_time is required (OIDC Core
     // 3.1.2.1) and must be recent enough.
     if let Some(max_age) = correlation.max_age {

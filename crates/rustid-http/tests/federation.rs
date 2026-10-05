@@ -882,3 +882,57 @@ async fn tenant_not_allowed_is_502() {
     let failure = &f.events.named("User Login Failure")[0];
     assert_eq!(failure["Reason"], "tenant_not_allowed");
 }
+
+#[tokio::test]
+async fn multi_tenant_callbacks_accept_a_tenant_issuer_that_matches_the_token() {
+    const OTHER: &str = "22222222-2222-2222-2222-222222222222";
+    let f = federated_custom(
+        Default::default(),
+        |p| {
+            entra(p);
+            p.multi_tenant.as_mut().unwrap().tenants.push(OTHER.into());
+        },
+        false,
+    );
+    tenant(&f, TENANT);
+    f.fake
+        .edit(|s| s.discovery["authorization_response_iss_parameter_supported"] = true.into());
+    let mut b = Browser::new(&f.app);
+    let with_iss = |upstream: &str, iss: &str| {
+        format!(
+            "/federation/up/callback?code=c1&state={}&iss={}",
+            encode(&query(upstream, "state").unwrap()),
+            encode(iss)
+        )
+    };
+    let tenant_issuer = |t: &str| format!("https://up.example/{t}/v2.0");
+
+    // The token's tenant's issuer: signed in.
+    let (_, upstream) = start(&mut b).await;
+    f.fake.expect_nonce(&query(&upstream, "nonce").unwrap());
+    let reply = b.get(&with_iss(&upstream, &tenant_issuer(TENANT))).await;
+    assert_eq!(reply.status, StatusCode::FOUND, "{}", reply.body);
+
+    // A tenant that isn't listed: refused before the code is redeemed.
+    let (_, upstream) = start(&mut b).await;
+    let reply = b
+        .get(&with_iss(
+            &upstream,
+            &tenant_issuer("33333333-3333-3333-3333-333333333333"),
+        ))
+        .await;
+    assert_eq!(reply.status, StatusCode::BAD_REQUEST);
+
+    // Another listed tenant than the token's: refused once the token says so.
+    let (_, upstream) = start(&mut b).await;
+    f.fake.expect_nonce(&query(&upstream, "nonce").unwrap());
+    let reply = b.get(&with_iss(&upstream, &tenant_issuer(OTHER))).await;
+    assert_eq!(reply.status, StatusCode::BAD_REQUEST);
+    let reasons: Vec<serde_json::Value> = f
+        .events
+        .named("User Login Failure")
+        .iter()
+        .map(|e| e["Reason"].clone())
+        .collect();
+    assert_eq!(reasons, ["issuer_mismatch", "issuer_mismatch"]);
+}

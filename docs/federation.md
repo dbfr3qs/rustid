@@ -37,7 +37,7 @@ identity_providers_file = "identity-providers.json"
 | `scheme` | The provider's identifier: lowercase letters, digits, `_` and `-`, at most 64 characters, and not `local`. It appears in the provider's URLs, in `acr_values=idp:<scheme>`, in a client's `identityProviderRestrictions`, and as the session's `idp` |
 | `displayName` | The name on sign-in buttons |
 | `enabled` | `true` by default. A disabled provider is never offered, and its callbacks are refused |
-| `authority` | The provider's issuer. rustid reads `<authority>/.well-known/openid-configuration`, and the document's `issuer` must equal `authority` exactly. It must be `https` |
+| `authority` | The provider's issuer. rustid reads `<authority>/.well-known/openid-configuration`, and the document's `issuer` must equal `authority` exactly (with `multiTenant`, the authority with one path segment replaced by `{tenantid}`). It must be `https` |
 | `clientId` | rustid's client id at the provider |
 | `clientAuthentication` | How rustid authenticates to the provider's token endpoint. See below |
 | `scopes` | `["openid", "profile", "email"]` by default. Must contain `openid` |
@@ -103,11 +103,15 @@ The list is required, and there is no wildcard: "any tenant" would let anyone wi
 
 The subject is derived from the per-tenant issuer, so the same user id in two tenants gives two subjects.
 
+The tenant that counts is the one that issued the token: for the `organizations` endpoint, the user's home tenant. A guest invited into a listed tenant from an unlisted one is refused, unless their home tenant is listed too.
+
+When the provider sends `iss` in the authorization response (RFC 9207), it must be a listed tenant's issuer, and the id token's issuer must match it.
+
 ## Who can sign in
 
 rustid accepts every user the provider authenticates. A single-tenant provider (an Entra ID tenant, your Okta or Keycloak realm) only authenticates your organisation's users. A public or multi-tenant endpoint, such as Google's, authenticates anyone with an account there.
 
-To restrict users, copy the claim that identifies the organisation into the session (`claims`, for example `hd` or `tid`), and refuse other values in a `subject_active` hook ([hooks.md](hooks.md)). Also limit each client to the providers it should use with `identityProviderRestrictions`.
+To restrict users to an organisation behind a multi-tenant endpoint, use `multiTenant` with the tenants you accept (Entra ID), or copy the claim that names the organisation into the session (`claims`, for example Google's `hd`) and refuse other values in a `subject_active` hook ([hooks.md](hooks.md)). Also limit each client to the providers it should use with `identityProviderRestrictions`.
 
 ## Signing in
 

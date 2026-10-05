@@ -29,6 +29,10 @@ struct Cached {
     refetches: Vec<i64>,
 }
 
+/// Stored providers resolved, by scheme: the entity id and version they
+/// were resolved at.
+type Resolved = Mutex<HashMap<String, (crate::admin::EntityId, i32, Arc<Provider>)>>;
+
 /// Where federation's providers come from.
 enum Source {
     /// A fixed set.
@@ -38,7 +42,7 @@ enum Source {
     Store {
         configuration: Arc<dyn crate::stores::ConfigurationStore>,
         protector: Arc<crate::data_protection::DataProtector>,
-        resolved: Mutex<HashMap<String, (crate::admin::EntityId, i32, Arc<Provider>)>>,
+        resolved: Resolved,
     },
 }
 
@@ -163,7 +167,7 @@ impl Federation {
     /// resolved (its secret's environment variable has gone, say) is
     /// logged and left out.
     fn resolved(
-        resolved: &Mutex<HashMap<String, (crate::admin::EntityId, i32, Arc<Provider>)>>,
+        resolved: &Resolved,
         protector: &crate::data_protection::DataProtector,
         entity: &crate::stores::StoredEntity,
     ) -> Option<Arc<Provider>> {

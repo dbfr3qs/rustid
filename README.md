@@ -5,6 +5,7 @@ An OpenID Connect and OAuth 2.0 server, and a SAML 2.0 identity provider, writte
 ## Features
 
 - **OpenID Connect and OAuth 2.0:** the authorization code flow with PKCE, implicit and hybrid flows, client credentials, refresh tokens, the device flow, CIBA (poll), the password and extension grants (through hooks), introspection and revocation, userinfo, discovery and JWKS.
+- **Upstream federation:** sign users in through other OpenID Connect providers (Entra ID, Okta, Keycloak, Google Workspace), with the provider's identity checked as OpenID Connect Core requires.
 - **Sessions and logout:** server-side sessions, RP-initiated, front-channel and back-channel logout, and session management.
 - **Advanced security:** pushed authorization requests (PAR), JWT-secured authorization requests (JAR, by value and by reference), JWT-secured authorization responses (JARM), DPoP, mTLS client authentication and certificate-bound tokens, resource indicators, and FAPI 2.0.
 - **SAML 2.0 IdP:** SP- and IdP-initiated SSO, single logout, signed metadata.
@@ -13,20 +14,20 @@ An OpenID Connect and OAuth 2.0 server, and a SAML 2.0 identity provider, writte
 
 The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included ([docs/conformance.md](docs/conformance.md)).
 
-**Not supported:** upstream federation (signing in through external identity providers), dynamic identity providers, and SAML assertion encryption.
+**Not supported:** identity providers managed through the admin API, signing out of upstream providers, and SAML assertion encryption.
 
 ## Quick start
 
 With Docker (x86_64 or arm64):
 
-    docker run --rm -p 8080:8080 -e RUSTID_PROTOCOL__ISSUER_URI=http://localhost:8080 ghcr.io/dbfr3qs/rustid:0.1.2
+    docker run --rm -p 8080:8080 -e RUSTID_PROTOCOL__ISSUER_URI=http://localhost:8080 ghcr.io/dbfr3qs/rustid:0.2.0
     curl http://localhost:8080/.well-known/openid-configuration
 
 Or download the binary for your architecture (`x86_64` or `aarch64`, static, any Linux) from the [releases page](https://github.com/dbfr3qs/rustid/releases), with `SHA256SUMS`:
 
     sha256sum -c SHA256SUMS --ignore-missing
-    tar xzf rustid-server-0.1.2-x86_64-unknown-linux-musl.tar.gz
-    rustid-server-0.1.2-x86_64-unknown-linux-musl/rustid-server --version
+    tar xzf rustid-server-0.2.0-x86_64-unknown-linux-musl.tar.gz
+    rustid-server-0.2.0-x86_64-unknown-linux-musl/rustid-server --version
 
 Either way it starts on the memory store with no clients. [docs/operations.md](docs/operations.md) covers configuration, clients, stores and TLS; [examples/rustid.toml](examples/rustid.toml) lists every setting.
 
@@ -34,9 +35,10 @@ Either way it starts on the memory store with no clients. [docs/operations.md](d
 
     scripts/demo.sh
 
-This builds and starts two things:
+This builds and starts three things:
 
 - **rustid-server** on `https://localhost:5443`, with the interactive reference UI (a sign-in form backed by `fixtures/users.json`).
+- **A second rustid-server** on `https://127.0.0.1:5444`: an upstream identity provider the first signs users in through.
 - **A demo client** on `http://localhost:5002`: a small web app that signs in with the authorization code flow, PKCE and a pushed authorization request (PAR), verifies the id token against the server's JWKS, calls userinfo, and shows the claims it received.
 
 Open http://localhost:5002, click **Sign in**, and use `alice` / `alice` or `bob` / `bob`.
@@ -50,6 +52,7 @@ Then try:
 - **Refresh tokens:** grant *Offline access* on the consent page and the client gets a refresh token, which **Refresh tokens** redeems for new ones.
 - **Sign out:** this ends both sessions. The client sends you to the server's end session endpoint with its id token as the hint. Sign out at the server itself (https://localhost:5443/connect/endsession) and the demo client is signed out too, through the front-channel logout iframe.
 - **Sessions:** sessions are kept server side. **Your sessions at the server** (https://localhost:5443/sessions) lists where you are signed in. Sign in from a second browser and end that session from the first: the second is signed out, and its refresh tokens are revoked.
+- **Federation:** on the sign-in page, *Sign in with Upstream IdP* signs in through a second rustid on https://127.0.0.1:5444 as `carol` / `carol` or `dave` / `dave`.
 - **SAML:** the demo client is also a SAML service provider. Open http://localhost:5002/saml for **Sign in with SAML** (a signed AuthnRequest, the response's signatures checked against the server's metadata at https://localhost:5443/Saml2) and **Log out (SAML SLO)**. Your browser may warn that the identity provider posts to an `http://` page; continue.
 - **Other grants:**
   - `cargo run -p rustid-demo -- device` runs the device flow, approved at https://localhost:5443/device;
@@ -64,6 +67,7 @@ Then try:
 | [docs/operations.md](docs/operations.md) | Running it: the CLI, the container, TLS and proxies, stores, keys and data protection, jobs, telemetry, health |
 | [examples/rustid.toml](examples/rustid.toml) | The configuration reference: every setting, with its default (checked in CI) |
 | [docs/interaction-api.md](docs/interaction-api.md) | What a login, consent and logout UI calls |
+| [docs/federation.md](docs/federation.md) | Signing in through upstream OpenID Connect providers |
 | [docs/hooks.md](docs/hooks.md) | The hooks your services answer: profile claims, grants, CIBA |
 | [docs/admin-api.md](docs/admin-api.md) | The admin API: clients, resources, SAML service providers, schemas |
 | [docs/dynamic-client-registration.md](docs/dynamic-client-registration.md) | Clients registering themselves (RFC 7591), and RFC 7592 read and delete |

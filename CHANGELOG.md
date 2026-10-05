@@ -7,6 +7,19 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-05
+
+### Added
+
+- Upstream federation: users sign in through other OpenID Connect providers configured in `identity_providers_file` (docs/federation.md). rustid runs the authorization code flow with PKCE, validates the id token as OpenID Connect Core §3.1.3.7 requires, and derives the local subject from the provider's issuer and subject. Sign-in starts from a login page button (`identityProviders` in the login context), from `acr_values=idp:<scheme>`, or straight away for a client with one provider and no local login. Client authentication to providers is `client_secret_basic`, `client_secret_post` or `private_key_jwt`, and a provider can also be asked for userinfo.
+- `User Login Success` and `User Login Failure` events for upstream sign-ins.
+- The demo signs in through a second rustid as an upstream provider.
+- The OpenID Foundation relying-party test plan runs against the federation (`scripts/conformance.sh rp`).
+
+### Changed
+
+- With `reference_ui.users_profile_service`, subjects that aren't in the users file are answered from their session's claims and count as active, so users signed in another way stay signed in.
+
 ## [0.1.2] - 2026-10-05
 
 ### Changed
@@ -35,7 +48,8 @@ The first release.
 - Static Linux binaries (x86_64 and aarch64, musl) and a multi-arch container image on `ghcr.io/dbfr3qs/rustid`.
 - The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included.
 
-[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/dbfr3qs/rustid/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/dbfr3qs/rustid/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/dbfr3qs/rustid/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/dbfr3qs/rustid/releases/tag/v0.1.0

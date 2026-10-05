@@ -48,6 +48,8 @@ struct FakeState {
     token_body: Value,
     gets: Vec<String>,
     posts: Vec<FormPost>,
+    userinfo: Value,
+    bearer: Vec<String>,
 }
 
 struct Fake(Mutex<FakeState>);
@@ -61,6 +63,8 @@ impl Fake {
             token_body: json!({}),
             gets: Vec::new(),
             posts: Vec::new(),
+            userinfo: json!({ "sub": "upstream-user", "email": "ada@userinfo.example", "iss": "ignored" }),
+            bearer: Vec::new(),
         })))
     }
     fn gets(&self, url: &str) -> usize {
@@ -89,6 +93,12 @@ impl UpstreamClient for Fake {
         let mut s = self.0.lock().unwrap();
         s.posts.push(post.clone());
         Ok((s.token_status, s.token_body.clone()))
+    }
+    async fn get_userinfo(&self, url: &str, access_token: &str) -> Result<Value, UpstreamError> {
+        let mut s = self.0.lock().unwrap();
+        assert_eq!(url, "https://up.example/userinfo");
+        s.bearer.push(access_token.to_owned());
+        Ok(s.userinfo.clone())
     }
 }
 
@@ -560,4 +570,71 @@ fn correlation_round_trip_and_authorization_url() {
     ] {
         assert!(url.contains(&part), "{url} lacks {part}");
     }
+}
+
+fn userinfo_federation(fake: Arc<Fake>) -> Federation {
+    let mut p = provider(Credential::Basic("s".into()));
+    p.config.userinfo = true;
+    Federation::new(Providers::new(vec![p]).unwrap(), fake, false)
+}
+
+#[tokio::test]
+async fn userinfo_is_called_only_when_enabled_and_its_sub_must_match() {
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    fake.0.lock().unwrap().discovery["userinfo_endpoint"] = "https://up.example/userinfo".into();
+    let c = Correlation::new("up", "/return", NOW);
+    fake.0.lock().unwrap().token_body =
+        json!({ "id_token": token(&k, &baseline(&c.nonce)), "access_token": "at1" });
+
+    // Off by default: no userinfo call.
+    let fed = federation(fake.clone());
+    let p = fed.providers.find("up").unwrap();
+    let t = fed
+        .redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap();
+    assert!(fake.0.lock().unwrap().bearer.is_empty());
+    assert!(t.payload.get("email").is_none());
+
+    // On: called with the access token; its claims join the token's, and
+    // its protocol claims never replace the token's.
+    let fed = userinfo_federation(fake.clone());
+    let p = fed.providers.find("up").unwrap();
+    let t = fed
+        .redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap();
+    assert_eq!(fake.0.lock().unwrap().bearer, ["at1"]);
+    assert_eq!(t.payload["email"], "ada@userinfo.example");
+    assert_eq!(t.payload["iss"], AUTHORITY);
+
+    // A different sub is refused (OIDC Core 5.3.4).
+    fake.0.lock().unwrap().userinfo["sub"] = "someone-else".into();
+    let failure = fed
+        .redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap_err();
+    assert_eq!(failure.reason(), "userinfo_failed");
+    assert!(failure.detail().contains("sub"), "{}", failure.detail());
+
+    // No access token, or no userinfo endpoint: refused.
+    fake.0.lock().unwrap().userinfo["sub"] = "upstream-user".into();
+    fake.0.lock().unwrap().token_body = json!({ "id_token": token(&k, &baseline(&c.nonce)) });
+    assert_eq!(
+        fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+            .await
+            .unwrap_err()
+            .reason(),
+        "userinfo_failed"
+    );
+}
+
+#[test]
+fn metadata_userinfo_endpoint_must_be_https() {
+    let mut m = metadata();
+    m.userinfo_endpoint = Some("http://up.example/userinfo".into());
+    assert!(m.check(AUTHORITY, false).is_err());
+    m.userinfo_endpoint = Some("https://up.example/userinfo".into());
+    m.check(AUTHORITY, false).unwrap();
 }

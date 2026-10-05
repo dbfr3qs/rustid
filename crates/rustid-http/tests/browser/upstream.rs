@@ -103,6 +103,10 @@ impl UpstreamClient for FakeUpstream {
         );
         Ok((s.token_status, body))
     }
+
+    async fn get_userinfo(&self, _: &str, _: &str) -> Result<Value, UpstreamError> {
+        Err(UpstreamError("the fake has no userinfo endpoint".into()))
+    }
 }
 
 /// Records every event raised.

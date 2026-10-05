@@ -57,6 +57,7 @@ pub enum Failure {
     MetadataUnavailable(String),
     TokenRequestFailed(String),
     IdTokenInvalid(IdTokenCheck),
+    UserinfoFailed(String),
 }
 
 impl Failure {
@@ -66,13 +67,16 @@ impl Failure {
             Failure::MetadataUnavailable(_) => "metadata_unavailable",
             Failure::TokenRequestFailed(_) => "token_request_failed",
             Failure::IdTokenInvalid(_) => "id_token_invalid",
+            Failure::UserinfoFailed(_) => "userinfo_failed",
         }
     }
 
     /// What went wrong, for events and logs (never for the browser).
     pub fn detail(&self) -> String {
         match self {
-            Failure::MetadataUnavailable(d) | Failure::TokenRequestFailed(d) => d.clone(),
+            Failure::MetadataUnavailable(d)
+            | Failure::TokenRequestFailed(d)
+            | Failure::UserinfoFailed(d) => d.clone(),
             Failure::IdTokenInvalid(check) => {
                 format!("the id token failed the {} check", check.as_str())
             }
@@ -233,7 +237,7 @@ impl Federation {
             Some(keys) => keys,
             None => self.fetch_keys(provider, &metadata, now).await?,
         };
-        match validate(id_token, &keys, &expect) {
+        let token = match validate(id_token, &keys, &expect) {
             Err(IdTokenCheck::UnknownKey) => {
                 let fetched_at = self
                     .cached(provider)
@@ -243,9 +247,55 @@ impl Federation {
                     return Err(Failure::IdTokenInvalid(IdTokenCheck::UnknownKey));
                 }
                 let keys = self.fetch_keys(provider, &metadata, now).await?;
-                validate(id_token, &keys, &expect).map_err(Failure::IdTokenInvalid)
+                validate(id_token, &keys, &expect).map_err(Failure::IdTokenInvalid)?
             }
-            other => other.map_err(Failure::IdTokenInvalid),
+            other => other.map_err(Failure::IdTokenInvalid)?,
+        };
+        if !provider.config.userinfo {
+            return Ok(token);
         }
+        let access_token = body.get("access_token").and_then(Value::as_str);
+        self.with_userinfo(provider, &metadata, access_token, token)
+            .await
+    }
+
+    /// The token with the userinfo response's claims added: its `sub` must
+    /// be the token's (OIDC Core §5.3.4), and protocol claims are ignored.
+    async fn with_userinfo(
+        &self,
+        provider: &Provider,
+        metadata: &Metadata,
+        access_token: Option<&str>,
+        mut token: ValidatedIdToken,
+    ) -> Result<ValidatedIdToken, Failure> {
+        let endpoint = metadata.userinfo_endpoint.as_deref().ok_or_else(|| {
+            Failure::UserinfoFailed("the provider advertises no userinfo_endpoint".into())
+        })?;
+        let access_token = access_token.ok_or_else(|| {
+            Failure::UserinfoFailed("the token response has no access_token".into())
+        })?;
+        let span = tracing::info_span!("federation.userinfo", scheme = %provider.config.scheme);
+        let response = self
+            .upstream
+            .get_userinfo(endpoint, access_token)
+            .instrument(span)
+            .await
+            .map_err(|e| Failure::UserinfoFailed(e.0))?;
+        let Value::Object(claims) = response else {
+            return Err(Failure::UserinfoFailed(
+                "the userinfo response isn't a JSON object".into(),
+            ));
+        };
+        if claims.get("sub").and_then(Value::as_str) != Some(token.subject.as_str()) {
+            return Err(Failure::UserinfoFailed(
+                "the userinfo response's sub isn't the id token's".into(),
+            ));
+        }
+        for (name, value) in claims {
+            if !super::session::PROTOCOL_CLAIMS.contains(&name.as_str()) {
+                token.payload.insert(name, value);
+            }
+        }
+        Ok(token)
     }
 }

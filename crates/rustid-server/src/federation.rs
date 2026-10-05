@@ -150,6 +150,21 @@ impl UpstreamClient for HttpUpstreamClient {
         serde_json::from_slice(&body).map_err(|e| UpstreamError(format!("{url}: {e}")))
     }
 
+    async fn get_userinfo(&self, url: &str, access_token: &str) -> Result<Value, UpstreamError> {
+        let response = self
+            .client
+            .get(url)
+            .bearer_auth(access_token)
+            .send()
+            .await
+            .map_err(error)?;
+        let (status, body) = read(response).await?;
+        if !(200..300).contains(&status) {
+            return Err(UpstreamError(format!("{url} answered {status}")));
+        }
+        serde_json::from_slice(&body).map_err(|e| UpstreamError(format!("{url}: {e}")))
+    }
+
     async fn post_form(&self, post: &FormPost) -> Result<(u16, Value), UpstreamError> {
         let mut request = self.client.post(&post.url).form(&post.form);
         if let Some((id, secret)) = &post.basic {

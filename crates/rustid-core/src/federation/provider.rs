@@ -33,6 +33,10 @@ pub struct IdentityProvider {
     /// The id token claims copied into the session.
     #[serde(default = "default_claims")]
     pub claims: Vec<String>,
+    /// Also call the provider's userinfo endpoint with the access token;
+    /// its claims join the id token's (OIDC Core §5.3).
+    #[serde(default)]
+    pub userinfo: bool,
 }
 
 fn enabled_default() -> bool {

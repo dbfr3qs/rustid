@@ -135,6 +135,15 @@ async fn host() -> String {
             axum::routing::get(|| async { "x".repeat(2 * 1024 * 1024) }),
         )
         .route(
+            "/userinfo",
+            axum::routing::get(|headers: HeaderMap| async move {
+                let auth = headers
+                    .get("authorization")
+                    .map(|v| v.to_str().unwrap().to_owned());
+                axum::Json(json!({ "sub": "u", "auth": auth }))
+            }),
+        )
+        .route(
             "/token",
             axum::routing::post(|headers: HeaderMap, body: String| async move {
                 let auth = headers
@@ -182,6 +191,17 @@ async fn the_http_client_reads_json_refuses_redirects_and_encodes_basic_credenti
     let expected = base64::engine::general_purpose::STANDARD.encode("abc:a+b%3Ac");
     assert_eq!(body["auth"], format!("Basic {expected}"));
     assert_eq!(body["body"], "code=a+b");
+    let userinfo = client
+        .get_userinfo(&format!("{base}/userinfo"), "at1")
+        .await
+        .unwrap();
+    assert_eq!(userinfo["auth"], "Bearer at1");
+    assert!(
+        client
+            .get_userinfo(&format!("{base}/missing"), "at1")
+            .await
+            .is_err()
+    );
 }
 
 /// A server on `listener` with `config` (paths relative to `dir`).

@@ -29,6 +29,9 @@ pub trait UpstreamClient: Send + Sync {
     /// POSTs a form; the status and the JSON body (an error when the body
     /// isn't JSON).
     async fn post_form(&self, post: &FormPost) -> Result<(u16, Value), UpstreamError>;
+    /// GETs a userinfo response with the access token as a bearer token;
+    /// non-2xx answers are errors.
+    async fn get_userinfo(&self, url: &str, access_token: &str) -> Result<Value, UpstreamError>;
 }
 
 /// Reaches nothing: every call fails.
@@ -40,6 +43,9 @@ impl UpstreamClient for NoUpstream {
         Err(UpstreamError("no upstream client".into()))
     }
     async fn post_form(&self, _: &FormPost) -> Result<(u16, Value), UpstreamError> {
+        Err(UpstreamError("no upstream client".into()))
+    }
+    async fn get_userinfo(&self, _: &str, _: &str) -> Result<Value, UpstreamError> {
         Err(UpstreamError("no upstream client".into()))
     }
 }
@@ -57,6 +63,8 @@ pub struct Metadata {
     pub authorization_response_iss_parameter_supported: bool,
     #[serde(default)]
     pub end_session_endpoint: Option<String>,
+    #[serde(default)]
+    pub userinfo_endpoint: Option<String>,
 }
 
 /// The algorithms an id token may be signed with.
@@ -74,11 +82,16 @@ impl Metadata {
                 self.issuer
             ));
         }
+        let userinfo = self.userinfo_endpoint.as_ref();
         for (name, url) in [
-            ("authorization_endpoint", &self.authorization_endpoint),
-            ("token_endpoint", &self.token_endpoint),
-            ("jwks_uri", &self.jwks_uri),
-        ] {
+            ("authorization_endpoint", Some(&self.authorization_endpoint)),
+            ("token_endpoint", Some(&self.token_endpoint)),
+            ("jwks_uri", Some(&self.jwks_uri)),
+            ("userinfo_endpoint", userinfo),
+        ]
+        .into_iter()
+        .filter_map(|(name, url)| url.map(|u| (name, u)))
+        {
             if !is_allowed_url(url, allow_insecure_loopback) {
                 return Err(format!("the discovery {name} {url:?} must be https"));
             }

@@ -24,7 +24,7 @@ resources_file = "../fixtures/resources.json"
 # password_grant = false
 # extension_grants = []
 
-# Server-side sessions (AddServerSideSessions): the session lives in the
+# Server-side sessions: the session lives in the
 # store and the cookie holds its key. Its options are in the
 # protocol.server_side_sessions section.
 # [server_side_sessions]

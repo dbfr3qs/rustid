@@ -26,7 +26,7 @@ pub struct ServerConfig {
     pub tls: Option<TlsConfig>,
     #[serde(default)]
     pub log: LogConfig,
-    /// Server-side sessions (`AddServerSideSessions`): the session lives in
+    /// Server-side sessions: the session lives in
     /// the store and the cookie holds its key. Options are in
     /// `protocol.server_side_sessions`.
     #[serde(default)]
@@ -58,7 +58,7 @@ pub struct ServerConfig {
     /// `protocol.mutual_tls`.
     #[serde(default)]
     pub mutual_tls: MutualTlsConfig,
-    /// Optional path prefix, like `UsePathBase`: requests may
+    /// Optional path prefix: requests may
     /// arrive with or without it. Must start with `/` and not end with `/`.
     #[serde(default)]
     pub path_base: Option<String>,
@@ -374,11 +374,9 @@ pub struct StoreConfig {
     pub kind: StoreKind,
     /// Required when `kind` is `postgres`; not allowed otherwise.
     pub postgres: Option<PostgresConfig>,
-    /// The storage purge also removes consumed grants (EF's
-    /// `RemoveConsumedTokens`).
+    /// The storage purge also removes consumed grants.
     pub remove_consumed_grants: bool,
-    /// Seconds a consumed grant is kept before the purge may remove it
-    /// (`ConsumedTokenCleanupDelay`).
+    /// Seconds a consumed grant is kept before the purge may remove it.
     pub consumed_grant_cleanup_delay: i64,
 }
 

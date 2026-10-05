@@ -28,8 +28,7 @@ pub struct UserSession {
     pub claims: Vec<Claim>,
     /// Clients that received a response in this session, for logout.
     pub client_ids: Vec<String>,
-    /// SAML service providers that received an assertion in this session
-    ///, for single logout.
+    /// SAML service providers that received an assertion in this session, for single logout.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub saml_sessions: Vec<SamlSpSession>,
     pub issued: DateTime<Utc>,

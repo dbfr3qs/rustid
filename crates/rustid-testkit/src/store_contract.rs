@@ -875,8 +875,7 @@ pub async fn configuration_store(
     );
 }
 
-/// API scope and identity resource admin (`ApiScopeAdminTests`,
-/// `IdentityResourceAdminTests`) over a configuration store. Names carry a
+/// API scope and identity resource admin over a configuration store. Names carry a
 /// fresh prefix, so the run can share the store with fixture data.
 pub async fn resource_admin(
     store: Arc<dyn rustid_core::stores::ConfigurationStore>,
@@ -1084,7 +1083,7 @@ pub async fn resource_names_span_both_kinds(
     assert_eq!(rename[0].code, "already_exists");
 }
 
-/// API resource admin (`ApiResourceAdminTests`) over a configuration store.
+/// API resource admin over a configuration store.
 /// Expects the fixture resources (the `api` resource and its secret).
 pub async fn api_resource_admin(store: Arc<dyn rustid_core::stores::ConfigurationStore>) {
     use rustid_core::admin::EntityId;
@@ -1454,7 +1453,7 @@ pub async fn client_configuration(
     assert_eq!(fixture_client.data["clientId"], "client");
 }
 
-/// `ClientAdminTests`: clients with their secrets, through the admin
+/// Clients with their secrets, through the admin
 /// service.
 pub async fn client_admin(store: Arc<dyn rustid_core::stores::ConfigurationStore>) {
     use rustid_core::admin::EntityId;
@@ -2425,7 +2424,7 @@ pub async fn extended_properties(
     }
 }
 
-/// `PersistedGrantStoreTests`: criteria AND together, while a single value
+/// Criteria AND together, while a single value
 /// and a list of the same criterion (`ClientId`/`ClientIds`,
 /// `Type`/`Types`) merge into one set.
 pub async fn persisted_grant_filters(store: Arc<dyn PersistedGrantStore>) {
@@ -2561,7 +2560,7 @@ pub async fn persisted_grant_filters(store: Arc<dyn PersistedGrantStore>) {
         .unwrap();
 }
 
-/// `ResourceStoreTests`: the resource lookups, by name and by scope,
+/// The resource lookups, by name and by scope,
 /// none of which filter on enabled. Expects the fixture resources.
 pub async fn resource_store_lookups(store: &dyn ResourceStore) {
     let fixtures = Resources::load(&fixture("resources.json")).unwrap();
@@ -2667,7 +2666,7 @@ pub async fn resource_store_lookups(store: &dyn ResourceStore) {
     assert!(found.iter().any(|a| a.name == disabled.name && !a.enabled));
 }
 
-/// `PushedAuthorizationStoreTests`: pushed requests live in the grant
+/// Pushed requests live in the grant
 /// store under their reference's hash, are read back with their expiry, and
 /// are consumed once; requests are independent.
 pub async fn pushed_requests(grants: Arc<dyn PersistedGrantStore>) {
@@ -2707,7 +2706,7 @@ pub async fn pushed_requests(grants: Arc<dyn PersistedGrantStore>) {
     consume(grants, &reference(2)).await.unwrap();
 }
 
-/// `ServerSideSessionStoreTests`: paging back and forth, malformed tokens,
+/// Paging back and forth, malformed tokens,
 /// empty and unfiltered queries, and expiry changes as the expired-session
 /// sweep sees them.
 pub async fn server_side_session_queries(
@@ -2887,7 +2886,7 @@ fn saml_state(
     }
 }
 
-/// `SamlSigninStateStoreTests` and `SamlSigninStateStoreContractTests`.
+/// The SAML sign-in state store contract.
 pub async fn saml_signin_state_store(store: Arc<dyn rustid_saml::stores::SigninStateStore>) {
     use rustid_core::admin::EntityId;
     let t0 = Utc.timestamp_opt(1_700_000_000, 0).unwrap();
@@ -3085,7 +3084,7 @@ fn logout_session(
     }
 }
 
-/// `SamlLogoutSessionStoreTests` and `SamlLogoutSessionStoreContractTests`.
+/// The SAML logout session store contract.
 pub async fn saml_logout_session_store(store: Arc<dyn rustid_saml::stores::LogoutSessionStore>) {
     let p = format!("ls{}-", Utc::now().timestamp_nanos_opt().unwrap());
     let id = |s: &str| format!("{p}{s}");
@@ -3242,7 +3241,7 @@ pub async fn saml_logout_session_store(store: Arc<dyn rustid_saml::stores::Logou
     store.remove(&id("live")).await.unwrap();
 }
 
-/// `SamlServiceProviderStoreContractTests`: by entity id (enabled only,
+/// By entity id (enabled only,
 /// exact) and all. Expects the fixture service providers.
 pub async fn saml_service_provider_store(store: &dyn rustid_saml::stores::ServiceProviderStore) {
     let fixtures =
@@ -3376,8 +3375,7 @@ pub async fn saml_configuration_reaches_runtime(
     );
 }
 
-/// `SamlServiceProviderAdminTests`, `SamlServiceProviderExtendedPropertiesTests`
-/// and `SamlServiceProviderStoreTests`: the admin's rules over this
+/// SAML service provider admin: the admin's rules over this
 /// configuration, and its writes as `runtime` serves them.
 pub async fn saml_service_provider_admin(
     store: Arc<dyn rustid_core::stores::ConfigurationStore>,
@@ -3526,7 +3524,7 @@ pub async fn saml_service_provider_admin(
             .is_none()
     );
 
-    // SamlServiceProviderStoreTests: create via admin, then find in the runtime.
+    // Created via the admin, then found in the runtime store.
     let sp = runtime.find_by_entity_id(&full_id).await.unwrap().unwrap();
     assert_eq!(sp.display_name.as_deref(), Some("Test SP"));
     assert_eq!(sp.clock_skew, Some(rustid_core::options::TimeSpan(300)));
@@ -3965,7 +3963,7 @@ pub async fn saml_service_provider_admin(
     );
     saved(admin.delete(store_ref, &m.id).await);
 
-    // SamlServiceProviderExtendedPropertiesTests.
+    // Extended properties.
     let props = |v: Value| {
         with(
             minimal(&entity(&format!("ep{}", EntityId::new_v7()))),
@@ -4069,7 +4067,7 @@ pub async fn saml_service_provider_admin(
     );
 }
 
-/// `ConnectedApplicationStoreTests`: clients and SAML service providers
+/// Clients and SAML service providers
 /// created by admin, by identifier (the client first) and all together
 /// (clients first).
 pub async fn connected_application_store(store: Arc<dyn rustid_core::stores::ConfigurationStore>) {

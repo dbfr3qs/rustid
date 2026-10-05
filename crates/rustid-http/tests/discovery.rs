@@ -297,7 +297,7 @@ async fn oauth_metadata_with_trailing_slash_is_404_like_remove_trailing_slash() 
 }
 
 #[tokio::test]
-async fn syntactically_invalid_host_header_is_400_like_kestrel() {
+async fn syntactically_invalid_host_header_is_400() {
     for host in [
         "a b",
         "a\"b",
@@ -345,7 +345,7 @@ async fn paths_are_percent_decoded_before_matching_except_encoded_slash() {
         get(s(), "/.well-known/openid%2Dconfiguration").await.status,
         StatusCode::OK
     );
-    // Kestrel leaves %2F encoded, so it never becomes a path separator.
+    // %2F stays encoded, so it never becomes a path separator.
     assert_eq!(
         get(s(), "/.well-known%2Fopenid-configuration").await.status,
         StatusCode::NOT_FOUND

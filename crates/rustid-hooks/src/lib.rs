@@ -379,8 +379,8 @@ impl ProfileService for Hooks {
                 };
             }
         };
-        // No claims (absent or null) means none, treating a null
-        // `IssuedClaims`; anything else must be a list of claims.
+        // No claims (absent or null) means none; anything else must be a
+        // list of claims.
         let parsed: Result<Vec<HookClaim>, _> = match answer.get("claims") {
             None | Some(Value::Null) => Ok(Vec::new()),
             Some(claims) => serde_json::from_value(claims.clone()),
@@ -403,7 +403,7 @@ impl ProfileService for Hooks {
                 };
             }
         };
-        // `AddRequestedClaims`: only what was asked for.
+        // Only what was asked for.
         let claims = requested_claims(&claims, request.requested_claim_types);
         cache.insert(cache_key, claims.clone()).await;
         Ok(claims)
@@ -560,7 +560,7 @@ fn grant_answer(
                     Some(claims) => serde_json::from_value(claims.clone())
                         .map_err(|e| fail(HookError::Body(e.to_string())))?,
                 };
-                // GrantValidationResult can't be built without one.
+                // A successful grant result needs one.
                 let authentication_method =
                     text(subject, "amr")
                         .filter(|s| !s.trim().is_empty())

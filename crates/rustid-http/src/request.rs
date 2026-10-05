@@ -69,8 +69,7 @@ pub(crate) struct Incoming<'a> {
     pub session: Option<&'a rustid_core::session::UserSession>,
 }
 
-/// `PathString.StartsWithSegments` with `OrdinalIgnoreCase`:
-/// Returns the remainder when `path` equals `prefix` or continues with `/`.
+/// Case-insensitive segment prefix match: returns the remainder when `path` equals `prefix` or continues with `/`.
 pub(crate) fn strip_segment_prefix<'a>(path: &'a str, prefix: &str) -> Option<&'a str> {
     let head = path.get(..prefix.len())?;
     if !head.eq_ignore_ascii_case(prefix) {
@@ -80,7 +79,7 @@ pub(crate) fn strip_segment_prefix<'a>(path: &'a str, prefix: &str) -> Option<&'
     (rest.is_empty() || rest.starts_with('/')).then_some(rest)
 }
 
-/// RFC 3986 `host [ ":" port ]` as Kestrel validates the Host header: an
+/// RFC 3986 `host [ ":" port ]` as a Host header must be: an
 /// IPv6 literal in brackets or a reg-name, then an optional numeric port.
 /// Anything else would end up verbatim in the issuer and every URL.
 pub fn is_valid_host(host: &str) -> bool {
@@ -123,7 +122,7 @@ pub fn is_valid_host(host: &str) -> bool {
     true
 }
 
-/// Percent-decodes a request path the way Kestrel does before routing:
+/// Percent-decodes a request path before routing:
 /// Every valid escape is decoded except `%2F`, which stays encoded so it can
 /// never become a path separator. Invalid escapes are kept literally.
 pub(crate) fn decode_path(raw: &str) -> String {

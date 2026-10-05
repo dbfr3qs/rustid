@@ -964,7 +964,7 @@ fn spawn_outbox_processor(state: AppState) -> Option<tokio::task::JoinHandle<()>
     }))
 }
 
-/// `AddInMemoryDataExtensionSchemas`: the schemas in `path` become the
+/// The schemas in `path` become the
 /// registered set. Each is created, or updated where it differs, and stored
 /// schemas the file doesn't list are removed, so a restart applies an edited
 /// file.

@@ -402,8 +402,7 @@ async fn load_pushed_request(
 
 /// The return URL's query for the UI: a pushed
 /// request by reference with the processed markers; a request with a
-/// request object without the parameters the object carries
-///, always keeping `client_id` and
+/// request object without the parameters the object carries, always keeping `client_id` and
 /// `response_type`; otherwise every parameter.
 pub fn return_url_query(r: &ValidatedAuthorizeRequest) -> String {
     if let Some(reference) = &r.pushed_reference {

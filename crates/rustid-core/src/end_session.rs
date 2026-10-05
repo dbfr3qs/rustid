@@ -250,8 +250,7 @@ pub struct LogoutNotificationContext {
     pub saml_logout_id: Option<String>,
 }
 
-/// Whether any of the SAML SPs can be sent a front-channel LogoutRequest
-///; the SAML IdP answers.
+/// Whether any of the SAML SPs can be sent a front-channel LogoutRequest; the SAML IdP answers.
 #[async_trait::async_trait]
 pub trait SamlFrontChannel: Send + Sync {
     async fn any_front_channel(&self, entity_ids: &[String]) -> Result<bool, StoreError>;

@@ -290,7 +290,7 @@ async fn prompt_none_errors_return_to_the_client_in_the_requested_mode() {
     );
     assert!(!r.location().ends_with("#_"));
 
-    // A repeated parameter is joined with commas, as NameValueCollection.Get does.
+    // A repeated parameter is joined with commas.
     let r = get(&format!(
         "/connect/authorize?{}",
         web_query("&prompt=none&response_mode=form_post&state=%3Cb%3E")

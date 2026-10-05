@@ -570,7 +570,7 @@ async fn logout_context(
             id,
         ));
     }
-    // A `NameValueCollection`: one value is a string, several an array.
+    // One value is a string, several an array.
     let parameters: serde_json::Map<String, serde_json::Value> = message
         .parameters
         .iter()

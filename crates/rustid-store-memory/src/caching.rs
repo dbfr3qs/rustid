@@ -16,7 +16,7 @@ use rustid_core::stores::{ClientStore, ResourceStore, StoreError};
 /// Entries per cache; beyond this the least recently used are evicted.
 const MAX_ENTRIES: u64 = 10_000;
 
-/// `HybridCacheOptions.MaximumKeyLength`: longer keys go straight to the
+/// Longer keys go straight to the
 /// store, so request input (an `Origin` header) can't pin large entries.
 const MAX_KEY_LENGTH: usize = 1024;
 

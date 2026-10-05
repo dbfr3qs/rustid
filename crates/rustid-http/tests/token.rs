@@ -281,7 +281,7 @@ async fn cors_actual_requests_get_the_allow_origin_header_even_on_errors() {
 
 #[tokio::test]
 async fn cors_headers_are_added_to_404s_on_cors_paths_without_an_endpoint() {
-    // CorsMiddleware runs outside the protocol's endpoint routing, so a
+    // CORS applies outside the protocol's endpoint routing, so a
     // CORS path whose endpoint is disabled still gets the header on its 404.
     let mut s = (*state().0).clone();
     s.options.endpoints.enable_user_info_endpoint = false;

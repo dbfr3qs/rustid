@@ -7,8 +7,7 @@ use crate::constants::{NS_ASSERTION, NS_PROTOCOL};
 use crate::response::{Status, instant};
 use crate::xml::writer::{XmlElement, write};
 
-/// A front-channel LogoutRequest to an SP
-///.
+/// A front-channel LogoutRequest to an SP.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogoutRequestOut {
     pub id: String,

@@ -225,8 +225,7 @@ fn test_users(users: &[Value], request: &Value) -> Value {
     )
 }
 
-/// `CustomResponseDto.Create` and the custom response the custom-response
-/// validators answer with; the null `nested` is left out.
+/// The custom response the custom-response validators answer with; the null `nested` is left out.
 fn custom_response() -> Value {
     json!({
         "string_value": "some_string",
@@ -244,7 +243,7 @@ fn with_custom(mut answer: Value) -> Value {
     answer
 }
 
-/// `CustomResponseResourceOwnerValidator`: valid when the username is the
+/// Valid when the username is the
 /// password.
 fn custom_response_password(request: &Value) -> Value {
     let username = request["username"].as_str().unwrap_or_default();
@@ -255,7 +254,7 @@ fn custom_response_password(request: &Value) -> Value {
     }
 }
 
-/// `CustomResponseExtensionGrantValidator`: valid when `outcome` is
+/// Valid when `outcome` is
 /// `succeed`.
 fn custom_response_grant(request: &Value) -> Value {
     if parameter(request, "outcome") == Some("succeed") {
@@ -265,10 +264,8 @@ fn custom_response_grant(request: &Value) -> Value {
     }
 }
 
-/// The extension grant validator, `ExtensionGrantValidator2`,
-/// `NoSubjectExtensionGrantValidator` and
-/// `DynamicParameterExtensionGrantValidator`. `None` when the validator
-/// would throw.
+/// The test extension grant validators, by grant type. `None` when the
+/// validator fails the request.
 fn extension_grant(grant_type: &str, request: &Value) -> Option<Value> {
     let credential = parameter(request, "custom_credential").is_some();
     Some(match grant_type {
@@ -339,7 +336,7 @@ fn sorted(value: &Value) -> Value {
     items.into()
 }
 
-/// What the user hook was asked (`BackchannelAuthenticationUserValidatorContext`).
+/// What the user hook was asked.
 fn seen_user(request: &Value) -> Value {
     json!({
         "client_id": request["client_id"],
@@ -351,7 +348,7 @@ fn seen_user(request: &Value) -> Value {
     })
 }
 
-/// The login request the notification hook got (`BackchannelUserLoginRequest`).
+/// The login request the notification hook got.
 fn seen_notification(request: &Value) -> Value {
     json!({
         "internal_id": request["internal_id"],
@@ -395,7 +392,7 @@ fn ciba_user(users: &[Value], request: &Value) -> Value {
     }
 }
 
-/// The scripted custom validator, as `CibaTestsBase`'s: a `custom`
+/// The scripted custom validator: a `custom`
 /// parameter becomes a property, a `complex` one a nested property, and a
 /// `custom_error` one refuses the request.
 fn ciba_request(request: &Value) -> Value {

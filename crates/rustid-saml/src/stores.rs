@@ -1,6 +1,5 @@
 //! The SAML stores: service providers, sign-in
-//! state and logout sessions
-//!. Methods that judge expiry take `now`.
+//! state and logout sessions. Methods that judge expiry take `now`.
 
 use std::sync::Arc;
 

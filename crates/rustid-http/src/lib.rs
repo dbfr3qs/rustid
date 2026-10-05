@@ -61,7 +61,7 @@ pub struct ProtocolState {
     pub stores: Stores,
     /// Raises events enabled in `protocol.events`.
     pub events: EventService,
-    /// Optional path prefix, matched case-insensitively like `UsePathBase`.
+    /// Optional path prefix, matched case-insensitively.
     pub path_base: Option<String>,
     /// What browser interactions and the interaction API need.
     pub interaction: InteractionState,
@@ -279,7 +279,7 @@ pub struct TlsClientCertificate(pub Arc<rustid_core::client_certificate::ClientC
 
 /// Routes protocol requests by path: exact,
 /// case-insensitive path matches after the optional path base. CORS for
-/// the CORS endpoints is applied first, as `UseCors` does.
+/// the CORS endpoints is applied first.
 async fn protocol(State(state): State<AppState>, request: Request<Body>) -> Response {
     let state = &*state.0;
     let (parts, body) = request.into_parts();
@@ -295,7 +295,7 @@ async fn protocol(State(state): State<AppState>, request: Request<Body>) -> Resp
         &parts.uri,
         parts.extensions.get::<Https>().is_some(),
     ) else {
-        // Kestrel rejects HTTP/1.1 requests without a Host header the same way.
+        // HTTP/1.1 requires a Host header (RFC 9112 §3.2).
         return StatusCode::BAD_REQUEST.into_response();
     };
     let info = events::RequestInfo {
@@ -359,8 +359,8 @@ async fn protocol(State(state): State<AppState>, request: Request<Body>) -> Resp
         return interaction_api::handle(state, &incoming, body, &call).await;
     }
     let mut response = match Endpoint::find(state, &route) {
-        // CorsMiddleware runs outside endpoint routing, so a 404 on a CORS
-        // path still gets the header below.
+        // CORS applies outside endpoint routing, so a 404 on a CORS path
+        // still gets the header below.
         None => StatusCode::NOT_FOUND.into_response(),
         Some(endpoint) => {
             let span = tracing::info_span!("ProtocolRequest", endpoint_type = endpoint.type_name());
@@ -415,8 +415,8 @@ impl Drop for ActiveRequest {
     }
 }
 
-/// A per-request identifier in the shape of Kestrel's `TraceIdentifier`
-/// (connection id, colon, request number), for error messages.
+/// A per-request identifier (connection id, colon, request number), for
+/// error messages.
 pub(crate) fn request_id() -> String {
     use std::sync::OnceLock;
     use std::sync::atomic::{AtomicU64, Ordering};

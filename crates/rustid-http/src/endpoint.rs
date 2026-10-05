@@ -15,7 +15,7 @@ use crate::request::Route;
 /// Largest request body read, a 4 MB form value limit.
 const MAX_BODY: usize = 4 * 1024 * 1024;
 
-/// `HasApplicationFormContentType`: the media type, ignoring parameters.
+/// The media type, ignoring parameters.
 pub(crate) fn is_form_content_type(headers: &HeaderMap) -> bool {
     headers
         .get(CONTENT_TYPE)

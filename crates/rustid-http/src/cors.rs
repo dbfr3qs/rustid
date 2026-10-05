@@ -1,5 +1,5 @@
-//! CORS for the protocol's CORS endpoints, reproducing the
-//! `CorsMiddleware` with the clients' allowed origins.
+//! CORS for the protocol's CORS endpoints, with the clients' allowed
+//! origins.
 
 use axum::http::header::{
     ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -11,7 +11,7 @@ use axum::response::{IntoResponse, Response};
 use crate::ProtocolState;
 use crate::request::Route;
 
-/// `ProtocolRoutePaths.CorsPaths`.
+/// The endpoints that answer CORS requests.
 const CORS_PATHS: &[&str] = &[
     "/.well-known/openid-configuration",
     "/.well-known/openid-configuration/jwks",
@@ -51,7 +51,7 @@ pub(crate) async fn evaluate(
         Ok(true) => {}
         Ok(false) => return None,
         Err(error) => {
-            // The policy service's exception escapes CorsMiddleware: 500.
+            // A failing origin check is a server error: 500.
             tracing::error!(%error, "CORS origin check failed");
             return Some(Cors::Failed);
         }

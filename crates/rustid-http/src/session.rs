@@ -116,7 +116,7 @@ pub(crate) async fn ensure_session_id(
             .iter()
             .any(|v| v.as_bytes().starts_with(b"idsrv="));
         if !written {
-            // The cookie handler's `ApplyHeaders`: never cached.
+            // Cookie responses are never cached.
             let headers = response.headers_mut();
             headers.append(SET_COOKIE, cookie);
             headers.insert(

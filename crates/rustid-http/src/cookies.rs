@@ -17,8 +17,7 @@ pub(crate) fn get<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
         .map(|(_, v)| v)
 }
 
-/// Where the server's cookies apply: the path base, or `/`
-/// (`BasePath.CleanUrlPath()`).
+/// Where the server's cookies apply: the path base, or `/`.
 pub(crate) fn cookie_path(base_path: &str) -> &str {
     if base_path.is_empty() { "/" } else { base_path }
 }

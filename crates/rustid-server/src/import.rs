@@ -51,8 +51,8 @@ pub struct BundleKey {
     pub certificate: Option<String>,
 }
 
-/// A `PersistedGrants` row, its `Data` unprotected and parsed: the source's
-/// model (`RefreshToken`, `Token`, `Consent`) as `System.Text.Json` writes it.
+/// A bundle grant, its `data` parsed: a refresh token, a reference token or
+/// a consent, in the bundle's JSON form.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GrantRow {
     pub key: String,

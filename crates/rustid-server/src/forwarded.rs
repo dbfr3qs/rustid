@@ -1,5 +1,4 @@
-//! Forwarded headers from a trusted reverse proxy, as the
-//! `ForwardedHeadersMiddleware` with `ForwardLimit = 1`: the rightmost
+//! Forwarded headers from a trusted reverse proxy, one hop: the rightmost
 //! `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-For` values
 //! become the request's scheme, host and client address, but only when the
 //! TCP peer is one of `forwarded_headers.trusted_proxies`. A trusted proxy

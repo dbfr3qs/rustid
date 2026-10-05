@@ -96,9 +96,9 @@ pub(crate) async fn remove(state: &ProtocolState, session: &UserSession) -> Resu
     Ok(())
 }
 
-/// `CheckForRefresh` with sliding expiration: renews the session when more
+/// Sliding expiration: renews the session when more
 /// of its lifetime has passed than remains, or when token use flagged it
-/// (`ForceCookieRenewalFlag`) and it hasn't expired. The span is kept:
+/// and it hasn't expired. The span is kept:
 /// Issued becomes now and the expiry now plus the span.
 pub(crate) fn renew_if_due(
     state: &ProtocolState,

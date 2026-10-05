@@ -95,7 +95,7 @@ fn json_response(status: StatusCode, body: &Value) -> Response {
     (status, [(CONTENT_TYPE, JSON_UTF8)], body.to_string()).into_response()
 }
 
-/// `HasCorrectContentType`: the media type is `application/json`.
+/// The media type is `application/json`.
 fn is_json(headers: &HeaderMap) -> bool {
     headers
         .get(CONTENT_TYPE)

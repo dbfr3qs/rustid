@@ -37,8 +37,8 @@ key_file = "../../fixtures/signing-key.pem"
 [client_authentication]
 private_key_jwt = true
 
-# The resource the plan calls with its DPoP-bound access tokens (a local
-# API in DPoPAndBearer mode).
+# The resource the plan calls with its DPoP-bound access tokens (it
+# accepts bearer and DPoP-bound tokens).
 [protected_resource]
 path = "/fapi2/resource"
 

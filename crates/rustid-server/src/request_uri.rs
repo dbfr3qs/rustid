@@ -1,4 +1,4 @@
-//! `DefaultJwtRequestUriHttpClient`: fetching request objects by reference
+//! Fetching request objects by reference
 //! over HTTP, without following redirects, within 10 seconds, and reading at
 //! most 1 MiB. The URI is the client's; which hosts it may name
 //! is the operator's concern (enable request URIs only for trusted clients).

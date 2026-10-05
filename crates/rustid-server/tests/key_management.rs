@@ -1,5 +1,4 @@
-//! Automatic key management in the running server
-//! (`SigningKeyStoreKeyManagerTests`): the first token creates and persists
+//! Automatic key management in the running server: the first token creates and persists
 //! a key, its `kid` is the stored key's id, later tokens reuse it, and
 //! discovery's JWKS publishes it.
 

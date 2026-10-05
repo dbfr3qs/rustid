@@ -57,7 +57,7 @@ pub(crate) fn apply(state: &ProtocolState, route: &mut Route) -> Result<(), Resp
     Ok(())
 }
 
-/// `RequestedHostMatches`: the host without regard to case, and the port
+/// The host without regard to case, and the port
 /// (443 when either side leaves it out).
 fn host_matches(request_host: &str, configured: &str) -> bool {
     let split = |host: &str| -> (String, Option<u16>) {

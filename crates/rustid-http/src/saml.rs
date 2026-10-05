@@ -118,7 +118,7 @@ pub(crate) async fn single_sign_on(
     let options = &saml.options;
     let unhandled = |detail: &str| crate::response::internal_error(state, info, OPERATION, detail);
 
-    // `CanUnBind`: reading a POST's form throws unless it is a form.
+    // Reading a POST's form throws unless it is a form.
     let mut form: Vec<(String, String)> = Vec::new();
     if method == Method::POST {
         if !crate::endpoint::is_form_content_type(headers) {
@@ -428,7 +428,7 @@ async fn is_active(
         .await
 }
 
-/// Guid.NewGuid().ToString("N").
+/// A random UUID as 32 hex digits.
 fn new_session_index() -> String {
     let mut bytes = [0u8; 16];
     aws_lc_rs::rand::fill(&mut bytes).expect("the system RNG");
@@ -514,9 +514,9 @@ async fn post_response(
         .into_response())
 }
 
-/// `CreateResponse` and its result: the assertion for the signed-in user,
+/// The response for the signed-in user: the assertion,
 /// the SP's SAML session recorded in the user's (cookie rewritten), and
-/// `SamlSsoSuccessEvent`. A name ID that can't be made goes to the error
+/// the SSO success event. A name ID that can't be made goes to the error
 /// page.
 pub(crate) async fn respond(
     state: &ProtocolState,
@@ -634,8 +634,8 @@ pub(crate) async fn respond(
     match crate::session_cookie::write(state, route, &mut session).await {
         Ok(cookie) => {
             crate::cookies::append(&mut http, &cookie);
-            // The cookie handler's `ApplyHeaders` (the binding then sets
-            // its own Cache-Control).
+            // Cookie responses are never cached (the binding then sets its
+            // own Cache-Control).
             http.headers_mut().insert(
                 axum::http::header::PRAGMA,
                 axum::http::HeaderValue::from_static("no-cache"),
@@ -659,7 +659,7 @@ pub(crate) async fn respond(
     http
 }
 
-/// `CreateErrorResponse`: a status response (no assertion), signed when
+/// A status response (no assertion), signed when
 /// the SP's behaviour signs responses.
 pub(crate) async fn error_response(
     state: &ProtocolState,
@@ -824,7 +824,7 @@ pub(crate) async fn callback(
     respond(state, saml, route, info, user, request).await
 }
 
-/// `Saml2LoginRedirectResult`: a 302 to the login page, the callback (path
+/// A 302 to the login page, the callback (path
 /// and query, without the path base) as the return URL.
 fn login_redirect(state: &ProtocolState, route: &Route, headers: &HeaderMap) -> Response {
     let ui = &state.options.user_interaction;
@@ -915,7 +915,7 @@ pub(crate) async fn record_denial(
         .await
 }
 
-/// `AnySamlServiceProviderHasFrontChannelLogout`: an enabled SP with an
+/// An enabled SP with an
 /// HTTP-Redirect SLO endpoint.
 pub(crate) struct SamlFrontChannelCheck<'a>(pub &'a rustid_saml::Saml);
 
@@ -1256,8 +1256,8 @@ pub(crate) async fn single_logout(
     };
     let entity = sp.as_deref().and_then(signing_entity);
     let trust = redirect_trust(&inbound, entity.as_ref());
-    // Exceptions the endpoint catches (`SamlXmlException`,
-    // `InvalidOperationException`), apart from the rest.
+    // Errors the endpoint answers with an error page, apart from the
+    // rest.
     let caught = |e: &ReadError| match e {
         ReadError::Invalid(_) => true,
         ReadError::Unhandled(detail) => detail.starts_with("InvalidOperationException"),
@@ -1400,7 +1400,7 @@ pub(crate) async fn single_logout(
         )
         .await;
     };
-    // `Saml2LogoutPageResult`: the logout page, which ends the session and
+    // The logout page, which ends the session and
     // then comes back to the SLO callback.
     let callback = format!(
         "{}/{}",
@@ -1671,7 +1671,7 @@ pub(crate) async fn idp_initiated(
 
 /// `GET /connect/interaction/saml/idp-initiated?token=…` (the browser):
 /// Redeems the continuation once, in the session that asked, checks the SP
-/// again and answers with the auto-post page (`SamlAutoPostResult`).
+/// again and answers with the auto-post page.
 pub(crate) async fn continue_idp_initiated(
     state: &ProtocolState,
     route: &Route,

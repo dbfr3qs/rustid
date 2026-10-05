@@ -37,11 +37,11 @@ use crate::endpoint::{is_form_content_type, read_form};
 use crate::request::Route;
 use crate::response::{internal_error, set_no_cache};
 
-/// `ProtocolRoutePaths.AuthorizeCallback`.
+/// The authorize callback's path, under the base URL.
 const CALLBACK_PATH: &str = "connect/authorize/callback";
-/// `ContentSecurityPolicyHashes.AuthorizeScript`: the form_post script.
+/// The form_post script.
 const AUTHORIZE_SCRIPT_HASH: &str = "sha256-orD0/VhH8hLqrLxKHD/HUEMdwqX6/0ve7c5hspX5VJ8=";
-/// `CookieRequestCultureProvider.DefaultCookieName`.
+/// The culture cookie's name (a wire name, kept for compatibility).
 pub const CULTURE_COOKIE: &str = ".AspNetCore.Culture";
 
 /// `/connect/authorize`: GET, or POST with a form body.
@@ -159,7 +159,7 @@ async fn process(
     let page = |url: &str, parameter: &str| {
         interaction_page(state, route, headers, &request, url, parameter)
     };
-    // `AuthorizeResult` consumes a pushed request; pages don't.
+    // A response consumes a pushed request; pages don't.
     if matches!(interaction, Interaction::Error(..) | Interaction::None)
         || (matches!(interaction, Interaction::CreateAccount) && ui.create_account_url.is_none())
     {
@@ -541,7 +541,7 @@ async fn client_response(
     Ok(response)
 }
 
-/// `GetFormPostHtml`.
+/// The form_post response page.
 fn form_post_html(redirect_uri: &str, params: &Params) -> String {
     let mut inputs = String::new();
     for (name, values) in params.iter() {
@@ -559,7 +559,7 @@ fn form_post_html(redirect_uri: &str, params: &Params) -> String {
     )
 }
 
-/// `HtmlEncoder.Default.Encode`: `" & ' + < >`, controls and non-ASCII
+/// `" & ' + < >`, controls and non-ASCII
 /// become character references.
 pub(crate) fn html_encode(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
@@ -676,7 +676,7 @@ async fn consume_pushed(state: &ProtocolState, request: &ValidatedAuthorizeReque
     }
 }
 
-/// `GetAbsoluteUrl`: local paths are made absolute under the base URL.
+/// Local paths are made absolute under the base URL.
 pub(crate) fn absolute_url(route: &Route, url: &str) -> String {
     if !is_local_url(url) {
         return url.to_owned();

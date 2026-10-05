@@ -24,7 +24,7 @@ use crate::endpoint::{is_form_content_type, read_form};
 use crate::request::Route;
 use crate::response::{internal_error, set_no_cache};
 
-/// `ProtocolRoutePaths.EndSessionCallback`.
+/// The end session callback's path, under the base URL.
 pub(crate) const CALLBACK_PATH: &str = "connect/endsession/callback";
 
 pub(crate) async fn end_session(
@@ -165,7 +165,7 @@ fn html(body: String) -> Response {
         .into_response()
 }
 
-/// `AddCspHeaders`: the header, and the deprecated one when configured.
+/// The header, and the deprecated one when configured.
 fn add_csp(state: &ProtocolState, response: &mut Response, csp: &str) {
     let Ok(value) = HeaderValue::from_str(csp) else {
         return;

@@ -121,7 +121,7 @@ pub(crate) async fn oauth_metadata(
         }
     }
     let mut origin = route.origin.clone();
-    // IServerUrls.BasePath setter applies RemoveTrailingSlash (one slash).
+    // The base path drops one trailing slash.
     origin.base_path = sub_path.strip_suffix('/').unwrap_or(sub_path).to_owned();
     let issuer = current_issuer(&state.options, &origin);
     if issuer != format!("{}://{}{}", origin.scheme, origin.host, sub_path) {

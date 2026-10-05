@@ -8,7 +8,7 @@ pub const JSON_UTF8: &str = "application/json; charset=utf-8";
 pub const JSON_UTF8_UPPER: &str = "application/json; charset=UTF-8";
 
 /// A JSON body as the protocol endpoints write it, with
-/// `SetCache(maxAge, "Origin")` applied when a cache interval is configured.
+/// caching headers (varying by `Origin`) when a cache interval is configured.
 pub(crate) fn json(body: &serde_json::Value, cache_interval: Option<i64>) -> Response {
     let mut response = (
         StatusCode::OK,
@@ -37,7 +37,7 @@ pub(crate) fn json(body: &serde_json::Value, cache_interval: Option<i64>) -> Res
     response
 }
 
-/// JSON with `SetNoCache()` headers, as the token endpoint results write it.
+/// JSON with no-cache headers, as the token endpoint results write it.
 pub(crate) fn no_cache_json(status: StatusCode, body: &serde_json::Value) -> Response {
     let mut response = plain_json(status, body);
     set_no_cache(&mut response);
@@ -49,7 +49,7 @@ pub(crate) fn plain_json(status: StatusCode, body: &serde_json::Value) -> Respon
     (status, [(CONTENT_TYPE, JSON_UTF8_UPPER)], body.to_string()).into_response()
 }
 
-/// `SetNoCache()`.
+/// Sets the no-cache headers.
 pub(crate) fn set_no_cache(response: &mut Response) {
     let headers = response.headers_mut();
     headers.insert(

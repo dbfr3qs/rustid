@@ -159,7 +159,7 @@ async fn entries_expire_and_failures_are_not_cached() {
 
 #[tokio::test]
 async fn keys_longer_than_the_limit_bypass_the_cache() {
-    // HybridCache doesn't cache keys over 1024 characters; neither do we, so
+    // Keys over 1024 characters are not cached, so
     // request input such as a huge Origin header can't pin memory.
     let inner = Arc::new(Counting::default());
     let store = CachingClientStore::new(inner.clone(), durations(Duration::from_secs(60)));

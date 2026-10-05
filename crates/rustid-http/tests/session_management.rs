@@ -1,5 +1,4 @@
-//! The session management calls of the interaction API
-//!: querying sessions and removing them, with
+//! The session management calls of the interaction API: querying sessions and removing them, with
 //! their tokens, consents and back-channel notifications.
 
 mod browser;

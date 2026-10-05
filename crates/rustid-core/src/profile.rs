@@ -65,8 +65,7 @@ pub trait ProfileService: Send + Sync {
     async fn is_active(&self, request: &ActiveRequest<'_>) -> Result<bool, ProfileError>;
 }
 
-/// `DefaultProfileService`: the subject's claims of the requested types
-///; every subject is active.
+/// `DefaultProfileService`: the subject's claims of the requested types; every subject is active.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DefaultProfileService;
 

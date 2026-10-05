@@ -29,6 +29,8 @@ fi
 
 echo "== references: no upstream product names"
 scripts/check-no-upstream-refs.sh
+scripts/check-doc-references.sh
+scripts/test-doc-references.sh
 
 echo "== release scripts"
 scripts/test-release-scripts.sh

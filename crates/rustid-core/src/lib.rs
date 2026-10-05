@@ -19,6 +19,7 @@ pub mod discovery;
 pub mod dpop;
 pub mod end_session;
 pub mod events;
+pub mod federation;
 pub mod form;
 pub mod grant_validation;
 pub mod grants;

@@ -39,7 +39,7 @@ fn saml(local: &str) -> XmlElement {
     XmlElement::new("saml", local, NS_ASSERTION)
 }
 
-/// `Write(LogoutRequest)`: RequestAbstractType's attributes (ID,
+/// A LogoutRequest as XML: RequestAbstractType's attributes (ID,
 /// IssueInstant, Version, Destination), the Issuer, NameID and
 /// SessionIndex.
 pub fn write_logout_request(r: &LogoutRequestOut) -> String {
@@ -77,7 +77,7 @@ pub fn write_logout_response(r: &LogoutResponseOut) -> String {
     write(&element)
 }
 
-/// `GetSingleLogoutServiceEndpoint(HttpRedirect)`: the first SLO endpoint
+/// The first SLO endpoint
 /// with the redirect binding (the only one front-channel logout and
 /// LogoutResponses use).
 pub fn slo_redirect_endpoint(
@@ -101,7 +101,7 @@ pub struct LogoutValidationInput<'a> {
 }
 
 /// The logout request validator, in order: whether the
-/// user's session for the SP was found (`SessionFound`), or why the
+/// user's session for the SP was found, or why the
 /// request is refused.
 pub fn validate_logout_request(
     input: &LogoutValidationInput<'_>,

@@ -13,7 +13,7 @@ pub struct Target {
     pub relay_state: Option<String>,
 }
 
-/// Why the IdP won't start SSO to the SP (`IdpInitiatedSsoResult.Error`).
+/// Why the IdP won't start SSO to the SP.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Refusal(pub String);
 

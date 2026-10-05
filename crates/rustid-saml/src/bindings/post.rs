@@ -1,4 +1,4 @@
-//! HTTP-POST: the message is base64 in a form field (`HttpPostBinding`).
+//! HTTP-POST: the message is base64 in a form field.
 
 use super::{BindingError, error, from_base64};
 

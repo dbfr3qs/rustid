@@ -289,7 +289,7 @@ fn audiences_are_plain_text() {
         ),
     );
     assert!(read(&xml).is_ok(), "{:?}", read(&xml));
-    // Another element in the restriction is an EnsureName error.
+    // Another element in the restriction is a reading error.
     let xml = request(
         ATTRS,
         &format!(

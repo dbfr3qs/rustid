@@ -63,14 +63,14 @@ impl XmlElement {
         self
     }
 
-    /// A text child (`InnerText`); an empty one still writes an end tag.
+    /// A text child; an empty one still writes an end tag.
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.children.push(XmlChild::Text(text.into()));
         self
     }
 }
 
-/// The element's `OuterXml`.
+/// The element serialized as XML.
 pub fn write(root: &XmlElement) -> String {
     let mut out = String::new();
     write_element(root, &BTreeMap::new(), &mut out);

@@ -27,7 +27,7 @@ use crate::model::{
 const KIND: EntityKind = EntityKind::SamlServiceProvider;
 const NAME: &str = "samlServiceProvider";
 
-/// `SamlEndpointConfiguration`.
+/// A service provider endpoint: its binding and location.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EndpointConfiguration {
@@ -37,7 +37,7 @@ pub struct EndpointConfiguration {
     pub binding: Binding,
 }
 
-/// `SamlIndexedEndpointConfiguration`.
+/// An indexed service provider endpoint (an assertion consumer service).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct IndexedEndpointConfiguration {
@@ -56,7 +56,7 @@ fn redirect() -> Binding {
     Binding::HttpRedirect
 }
 
-/// `SamlCertificateInput`: an unset id is a new certificate.
+/// An unset id is a new certificate.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CertificateInput {
@@ -68,7 +68,7 @@ pub struct CertificateInput {
     pub key_use: KeyUse,
 }
 
-/// `SamlCertificateConfiguration`: the certificate and, read from it, its
+/// The certificate and, read from it, its
 /// subject, thumbprint and expiry.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -197,7 +197,7 @@ impl SamlServiceProviderInput {
     }
 }
 
-/// `Guid.Empty`, which clients send for a new certificate.
+/// The nil UUID, which clients send for a new certificate.
 const NIL: &str = "00000000-0000-0000-0000-000000000000";
 
 /// `SamlServiceProviderConfiguration`.
@@ -279,8 +279,8 @@ fn absolute(location: &str) -> bool {
     crate::xml::traverser::is_absolute_uri(location)
 }
 
-/// The DER certificate in `base64` (whitespace ignored, as
-/// `Convert.FromBase64String`), checked to parse as X.509 and cut to the
+/// The DER certificate in `base64` (whitespace ignored), checked to parse
+/// as X.509 and cut to the
 /// certificate itself.
 fn certificate_der(base64: &str) -> Result<Vec<u8>, AdminError> {
     let compact: String = base64.chars().filter(|c| !c.is_whitespace()).collect();

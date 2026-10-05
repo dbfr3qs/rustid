@@ -2,3 +2,5 @@
 # specification and protocol terms.
 # PKCS#1 ASN.1 type (RFC 8017).
 RSAPublicKey
+# The release checksum file.
+SHA256SUMS

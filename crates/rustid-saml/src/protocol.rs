@@ -20,7 +20,7 @@ pub enum TrustLevel {
 /// Why a message couldn't be read.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReadError {
-    /// `SamlXmlException`: the reader's errors, in order.
+    /// The reader's errors, in order.
     Invalid(Vec<String>),
     /// Another failure, which the endpoints don't handle (a 500).
     Unhandled(String),
@@ -32,9 +32,8 @@ impl From<Unhandled> for ReadError {
     }
 }
 
-/// The issuer's signing certificates and allowed algorithms
-/// (`ServiceProviderEntityResolver`); none when it has no signing
-/// certificates.
+/// The issuer's signing certificates and allowed algorithms; none when it
+/// has no signing certificates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningEntity {
     pub certificates: Vec<Vec<u8>>,
@@ -64,7 +63,7 @@ pub struct Scoping {
     pub requester_ids: Vec<String>,
 }
 
-/// `Samlp.AuthnRequest`.
+/// A SAML AuthnRequest.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthnRequest {
     pub id: String,
@@ -88,7 +87,7 @@ pub struct AuthnRequest {
 }
 
 impl AuthnRequest {
-    /// `HasTrustedSignature`.
+    /// Whether a configured key verified the request's signature.
     pub fn has_trusted_signature(&self) -> bool {
         self.trust >= TrustLevel::ConfiguredKey
     }
@@ -199,7 +198,7 @@ fn read_core(
     Ok(request)
 }
 
-/// `RequestAbstractType`'s elements: the issuer, an optional signature
+/// The elements every SAML request has: the issuer, an optional signature
 /// (checked when the issuer has keys), and extensions.
 fn read_abstract_elements(
     doc: &Document,
@@ -262,7 +261,7 @@ fn read_issuer_and_signature(
     Ok((issuer, trust))
 }
 
-/// `Samlp.LogoutRequest`.
+/// A SAML LogoutRequest.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogoutRequest {
     pub id: String,
@@ -335,7 +334,7 @@ pub fn read_logout_request(
     request.ok_or_else(|| ReadError::Unhandled("no LogoutRequest read".into()))
 }
 
-/// `Samlp.LogoutResponse` (a StatusResponseType).
+/// A SAML LogoutResponse (a StatusResponseType).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogoutResponse {
     pub id: String,
@@ -350,7 +349,7 @@ pub struct LogoutResponse {
     pub status_message: Option<String>,
 }
 
-/// `ReadStatusCode`: the value, and the first nested value.
+/// The value, and the first nested value.
 fn read_status_code(
     source: &mut Traverser<'_>,
 ) -> Result<(Option<String>, Option<String>), Unhandled> {

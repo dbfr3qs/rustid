@@ -32,8 +32,8 @@ fn logout_requests_are_read() {
     assert_eq!(name_id.value, "alice@example.com");
     assert_eq!(r.session_index.as_deref(), Some("abc"));
     assert_eq!(r.destination.as_deref(), Some("https://idp/Saml2/SLO"));
-    // A missing NameID isn't a reading error (EnsureName at the end of the
-    // children adds none); the validator refuses it.
+    // A missing NameID isn't a reading error (the name check at the end of
+    // the children adds none); the validator refuses it.
     let missing = format!(
         r#"<samlp:LogoutRequest xmlns:samlp="{P}" xmlns:saml="{A}" ID="_l1" Version="2.0" IssueInstant="2026-10-02T10:00:00Z"><saml:Issuer>x</saml:Issuer></samlp:LogoutRequest>"#
     );

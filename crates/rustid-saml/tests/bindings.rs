@@ -1,5 +1,4 @@
-//! The HTTP-Redirect and HTTP-POST binding codecs (`HttpRedirectBinding`
-//! and `HttpPostBinding`).
+//! The HTTP-Redirect and HTTP-POST binding codecs.
 
 use std::path::{Path, PathBuf};
 
@@ -160,7 +159,7 @@ fn redirect_errors_have_their_messages() {
 
 #[test]
 fn plus_signs_are_spaces() {
-    // QueryStringEnumerable.DecodeValue turns '+' into a space and decodes
+    // Query decoding turns '+' into a space and decodes
     // escapes; the signed content keeps the raw text.
     let p = redirect::parse_parameters("?SAMLRequest=ab+cd%2B&SigAlg=x&Signature=y").unwrap();
     assert_eq!(p.message, "ab cd+");

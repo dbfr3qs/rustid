@@ -12,7 +12,7 @@ use crate::xml::writer::{XmlElement, write};
 pub const STATUS_SUCCESS: &str = "urn:oasis:names:tc:SAML:2.0:status:Success";
 pub const SUBJECT_CONFIRMATION_BEARER: &str = "urn:oasis:names:tc:SAML:2.0:cm:bearer";
 
-/// `SamlStatus`: a status code, optionally nested once.
+/// A status code, optionally nested once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Status {
     pub code: String,
@@ -156,7 +156,7 @@ fn assertion_element(a: &Assertion) -> XmlElement {
     element
 }
 
-/// The response's `OuterXml`, unsigned.
+/// The response's XML, unsigned.
 pub fn write_response(r: &Response) -> String {
     let mut element = samlp("Response")
         .attr("ID", r.id.as_str())
@@ -238,7 +238,7 @@ pub fn generate_name_id(
     })
 }
 
-/// `MapClaimsToAttributes`: each claim under its mapped name (the SP's
+/// Each claim under its mapped name (the SP's
 /// mappings, or the options' defaults when it has none), values of one
 /// name together, in first-seen order.
 pub fn map_attributes(
@@ -262,7 +262,7 @@ pub fn map_attributes(
     attributes
 }
 
-/// `ResolveAuthnContextClassRef`: the mapped `acr`, else the first mapped
+/// The mapped `acr`, else the first mapped
 /// `amr`, else unspecified; the SP's mappings or the defaults.
 pub fn authn_context_class(
     acr: Option<&str>,
@@ -290,7 +290,7 @@ pub fn authn_context_class(
 /// The CSP hash of the SAML auto-post page's script.
 pub const AUTO_POST_SCRIPT_HASH: &str = "sha256-1cDf9gWlS6Mjg+iEJCbdzTerOHORw4iNiJr4endY8Ng=";
 
-/// `WebUtility.HtmlEncode`: `<`, `>`, `&`, `"` and `'` as entities, and
+/// `<`, `>`, `&`, `"` and `'` as entities, and
 /// characters 160-255 and those beyond the BMP as numeric references.
 pub fn html_encode(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
@@ -310,7 +310,7 @@ pub fn html_encode(text: &str) -> String {
     out
 }
 
-/// `HttpPostBinding.BuildAutoPostHtml`: the page that posts the message
+/// The page that posts the message
 /// (`SAMLResponse` or `SAMLRequest`, base64 of its UTF-8) to `destination`.
 pub fn auto_post_html(
     destination: &str,

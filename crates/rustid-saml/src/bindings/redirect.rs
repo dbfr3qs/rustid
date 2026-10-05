@@ -1,4 +1,4 @@
-//! HTTP-Redirect (`HttpRedirectBinding`): the message DEFLATE-compressed and
+//! HTTP-Redirect: the message DEFLATE-compressed and
 //! base64-encoded in the query, signed over the raw query text.
 
 use std::io::Read;
@@ -6,7 +6,7 @@ use std::io::Read;
 use super::{BindingError, MessageName, error, from_base64};
 use crate::xml::dsig::{XmlSigner, verify_bytes};
 
-/// The binding's query parameters (`ParseQueryString`). `signed_content` is
+/// The binding's query parameters. `signed_content` is
 /// rebuilt from the raw encoded values in the binding's order, only when a
 /// signature and algorithm are present.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,7 +86,7 @@ fn unescape(text: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// `QueryStringEnumerable.DecodeValue`: '+' is a space, then escapes.
+/// '+' is a space, then escapes.
 fn decode_value(raw: &str) -> String {
     unescape(&raw.replace('+', " "))
 }
@@ -221,7 +221,7 @@ pub fn parse(query: &str, max_size: usize, max_relay_state: usize) -> Result<Par
     })
 }
 
-/// `ValidateSignature`: the algorithm allowed, and the signature verifying
+/// The algorithm allowed, and the signature verifying
 /// with one of the certificates. The key type follows the certificate, so
 /// an RSA certificate never checks an ECDSA algorithm or the reverse.
 pub fn verify_signature(query: &impl Signed, certificates: &[Vec<u8>], allowed: &[&str]) -> bool {
@@ -241,7 +241,7 @@ pub fn verify_signature(query: &impl Signed, certificates: &[Vec<u8>], allowed: 
         .any(|c| verify_bytes(c, alg, content.as_bytes(), &signature))
 }
 
-/// `GetQueryString`: `?{name}={deflated}`, the relay state, and when a
+/// `?{name}={deflated}`, the relay state, and when a
 /// credential is given, `SigAlg` and `Signature` over the rest.
 pub fn encode(
     name: MessageName,

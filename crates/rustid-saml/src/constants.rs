@@ -18,5 +18,5 @@ pub const NS_PROTOCOL: &str = "urn:oasis:names:tc:SAML:2.0:protocol";
 pub const NS_ASSERTION: &str = "urn:oasis:names:tc:SAML:2.0:assertion";
 pub const NS_XMLDSIG: &str = "http://www.w3.org/2000/09/xmldsig#";
 
-/// `SamlConstants.ContentTypes.Metadata`.
+/// The SAML metadata media type.
 pub const CONTENT_TYPE_METADATA: &str = "application/samlmetadata+xml";

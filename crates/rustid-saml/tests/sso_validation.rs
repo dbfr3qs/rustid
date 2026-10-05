@@ -1,4 +1,4 @@
-//! The authn request validator, `DefaultSamlResourceResolver` and
+//! The authn request validator, the service provider's scope check and
 //! the decision.
 
 use std::path::Path;

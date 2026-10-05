@@ -1,8 +1,8 @@
-//! Writes element trees and rustid's serialization of each for an
-//! external oracle that builds the same trees with `XmlDocument` and
-//! compares `OuterXml`. Usage: `oracle_write <file>
-//! [count]`. Deterministic. Text CR and attribute TAB are left out: the
-//! writer normalizes them on purpose (5a's interop ruling).
+//! Writes element trees and rustid's serialization of each, for an
+//! independent XML implementation to build the same trees and compare its
+//! serialization. Usage: `oracle_write <file> [count]`. Deterministic.
+//! Text CR and attribute TAB are left out: the writer normalizes them on
+//! purpose.
 
 use rustid_saml::xml::writer::{XmlElement, write};
 

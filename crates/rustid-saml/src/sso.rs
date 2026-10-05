@@ -1,6 +1,6 @@
 //! The SSO service endpoint's protocol work, independent of HTTP:
-//! Unbinding (`HttpRedirectBinding`, `HttpPostBinding`), the signing keys
-//! an issuer's signatures are checked with (`ServiceProviderEntityResolver`).
+//! Unbinding, the signing keys
+//! an issuer's signatures are checked with.
 
 use crate::bindings::{BindingError, INVALID_BASE64, MessageName, post, redirect};
 use crate::model::{KeyUse, ServiceProvider};
@@ -27,7 +27,7 @@ impl InboundBinding {
 /// Why a message couldn't be unbound.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnbindError {
-    /// `FormatException` from base64 decoding, which the endpoints catch.
+    /// Invalid base64, which the endpoints answer with an error page.
     Base64,
     /// Any other failure, which the endpoints don't handle (a 500).
     Unhandled(String),
@@ -63,7 +63,7 @@ impl Inbound {
     }
 }
 
-/// `CanUnBind`: GET with a message in the query is the redirect binding,
+/// GET with a message in the query is the redirect binding,
 /// POST with one in the form is the POST binding. Names are exact.
 pub fn select_binding(method: &str, query: &str, form_keys: &[&str]) -> Option<InboundBinding> {
     let is_message = |name: &str| name == "SAMLRequest" || name == "SAMLResponse";
@@ -222,7 +222,7 @@ pub fn signing_entity(sp: &ServiceProvider) -> Option<SigningEntity> {
     })
 }
 
-/// `SamlStatusCodes`.
+/// SAML status codes.
 pub const STATUS_REQUESTER: &str = "urn:oasis:names:tc:SAML:2.0:status:Requester";
 pub const STATUS_RESPONDER: &str = "urn:oasis:names:tc:SAML:2.0:status:Responder";
 pub const STATUS_VERSION_MISMATCH: &str = "urn:oasis:names:tc:SAML:2.0:status:VersionMismatch";
@@ -257,7 +257,7 @@ pub struct ValidatedAuthnRequest {
     pub requested_claim_types: Vec<String>,
 }
 
-/// `AuthnRequestValidationResult.InValid`: a status code and description;
+/// A status code and description;
 /// the provider when it was resolved.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationFailure {
@@ -379,7 +379,7 @@ pub fn validate_authn_request(input: &ValidationInput<'_>) -> Validation {
     })
 }
 
-/// `ValidateAcsUrl`.
+/// The assertion consumer service a request may use.
 fn resolve_acs(
     sp: &ServiceProvider,
     request: &crate::protocol::AuthnRequest,
@@ -427,15 +427,15 @@ fn resolve_acs(
             [] => Err(
                 "No AssertionConsumerServiceUrl registered for this Service Provider with the provided index",
             ),
-            // `SingleOrDefault` on duplicates throws; the configuration
-            // validator doesn't forbid them, so keep the first.
+            // The configuration validator doesn't forbid duplicates, so
+            // keep the first.
             [first, ..] => Ok((*first).clone()),
         };
     }
     Ok(default_or_first(&all.iter().collect::<Vec<_>>()))
 }
 
-/// `DefaultSamlResourceResolver`: the SP's allowed scopes must all be
+/// The SP's allowed scopes must all be
 /// enabled identity resources, and its requested claim types among their
 /// claims; the claim types then are those, or all the resources' claims.
 pub fn resolve_claim_types(

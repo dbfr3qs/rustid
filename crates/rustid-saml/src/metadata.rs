@@ -19,7 +19,7 @@ pub fn saml_issuer(options: &SamlOptions, oidc_issuer: &str) -> String {
     }
 }
 
-/// `ResolveMetadataPath`: the entity id's path when it's an absolute
+/// The entity id's path when it's an absolute
 /// http(s) URL with a path other than `/`; otherwise `entity_id_path`.
 pub fn metadata_path(options: &SamlOptions) -> String {
     if let Some(url) = options
@@ -34,7 +34,7 @@ pub fn metadata_path(options: &SamlOptions) -> String {
     options.entity_id_path.clone()
 }
 
-/// `XmlConvert.ToString(TimeSpan)` for whole seconds.
+/// An `xs:duration` for whole seconds.
 pub fn xs_duration(seconds: i64) -> String {
     let sign = if seconds < 0 { "-" } else { "" };
     let s = seconds.unsigned_abs();
@@ -58,7 +58,7 @@ pub fn xs_duration(seconds: i64) -> String {
     out
 }
 
-/// The metadata document (`OuterXml`): the IdP's entity descriptor with a
+/// The metadata document: the IdP's entity descriptor with a
 /// signing key descriptor per certificate (DER), the SLO and SSO services
 /// at `base_url` (trailing `/` trimmed), and the supported name-id formats.
 pub fn write_metadata(

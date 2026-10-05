@@ -1,5 +1,4 @@
-//! Unbinding an inbound message (`HttpRedirectBinding` and
-//! `HttpPostBinding`): which binding applies, what is a base64 error (an
+//! Unbinding an inbound message: which binding applies, what is a base64 error (an
 //! error page), what isn't handled (a 500), and redirect trust.
 
 use std::path::Path;

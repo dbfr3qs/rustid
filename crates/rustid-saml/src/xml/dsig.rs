@@ -1,8 +1,8 @@
-//! Enveloped XML signatures as the SAML IdP makes and checks them
-//!: one reference to the signature's parent by its `ID`,
+//! Enveloped XML signatures as the SAML IdP makes and checks them: one
+//! reference to the signature's parent by its `ID`,
 //! enveloped and exclusive-canonicalization transforms, RSA or ECDSA keys
-//! from X.509 certificates. Verification mirrors
-//! `SignedXml.CheckSignature` and its checks and messages.
+//! from X.509 certificates. Verification checks the SignedInfo signature,
+//! then the reference digest.
 
 use aws_lc_rs::{digest, rand, signature};
 use base64::Engine;
@@ -34,7 +34,7 @@ pub mod algorithms {
 }
 use algorithms::*;
 
-/// `SamlConstants.DefaultAllowedAlgorithms`.
+/// The signature algorithms allowed by default.
 pub const DEFAULT_ALLOWED: &[&str] = &[
     SHA256,
     SHA384,
@@ -111,7 +111,7 @@ impl Credential {
     }
 
     /// The signature method: RSA-SHA256, or ECDSA with the hash matching the
-    /// curve's strength (`CreateSignedXml`).
+    /// curve's strength.
     pub fn signature_method(&self) -> &'static str {
         match &self.key {
             Key::Rsa(_) => RSA_SHA256,
@@ -276,7 +276,7 @@ fn fixed_to_der(r: &[u8], s: &[u8]) -> Vec<u8> {
     out
 }
 
-/// `SignedXmlWithStrictIdResolution.GetIdElement`: exactly one element whose
+/// Exactly one element whose
 /// `ID`, `Id` or `id` is `id`, and its attribute must be `ID`.
 fn find_by_id<'d>(root: &'d Element, id: &str) -> Result<&'d Element, String> {
     let found: Vec<&Element> = root
@@ -359,7 +359,7 @@ pub fn sign(
 }
 
 /// Content some verifiers canonicalize differently from the XML-DSig
-/// specification: `SignedXml` re-reads the element from its serialization,
+/// specification: some re-read the element from its serialization,
 /// so a carriage return in text becomes a line feed and a tab in an
 /// attribute value a space. Neither verifier would accept both forms, so
 /// such content isn't signed.
@@ -405,8 +405,8 @@ fn c14n_options(algorithm: &str, element: &Element) -> Option<(bool, bool, Vec<S
     }
 }
 
-/// `CheckSignature` with one key: the SignedInfo signature, then the
-/// reference digest. `Err` is an exception message, which ends the check.
+/// Verification with one key: the SignedInfo signature, then the
+/// reference digest. `Err` is an error message, which ends the check.
 fn check_with(
     doc: &Document,
     signature: &Element,

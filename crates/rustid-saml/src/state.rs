@@ -1,6 +1,6 @@
 //! What the SAML IdP keeps between requests: sign-in state across the login
-//! round trip (`SamlAuthenticationState`) and logout sessions collecting
-//! service providers' logout responses (`SamlLogoutSession`).
+//! round trip and logout sessions collecting
+//! service providers' logout responses.
 
 use std::collections::BTreeMap;
 
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::model::IndexedEndpoint;
 
-/// `StoredRequestedAuthnContext`.
+/// The AuthnRequest's requested authentication context, kept for the callback.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestedAuthnContext {
@@ -20,7 +20,7 @@ pub struct RequestedAuthnContext {
     pub authn_context_decl_ref: Vec<String>,
 }
 
-/// `StoredAuthnRequestData`: what the callback needs from the AuthnRequest.
+/// What the callback needs from the AuthnRequest.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoredAuthnRequest {
@@ -35,7 +35,7 @@ pub struct StoredAuthnRequest {
     pub requested_authn_context: Option<RequestedAuthnContext>,
 }
 
-/// `SamlAuthenticationState`.
+/// The SAML request waiting for the user to sign in.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticationState {
@@ -55,7 +55,7 @@ pub struct AuthenticationState {
     pub denial_error_description: Option<String>,
 }
 
-/// `SamlSpLogoutResponse`.
+/// A service provider's logout response, collected during logout.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpLogoutResponse {
@@ -71,7 +71,7 @@ pub struct ExpectedSpLogout {
     pub response: Option<SpLogoutResponse>,
 }
 
-/// `SamlLogoutSession`: the LogoutRequests sent, by request id.
+/// The LogoutRequests sent, by request id.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogoutSession {

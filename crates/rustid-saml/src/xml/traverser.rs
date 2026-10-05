@@ -79,7 +79,7 @@ impl<'a> Traverser<'a> {
         self.errors.borrow_mut().push(message);
     }
 
-    /// `GetChildren`: a traverser before the current element's first child.
+    /// A traverser before the current element's first child.
     pub fn children(&self) -> Traverser<'a> {
         let element = self.current().expect("children of an element");
         Traverser {
@@ -159,7 +159,7 @@ impl<'a> Traverser<'a> {
         }
     }
 
-    /// The `ThrowOnErrors` precondition: the root traverser must have
+    /// The root traverser must have
     /// moved past the document element.
     pub fn finish(&self) -> Result<Vec<String>, Unhandled> {
         if !matches!(self.current, Current::None) {
@@ -179,7 +179,7 @@ impl<'a> Traverser<'a> {
             .is_some_and(|e| e.local == local && e.ns == ns)
     }
 
-    /// `EnsureName`.
+    /// Whether the current element has this local name and namespace.
     pub fn ensure_name(&self, local: &str, ns: &str) -> bool {
         let Some(e) = self.current() else {
             return false;
@@ -203,7 +203,7 @@ impl<'a> Traverser<'a> {
         ok
     }
 
-    /// `GetTextContents`: the element's `InnerText`; only text, whitespace
+    /// The element's text; only text, whitespace
     /// and comments may be inside.
     pub fn text_contents(&mut self) -> String {
         self.ignore_children();
@@ -224,7 +224,7 @@ impl<'a> Traverser<'a> {
         inner_text(e)
     }
 
-    /// `GetAbsoluteUriContents`.
+    /// The element's text, which must be an absolute URI.
     pub fn absolute_uri_contents(&mut self) -> String {
         let value = self.text_contents();
         let local = self.current().map(|e| e.local.clone()).unwrap_or_default();
@@ -240,8 +240,8 @@ impl<'a> Traverser<'a> {
         value
     }
 
-    /// An unprefixed attribute (`GetNamedItem(localName)` matches the
-    /// qualified name, so a prefixed attribute doesn't count).
+    /// An unprefixed attribute (matched by qualified name, so a prefixed
+    /// attribute doesn't count).
     pub fn attribute(&self, name: &str) -> Option<String> {
         self.current()?
             .attrs
@@ -336,7 +336,7 @@ impl<'a> Traverser<'a> {
     }
 }
 
-/// `XmlNode.InnerText`: the text of every descendant text node, in order.
+/// The text of every descendant text node, in order.
 pub fn inner_text(e: &Element) -> String {
     let mut out = String::new();
     for child in &e.children {
@@ -355,8 +355,7 @@ pub fn is_absolute_uri(value: &str) -> bool {
     url::Url::parse(value).is_ok()
 }
 
-/// `XmlConvert.ToDateTime(value, XmlDateTimeSerializationMode.Utc)` for
-/// xs:dateTime: up to seven fraction digits; `Z`, an offset, or no zone
+/// An xs:dateTime as UTC: up to seven fraction digits; `Z`, an offset, or no zone
 /// (taken as UTC). Surrounding whitespace is allowed.
 pub fn parse_xs_datetime(value: &str) -> Option<DateTime<Utc>> {
     let value = value.trim_matches(|c| matches!(c, ' ' | '\t' | '\r' | '\n'));

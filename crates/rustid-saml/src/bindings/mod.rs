@@ -32,7 +32,7 @@ pub(crate) fn error(message: impl Into<String>) -> BindingError {
 /// The base64 decoding error.
 pub const INVALID_BASE64: &str = "The input is not a valid Base-64 string as it contains a non-base 64 character, more than two padding characters, or an illegal character among the padding characters.";
 
-/// `Convert.FromBase64String`: standard base64, whitespace ignored.
+/// Standard base64, whitespace ignored.
 pub(crate) fn from_base64(text: &str) -> Result<Vec<u8>, BindingError> {
     use base64::Engine;
     let compact: String = text

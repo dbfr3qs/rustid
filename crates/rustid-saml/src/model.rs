@@ -35,7 +35,7 @@ fn enum_name_or_value<'de, D: Deserializer<'de>, T: Copy>(
     })
 }
 
-/// `SamlBinding`.
+/// A SAML binding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Binding {
     HttpRedirect,
@@ -106,7 +106,7 @@ impl Serialize for KeyUse {
     }
 }
 
-/// `SamlSigningBehavior` (flags: response 1, assertion 2).
+/// What a response signs (flags: response 1, assertion 2).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SigningBehavior {
     DoNotSign,
@@ -162,7 +162,7 @@ impl Serialize for SigningBehavior {
     }
 }
 
-/// `SamlEndpointType`.
+/// A service provider endpoint's kind.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Endpoint {
@@ -182,7 +182,7 @@ pub struct IndexedEndpoint {
     pub is_default: bool,
 }
 
-/// `ServiceProviderCertificate`: the certificate (DER) and what it's for.
+/// The certificate (DER) and what it's for.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpCertificate {
     pub der: Vec<u8>,

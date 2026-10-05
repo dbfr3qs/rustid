@@ -9,12 +9,12 @@ An OpenID Connect and OAuth 2.0 server, and a SAML 2.0 identity provider, writte
 - **Sessions and logout:** server-side sessions, RP-initiated, front-channel and back-channel logout, and session management.
 - **Advanced security:** pushed authorization requests (PAR), JWT-secured authorization requests (JAR, by value and by reference), JWT-secured authorization responses (JARM), DPoP, mTLS client authentication and certificate-bound tokens, resource indicators, and FAPI 2.0.
 - **SAML 2.0 IdP:** SP- and IdP-initiated SSO, single logout, signed metadata.
-- **Administration:** an admin API for clients, resources, SAML service providers and data extension schemas; dynamic client registration (RFC 7591) with optional RFC 7592 management.
+- **Administration:** an admin API for clients, resources, SAML service providers, upstream identity providers and data extension schemas; dynamic client registration (RFC 7591) with optional RFC 7592 management.
 - **Operations:** automatic signing-key management, data protection, OpenTelemetry traces and metrics, health and readiness probes, a static container image, and import from a migration bundle.
 
 The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included ([docs/conformance.md](docs/conformance.md)).
 
-**Not supported:** identity providers managed through the admin API, logout started by an upstream provider, and SAML assertion encryption.
+**Not supported:** logout started by an upstream provider, SAML upstream providers, and SAML assertion encryption.
 
 ## Quick start
 

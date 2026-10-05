@@ -47,6 +47,17 @@ Clients (`/admin/clients`, and `GET /admin/clients/by-client-id/{clientId}`) tak
 
 SAML service providers (`/admin/saml-service-providers`, and `GET /admin/saml-service-providers/by-entity-id/{entityId}` with the entity id URL-encoded) take the JSON of `service_providers_file`, except that certificates are `[{"id": ..., "base64Data": "<DER, base64>", "use": "Signing"|"Encryption"}]`. Reads add each certificate's `subject`, `thumbprint` and `notAfter`. A `PUT` replaces the certificate list: certificates sent back with their `id` keep it, new ones get one. The configuration checks apply (absolute ACS and SLO URLs, unique ACS indexes, valid certificates, HTTP-POST ACS endpoints, at least one scope), and extended properties go against schema `saml-service-provider`. Queries filter by `entityId`, `displayName` and `enabled`, and sort by `entityId`, `displayName` or `enabled`. A new, changed, disabled or deleted service provider takes effect at once, on either store. On Postgres, a service provider defined in `service_providers_file` is re-imported from the file on every start (see below), so disable or change it in the file, not only through admin. The admin API accepts service providers while `[saml] enabled` is false; they are served once SAML is enabled.
 
+## Identity providers
+
+Upstream identity providers (`/admin/identity-providers`, and `GET /admin/identity-providers/by-scheme/{scheme}`) take the JSON of `identity_providers_file` ([federation.md](federation.md)), keyed by `scheme`, which can't change after creation.
+
+- **Secrets and keys:** `clientAuthentication.secret`, and for `private_key_jwt` an inline `key` (a PKCS#8 PEM, with an optional `certificate` PEM), are stored encrypted with the data protection key ring. Reads never show them: they show `hasSecret` and `hasKey` instead. `secretEnv` and `keyFile` work as in the file.
+- **Updates:** a `PUT` without `secret` (or `key`) keeps the stored one when the method is unchanged. A `PUT` that switches to `private_key_jwt` must send a key.
+- **Checks:** every write passes the same checks as the file (an https authority, the scheme's form, `openid` in the scopes), and the credential must resolve: a `secretEnv` that is set, a key that parses.
+- **Postgres:** inline secrets and keys need `data_protection.keys` configured, since a per-process key couldn't open them after a restart. Without one, use `secretEnv` or `keyFile`.
+- **Queries** filter by `scheme`, `displayName` and `enabled`, and sort by `scheme`, `displayName` or `enabled`.
+- **Effect:** a new, changed, disabled or deleted provider takes effect at the next sign-in, without a restart.
+
 ## Extended properties and schemas
 
 Every kind also takes `extendedProperties`, checked against the kind's data extension schema (`client`, `api-resource`, `api-scope` or `identity-resource`); a kind with no schema accepts none. A schema lists attribute definitions with a type (`{"kind": "scalar", "dataType": "String"|"Integer"|"Decimal"|"Boolean"|"Date"|"DateTime"}`, a `list` of an `elementType`, or a `complex` type with `properties`) and whether each is required:
@@ -60,6 +71,6 @@ Schemas are managed at `/admin/schemas` (`GET`, `POST`, and `GET`/`PUT`/`DELETE 
 
 ## Admin edits and the configuration files
 
-With the Postgres store, `clients_file`, `resources_file` and `[saml] service_providers_file` are imported on every start and overwrite the entities they define: admin edits to those entities (an added secret, a disabled service provider or a certificate id included) don't survive a restart. Entities created through admin and absent from the files are kept. Manage an entity either in the file or through admin, not both.
+With the Postgres store, `clients_file`, `resources_file`, `identity_providers_file` and `[saml] service_providers_file` are imported on every start and overwrite the entities they define: admin edits to those entities (an added secret, a disabled service provider or a certificate id included) don't survive a restart. Entities created through admin and absent from the files are kept. Manage an entity either in the file or through admin, not both.
 
 With the memory store, admin writes live until the process stops; the files are read again at start.

@@ -27,6 +27,12 @@ fn app_with(schemas_read_only: bool) -> axum::Router {
         api_keys: vec![KEY.to_owned()],
         clients: Default::default(),
         schemas_read_only,
+        identity_providers: Arc::new(
+            rustid_core::admin::identity_providers::IdentityProviderAdmin::new(Arc::new(
+                rustid_core::data_protection::DataProtector::new([("k", [3u8; 32].as_slice())])
+                    .unwrap(),
+            )),
+        ),
     })
 }
 
@@ -966,4 +972,144 @@ async fn saml_service_providers() {
             .status,
         StatusCode::NOT_FOUND
     );
+}
+
+#[tokio::test]
+async fn identity_providers_over_http_never_show_their_secret() {
+    let app = app();
+    let auth = format!("Bearer {KEY}");
+    let headers = [("authorization", auth.as_str())];
+    let provider = json!({
+        "scheme": "corp", "displayName": "Corp", "authority": "https://login.corp.example",
+        "clientId": "rustid", "clientAuthentication": { "secret": "top-secret-value" },
+    });
+    let created = call(
+        &app,
+        Method::POST,
+        "/admin/identity-providers",
+        Some(provider.clone()),
+        &headers,
+    )
+    .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{}", created.body);
+    let id = created.body["id"].as_str().unwrap().to_owned();
+    assert!(!created.body.to_string().contains("top-secret-value"));
+
+    let read = call(
+        &app,
+        Method::GET,
+        &format!("/admin/identity-providers/{id}"),
+        None,
+        &headers,
+    )
+    .await;
+    assert_eq!(read.status, StatusCode::OK);
+    assert_eq!(read.body["scheme"], "corp");
+    assert_eq!(read.body["clientAuthentication"]["hasSecret"], true);
+    assert!(
+        !read.body.to_string().contains("top-secret-value"),
+        "{}",
+        read.body
+    );
+    let etag = read.headers["etag"].to_str().unwrap().to_owned();
+
+    let by_scheme = call(
+        &app,
+        Method::GET,
+        "/admin/identity-providers/by-scheme/corp",
+        None,
+        &headers,
+    )
+    .await;
+    assert_eq!(by_scheme.body["id"], id.as_str());
+    let list = call(
+        &app,
+        Method::GET,
+        "/admin/identity-providers?displayName=Co",
+        None,
+        &headers,
+    )
+    .await;
+    assert_eq!(list.body["items"][0]["scheme"], "corp");
+    assert!(!list.body.to_string().contains("top-secret-value"));
+
+    let duplicate = call(
+        &app,
+        Method::POST,
+        "/admin/identity-providers",
+        Some(provider.clone()),
+        &headers,
+    )
+    .await;
+    assert_eq!(duplicate.status, StatusCode::CONFLICT);
+
+    let mut renamed = provider.clone();
+    renamed["displayName"] = "Corp, renamed".into();
+    renamed["clientAuthentication"] = json!({});
+    let no_version = call(
+        &app,
+        Method::PUT,
+        &format!("/admin/identity-providers/{id}"),
+        Some(renamed.clone()),
+        &headers,
+    )
+    .await;
+    assert_eq!(no_version.status, StatusCode::PRECONDITION_REQUIRED);
+    let updated = call(
+        &app,
+        Method::PUT,
+        &format!("/admin/identity-providers/{id}"),
+        Some(renamed),
+        &[
+            ("authorization", auth.as_str()),
+            ("if-match", etag.as_str()),
+        ],
+    )
+    .await;
+    assert_eq!(updated.status, StatusCode::OK, "{}", updated.body);
+    let read = call(
+        &app,
+        Method::GET,
+        &format!("/admin/identity-providers/{id}"),
+        None,
+        &headers,
+    )
+    .await;
+    assert_eq!(read.body["displayName"], "Corp, renamed");
+    assert_eq!(
+        read.body["clientAuthentication"]["hasSecret"], true,
+        "the secret was kept"
+    );
+
+    let mut bad = provider;
+    bad["scheme"] = "local".into();
+    let refused = call(
+        &app,
+        Method::POST,
+        "/admin/identity-providers",
+        Some(bad),
+        &headers,
+    )
+    .await;
+    assert_eq!(refused.status, StatusCode::BAD_REQUEST);
+    assert_eq!(refused.body["errors"][0]["code"], "validation_failed");
+
+    let deleted = call(
+        &app,
+        Method::DELETE,
+        &format!("/admin/identity-providers/{id}"),
+        None,
+        &headers,
+    )
+    .await;
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+    let gone = call(
+        &app,
+        Method::GET,
+        &format!("/admin/identity-providers/{id}"),
+        None,
+        &headers,
+    )
+    .await;
+    assert_eq!(gone.status, StatusCode::NOT_FOUND);
 }

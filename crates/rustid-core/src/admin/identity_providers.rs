@@ -150,6 +150,7 @@ type Env = Arc<dyn Fn(&str) -> Option<String> + Send + Sync>;
 pub struct IdentityProviderAdmin {
     protector: Arc<DataProtector>,
     allow_insecure_loopback: bool,
+    inline_secrets: bool,
     env: Env,
 }
 
@@ -160,6 +161,7 @@ impl IdentityProviderAdmin {
         IdentityProviderAdmin {
             protector,
             allow_insecure_loopback: false,
+            inline_secrets: true,
             env: Arc::new(|name| std::env::var(name).ok()),
         }
     }
@@ -171,8 +173,22 @@ impl IdentityProviderAdmin {
         self
     }
 
+    /// Refuses secrets and keys given inline, for a store that outlives a
+    /// data protection key that isn't configured (Postgres with a
+    /// per-process key): they couldn't be read after a restart.
+    pub fn with_inline_secrets(mut self, allow: bool) -> Self {
+        self.inline_secrets = allow;
+        self
+    }
+
     /// The provider rules, then its credential must resolve.
     fn check(&self, config: &IdentityProvider) -> Option<AdminError> {
+        let auth = &config.client_authentication;
+        if !self.inline_secrets && (auth.secret.is_some() || auth.key.is_some()) {
+            return Some(AdminError::validation_failed(
+                "Storing a secret or key needs data_protection.keys to be configured; use secretEnv or keyFile instead.",
+            ));
+        }
         if let Err(error) = config.validate(self.allow_insecure_loopback) {
             return Some(AdminError::validation_failed(error.to_string()));
         }

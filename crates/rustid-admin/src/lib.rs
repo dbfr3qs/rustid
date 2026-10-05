@@ -41,6 +41,9 @@ pub struct AdminState {
     pub clients: rustid_core::admin::clients::ClientAdmin,
     /// Schemas come from `schemas_file`: the schema routes only read.
     pub schemas_read_only: bool,
+    /// The identity provider admin, with the data protection key ring
+    /// secrets are stored under.
+    pub identity_providers: Arc<rustid_core::admin::identity_providers::IdentityProviderAdmin>,
 }
 
 /// The routes under `/admin`, behind the API key check.
@@ -55,6 +58,7 @@ pub fn router(state: AdminState) -> Router {
     admin = admin.nest("/api-resources", api_resource_routes());
     admin = admin.nest("/clients", client_routes());
     admin = admin.nest("/schemas", schema_routes());
+    admin = admin.nest("/identity-providers", identity_provider_routes());
     #[cfg(feature = "saml")]
     {
         admin = admin.nest("/saml-service-providers", saml_routes());
@@ -857,6 +861,125 @@ fn saml_routes() -> Router<AdminState> {
                 match admin.delete(s.configuration.as_ref(), &id).await {
                     Ok(Ok(_)) => {
                         tracing::info!(kind = "saml_service_provider", %id, "admin deleted");
+                        StatusCode::NO_CONTENT.into_response()
+                    }
+                    Ok(Err(e)) => errors(e),
+                    Err(e) => store_failure(e),
+                }
+            }),
+        )
+}
+
+fn identity_provider_body(
+    bytes: &Bytes,
+) -> Result<rustid_core::admin::identity_providers::IdentityProviderInput, Response> {
+    let value: Value = body(bytes)?;
+    rustid_core::admin::identity_providers::IdentityProviderInput::from_json(value)
+        .map_err(|e| errors(vec![e]))
+}
+
+fn identity_provider_routes() -> Router<AdminState> {
+    use rustid_core::admin::identity_providers::{
+        IdentityProviderFilter, IdentityProviderSortField,
+    };
+    let text = |params: &Map<String, Value>, name: &str| {
+        params.get(name).and_then(Value::as_str).map(str::to_owned)
+    };
+    Router::new()
+        .route(
+            "/",
+            get(move |State(s): State<AdminState>, Query(params): Query<Map<String, Value>>| async move {
+                let query = || -> Result<_, AdminError> {
+                    let sort = match params.get("sort").and_then(Value::as_str) {
+                        None | Some("scheme") => IdentityProviderSortField::Scheme,
+                        Some("displayName") => IdentityProviderSortField::DisplayName,
+                        Some("enabled") => IdentityProviderSortField::Enabled,
+                        Some(_) => {
+                            return Err(AdminError::invalid_value(
+                                "sort",
+                                "Must be scheme, displayName or enabled.",
+                            ));
+                        }
+                    };
+                    let filter = IdentityProviderFilter {
+                        scheme: text(&params, "scheme"),
+                        display_name: text(&params, "displayName"),
+                        enabled: flag(&params, "enabled")?,
+                    };
+                    Ok((filter, sort, direction(&params)?, range(&params)?))
+                };
+                let (filter, sort, direction, range) = match query() {
+                    Ok(q) => q,
+                    Err(e) => return errors(vec![e]),
+                };
+                match s
+                    .identity_providers
+                    .query(s.configuration.as_ref(), &filter, Some((sort, direction)), &range)
+                    .await
+                {
+                    Ok(Ok(result)) => json_response(StatusCode::OK, &json!(result)),
+                    Ok(Err(e)) => errors(vec![e]),
+                    Err(e) => store_failure(e),
+                }
+            })
+            .post(move |State(s): State<AdminState>, bytes: Bytes| async move {
+                let input = match identity_provider_body(&bytes) {
+                    Ok(input) => input,
+                    Err(response) => return response,
+                };
+                let scheme = input.0.scheme.clone();
+                let result = s.identity_providers.create(s.configuration.as_ref(), input).await;
+                if let Ok(Ok(saved)) = &result {
+                    tracing::info!(kind = "identity_provider", id = %saved.id, key = %scheme, "admin created");
+                }
+                saved(result, true)
+            }),
+        )
+        .route(
+            "/by-scheme/{scheme}",
+            get(move |State(s): State<AdminState>, Path(scheme): Path<String>| async move {
+                found(s.identity_providers.get_by_scheme(s.configuration.as_ref(), &scheme).await)
+            }),
+        )
+        .route(
+            "/{id}",
+            get(move |State(s): State<AdminState>, Path(id): Path<String>| async move {
+                let Some(id) = parse_id(&id) else {
+                    return not_found();
+                };
+                found(s.identity_providers.get(s.configuration.as_ref(), &id).await)
+            })
+            .put(
+                move |State(s): State<AdminState>, Path(id): Path<String>, headers: HeaderMap, bytes: Bytes| async move {
+                    let Some(id) = parse_id(&id) else {
+                        return not_found();
+                    };
+                    let version = match expected_version(&headers) {
+                        Ok(v) => v,
+                        Err(response) => return response,
+                    };
+                    let input = match identity_provider_body(&bytes) {
+                        Ok(input) => input,
+                        Err(response) => return response,
+                    };
+                    let scheme = input.0.scheme.clone();
+                    let result = s
+                        .identity_providers
+                        .update(s.configuration.as_ref(), &id, input, version)
+                        .await;
+                    if let Ok(Ok(saved)) = &result {
+                        tracing::info!(kind = "identity_provider", id = %saved.id, key = %scheme, version = saved.version, "admin updated");
+                    }
+                    saved(result, false)
+                },
+            )
+            .delete(move |State(s): State<AdminState>, Path(id): Path<String>| async move {
+                let Some(id) = parse_id(&id) else {
+                    return StatusCode::NO_CONTENT.into_response();
+                };
+                match s.identity_providers.delete(s.configuration.as_ref(), &id).await {
+                    Ok(Ok(_)) => {
+                        tracing::info!(kind = "identity_provider", %id, "admin deleted");
                         StatusCode::NO_CONTENT.into_response()
                     }
                     Ok(Err(e)) => errors(e),

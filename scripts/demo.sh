@@ -103,6 +103,10 @@ cat << 'EOF'
       -H 'content-type: application/json' https://localhost:5443/admin/clients -d '{"clientId":"orders",
       "allowedGrantTypes":["client_credentials"],"allowedScopes":["api1"],"clientSecrets":[{"plaintextValue":"orders-secret"}]}'
     curl --cacert target/demo/ca.pem https://localhost:5443/connect/token -u orders:orders-secret -d grant_type=client_credentials
+  Admin API (the demo's upstream identity provider; disable it with a PUT
+  and the button leaves the sign-in page at once):
+    curl --cacert target/demo/ca.pem -H 'Authorization: Bearer rustid-demo-admin-key-not-for-real-use' \
+      https://localhost:5443/admin/identity-providers/by-scheme/upstream
   Admin API (the demo's SAML service provider; disable it with a PUT and
   "Sign in with SAML" is refused at once):
     curl --cacert target/demo/ca.pem -H 'Authorization: Bearer rustid-demo-admin-key-not-for-real-use' \

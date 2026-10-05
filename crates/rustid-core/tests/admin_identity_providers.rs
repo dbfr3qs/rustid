@@ -251,3 +251,26 @@ async fn secrets_protected_under_an_older_key_still_resolve() {
         matches!(resolve(&stored, &rotated, &no_env).unwrap().credential, Credential::Basic(s) if s == "s3cret")
     );
 }
+
+#[tokio::test]
+async fn without_a_configured_key_ring_inline_secrets_are_refused() {
+    let store = InMemoryConfiguration::default();
+    let admin = IdentityProviderAdmin::new(protector(&[("a", [1; 32])])).with_inline_secrets(false);
+    let errors = admin
+        .create(&store, input(provider("up")))
+        .await
+        .unwrap()
+        .unwrap_err();
+    assert_eq!(errors[0].code, "validation_failed");
+    assert!(
+        errors[0].message.contains("data_protection.keys"),
+        "{}",
+        errors[0].message
+    );
+    // SAFETY: only this test reads the variable.
+    let name = "RUSTID_TEST_IDP_SECRET_FOR_INLINE_CHECK";
+    unsafe { std::env::set_var(name, "from-env") };
+    let mut env = provider("env");
+    env["clientAuthentication"] = json!({ "secretEnv": name });
+    admin.create(&store, input(env)).await.unwrap().unwrap();
+}

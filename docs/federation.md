@@ -6,6 +6,8 @@ Upstream providers must be standards-compliant OpenID Connect providers. OAuth 2
 
 ## Configuring providers
 
+Providers come from `identity_providers_file`, the admin API (`/admin/identity-providers`, [admin-api.md](admin-api.md#identity-providers)), or both. The file is imported into the store at start, and admin changes take effect at the next sign-in. On Postgres, a provider the file defines is overwritten from the file at every start, so manage each provider in one place.
+
 Providers are a JSON array in the file `identity_providers_file` names:
 
 ```toml
@@ -191,6 +193,7 @@ The logout continuation (`/connect/interaction/logout?token=…`) may now redire
 
 These are not supported yet:
 - logout started by the provider (its front-channel or back-channel logout to rustid);
+- SAML upstream providers;
 - managing providers through the admin API.
 
 Upstream providers must answer in the query response mode.

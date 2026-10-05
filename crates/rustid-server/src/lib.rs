@@ -298,6 +298,17 @@ pub async fn build(config: &ServerConfig) -> anyhow::Result<App> {
                     .allow_unregistered_pushed_redirect_uris,
             },
             schemas_read_only: config.admin.schemas_file.is_some(),
+            identity_providers: Arc::new(
+                rustid_core::admin::identity_providers::IdentityProviderAdmin::new(
+                    state.0.interaction.protector.clone(),
+                )
+                .with_insecure_loopback(config.federation.allow_insecure_loopback)
+                // On Postgres, a per-process key wouldn't open stored secrets
+                // after a restart.
+                .with_inline_secrets(
+                    config.store.kind != StoreKind::Postgres || config.data_protector()?.is_some(),
+                ),
+            ),
         })
     } else {
         None

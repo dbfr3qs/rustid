@@ -5,6 +5,7 @@
     "authority": "https://127.0.0.1:5444",
     "clientId": "rustid-demo-federation",
     "clientAuthentication": { "secret": "federation-secret" },
-    "scopes": ["openid", "profile", "email"]
+    "scopes": ["openid", "profile", "email"],
+    "signOut": true
   }
 ]

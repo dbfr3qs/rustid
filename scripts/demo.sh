@@ -75,7 +75,8 @@ cat << 'EOF'
   Federation: on the sign-in page, "Sign in with Upstream IdP" signs in
            through a second rustid (https://127.0.0.1:5444) as carol / carol
            or dave / dave; the client then shows a subject derived from the
-           upstream's issuer and subject, and idp "upstream".
+           upstream's issuer and subject, and idp "upstream". Signing out
+           signs out of the upstream too.
   Logout:  "Sign out" in the client ends both sessions; signing out at
            https://localhost:5443/connect/endsession signs the client out
            over the front channel.

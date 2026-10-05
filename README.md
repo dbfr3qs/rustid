@@ -14,7 +14,7 @@ An OpenID Connect and OAuth 2.0 server, and a SAML 2.0 identity provider, writte
 
 The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included ([docs/conformance.md](docs/conformance.md)).
 
-**Not supported:** identity providers managed through the admin API, signing out of upstream providers, and SAML assertion encryption.
+**Not supported:** identity providers managed through the admin API, logout started by an upstream provider, and SAML assertion encryption.
 
 ## Quick start
 
@@ -52,7 +52,7 @@ Then try:
 - **Refresh tokens:** grant *Offline access* on the consent page and the client gets a refresh token, which **Refresh tokens** redeems for new ones.
 - **Sign out:** this ends both sessions. The client sends you to the server's end session endpoint with its id token as the hint. Sign out at the server itself (https://localhost:5443/connect/endsession) and the demo client is signed out too, through the front-channel logout iframe.
 - **Sessions:** sessions are kept server side. **Your sessions at the server** (https://localhost:5443/sessions) lists where you are signed in. Sign in from a second browser and end that session from the first: the second is signed out, and its refresh tokens are revoked.
-- **Federation:** on the sign-in page, *Sign in with Upstream IdP* signs in through a second rustid on https://127.0.0.1:5444 as `carol` / `carol` or `dave` / `dave`.
+- **Federation:** on the sign-in page, *Sign in with Upstream IdP* signs in through a second rustid on https://127.0.0.1:5444 as `carol` / `carol` or `dave` / `dave`; signing out then ends the upstream session too.
 - **SAML:** the demo client is also a SAML service provider. Open http://localhost:5002/saml for **Sign in with SAML** (a signed AuthnRequest, the response's signatures checked against the server's metadata at https://localhost:5443/Saml2) and **Log out (SAML SLO)**. Your browser may warn that the identity provider posts to an `http://` page; continue.
 - **Other grants:**
   - `cargo run -p rustid-demo -- device` runs the device flow, approved at https://localhost:5443/device;

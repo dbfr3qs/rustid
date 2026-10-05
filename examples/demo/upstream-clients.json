@@ -6,6 +6,7 @@
     "allowedGrantTypes": ["authorization_code"],
     "requirePkce": true,
     "redirectUris": ["https://localhost:5443/federation/upstream/callback"],
+    "postLogoutRedirectUris": ["https://localhost:5443/federation/upstream/signout-callback"],
     "allowedScopes": ["openid", "profile", "email"],
     "requireConsent": false,
     "alwaysIncludeUserClaimsInIdToken": true

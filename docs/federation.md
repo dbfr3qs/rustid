@@ -43,6 +43,7 @@ identity_providers_file = "identity-providers.json"
 | `scopes` | `["openid", "profile", "email"]` by default. Must contain `openid` |
 | `claims` | The id token claims copied into the session. By default these are the OpenID Connect standard claims (`name`, `email`, `email_verified`, `preferred_username` and the others) |
 | `userinfo` | `false` by default. When `true`, rustid also calls the provider's userinfo endpoint with the access token, and its claims join the id token's |
+| `signOut` | `false` by default. When `true`, signing out of rustid also signs the user out of the provider (see Signing out) |
 
 ### Client authentication
 
@@ -136,10 +137,28 @@ An upstream `access_denied` (the user refused, or the provider did) goes back to
 
 A successful sign-in raises `User Login Success` (id 1000), with `Provider`, `ProviderUserId` and `SubjectId`.
 
+## Signing out
+
+With `signOut`, signing out of rustid also signs the user out of the provider, following OpenID Connect RP-Initiated Logout 1.0.
+
+1. rustid signs the session out as usual: its cookies go, and back-channel notifications go to its clients.
+2. If the provider advertises an `end_session_endpoint`, rustid sends the browser there with:
+   - `client_id`;
+   - `post_logout_redirect_uri` set to `<rustid issuer>/federation/<scheme>/signout-callback`;
+   - a `state` bound to the browser by a sealed cookie;
+   - `id_token_hint`, but only with server-side sessions: only they keep the provider's id token, which would make a session cookie too large.
+3. The provider returns the browser to the signout callback, which checks `state` and continues to the return URL the login UI gave the logout call. The login UI's signed-out page (with its front-channel iframes) is shown then.
+
+Register the signout callback with the provider as a post-logout redirect URI.
+
+If the provider can't be reached, or never sends the browser back, the user is still signed out of rustid. A signout callback with a missing or wrong `state` shows a signed-out page and never redirects.
+
+The logout continuation (`/connect/interaction/logout?token=…`) may now redirect to the provider instead of to the return URL. The interaction API has always had the browser follow that redirect. A UI that visits the continuation itself must send the browser to its `Location` when it isn't the return URL, as the reference UI does.
+
 ## Limitations
 
 These are not supported yet:
-- signing out of the provider when the user signs out of rustid;
+- logout started by the provider (its front-channel or back-channel logout to rustid);
 - Entra ID's multi-tenant endpoints;
 - managing providers through the admin API.
 

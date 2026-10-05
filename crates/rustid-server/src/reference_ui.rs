@@ -151,6 +151,7 @@ impl ReferenceUi {
                     &format!("{prefix}/account/logout"),
                     get(logout).post(logout_submit),
                 )
+                .route(&format!("{prefix}/account/logout/done"), get(logout_done))
                 .route(
                     &format!("{prefix}/Account/Logout"),
                     get(logout).post(logout_submit),
@@ -673,8 +674,22 @@ async fn logout_context(
 /// Signs the browser out: completes the logout through
 /// the API and redeems the continuation with the browser's cookies, whose
 /// `Set-Cookie` deletions go on `response`.
-async fn sign_out(page: &Page, caller: &Caller, mut response: Response) -> Response {
-    let body = json!({ "returnUrl": "/" });
+/// Signs the browser out through the interaction API and answers with
+/// `response`. When the session's provider signs out upstream too, the
+/// continuation sends the browser there instead; it comes back to the done
+/// page, which shows the signed-out page then.
+async fn sign_out(
+    page: &Page,
+    caller: &Caller,
+    logout_id: Option<&str>,
+    mut response: Response,
+) -> Response {
+    let base = page.ui.path_base.clone().unwrap_or_default();
+    let return_url = match logout_id {
+        Some(id) => format!("{base}/account/logout/done?logoutId={}", url_encode(id)),
+        None => format!("{base}/account/logout/done"),
+    };
+    let body = json!({ "returnUrl": return_url });
     let continue_url = match page
         .api(axum::http::Method::POST, "/logout", caller, Some(body))
         .await
@@ -688,6 +703,14 @@ async fn sign_out(page: &Page, caller: &Caller, mut response: Response) -> Respo
         Ok(r) => return api_failure("logout continuation", &r.status()),
         Err(e) => return api_failure("logout continuation", &e),
     };
+    let location = signed_out
+        .headers()
+        .get(LOCATION)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or_default();
+    if location != return_url {
+        response = redirect(location);
+    }
     for cookie in signed_out.headers().get_all(SET_COOKIE) {
         response.headers_mut().append(SET_COOKIE, cookie.clone());
     }
@@ -715,7 +738,7 @@ async fn logout(State(page): State<Arc<Page>>, request: Request) -> Response {
         if context["showSignoutPrompt"] == true {
             return logout_prompt(logout_id.as_deref());
         }
-        return sign_out(&page, &caller, signed_out_page(&context)).await;
+        return sign_out(&page, &caller, logout_id.as_deref(), signed_out_page(&context)).await;
     }
     let answer = json_response(
         StatusCode::OK,
@@ -725,7 +748,7 @@ async fn logout(State(page): State<Arc<Page>>, request: Request) -> Response {
             "signOutIFrameUrl": context["signOutIFrameUrl"],
         }),
     );
-    sign_out(&page, &caller, answer).await
+    sign_out(&page, &caller, logout_id.as_deref(), answer).await
 }
 
 #[derive(Deserialize)]
@@ -755,7 +778,20 @@ async fn logout_submit(State(page): State<Arc<Page>>, request: Request) -> Respo
         Ok(context) => context,
         Err(response) => return *response,
     };
-    sign_out(&page, &caller, signed_out_page(&context)).await
+    sign_out(&page, &caller, logout_id.as_deref(), signed_out_page(&context)).await
+}
+
+/// `/account/logout/done?logoutId=…`: where a sign-out ends, after an
+/// upstream provider's sign-out when there was one. The signed-out page,
+/// from the logout context the logout id still names.
+async fn logout_done(State(page): State<Arc<Page>>, request: Request) -> Response {
+    let params = Params::parse_query(request.uri().query().unwrap_or_default());
+    let logout_id = params.get("logoutId");
+    let caller = Caller::of(&request);
+    match logout_context(&page, &caller, logout_id.as_deref()).await {
+        Ok(context) => signed_out_page(&context),
+        Err(response) => *response,
+    }
 }
 
 fn logout_prompt(logout_id: Option<&str>) -> Response {

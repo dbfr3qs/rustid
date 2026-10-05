@@ -12,7 +12,7 @@ use axum::response::{IntoResponse, Response};
 use rustid_core::access_tokens::ValidationContext;
 use rustid_core::authorize::AuthorizeContext;
 use rustid_core::authorize::context::{
-    ConsentContext, authorization_context, is_valid_return_url, validated_return_url,
+    AuthorizationContext, ConsentContext, is_valid_return_url, validated_return_url,
 };
 use rustid_core::authorize::login::{BINDING_COOKIE, Continuation, InteractionBinding};
 use rustid_core::authorize::messages::{self, ERROR_MESSAGE_PURPOSE, ErrorMessage};
@@ -188,8 +188,32 @@ async fn login_context(state: &ProtocolState, route: &Route, info: &RequestInfo)
     };
     let issuer = current_issuer(&state.options, &route.origin);
     let ctx = authorize_ctx(state, info, &issuer);
-    match authorization_context(&ctx, &return_url, None).await {
-        Ok(Some(context)) => no_cache_json(StatusCode::OK, &json!(context)),
+    match validated_return_url(&ctx, &return_url, None).await {
+        Ok(Some(request)) => {
+            let mut context = json!(AuthorizationContext::of(&request));
+            let client = request
+                .client
+                .as_ref()
+                .expect("validated request has a client");
+            // The providers this client may sign in through, as buttons.
+            let providers: Vec<serde_json::Value> = state
+                .stores
+                .federation
+                .providers
+                .allowed_for(client)
+                .iter()
+                .map(|p| {
+                    json!({
+                        "scheme": p.config.scheme,
+                        "displayName": p.config.display_name,
+                        "challengeUrl": crate::federation::challenge_url(route, &p.config.scheme, &return_url),
+                    })
+                })
+                .collect();
+            context["identityProviders"] = json!(providers);
+            context["enableLocalLogin"] = json!(client.enable_local_login);
+            no_cache_json(StatusCode::OK, &context)
+        }
         Ok(None) => no_cache_json(StatusCode::NOT_FOUND, &json!({ "error": "not_found" })),
         Err(e) => internal_error(state, info, "GetAuthorizationContext", &e.to_string()),
     }

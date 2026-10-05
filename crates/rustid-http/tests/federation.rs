@@ -434,3 +434,132 @@ async fn continuation_requires_the_same_browser() {
     assert_eq!(stolen.status, StatusCode::BAD_REQUEST);
     assert!(stolen.body.contains("invalid_continuation"));
 }
+
+async fn login_context(browser: &mut Browser, return_url: &str) -> serde_json::Value {
+    let bearer = format!("Bearer {API_KEY}");
+    let mut ui = Browser::new(&browser.app);
+    let reply = ui
+        .send(
+            Method::GET,
+            &format!("/interaction/login?returnUrl={}", encode(return_url)),
+            &[("authorization", &bearer)],
+            "",
+        )
+        .await;
+    assert_eq!(reply.status, StatusCode::OK, "{}", reply.body);
+    serde_json::from_str(&reply.body).unwrap()
+}
+
+#[tokio::test]
+async fn login_context_lists_allowed_providers() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let login = b.get(&authorize_for("fed.client", "")).await;
+    let return_url = return_url(&login.location());
+    let context = login_context(&mut b, &return_url).await;
+    assert_eq!(context["enableLocalLogin"], true);
+    assert_eq!(
+        context["identityProviders"],
+        serde_json::json!([{
+            "scheme": "up",
+            "displayName": "Upstream",
+            "challengeUrl": format!("http://server/federation/up/challenge?returnUrl={}", encode(&return_url)),
+        }])
+    );
+    // The challenge URL works as it is.
+    let challenge_url = context["identityProviders"][0]["challengeUrl"]
+        .as_str()
+        .unwrap();
+    let reply = b
+        .get(challenge_url.strip_prefix("http://server").unwrap())
+        .await;
+    assert_eq!(reply.status, StatusCode::FOUND);
+    assert!(
+        reply
+            .location()
+            .starts_with("https://up.example/authorize?")
+    );
+}
+
+#[tokio::test]
+async fn idp_hint_skips_the_login_page() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let reply = b
+        .get(&authorize_for("fed.client", "&acr_values=idp%3Aup"))
+        .await;
+    let location = reply.location();
+    assert!(
+        location.starts_with("http://server/federation/up/challenge?returnUrl="),
+        "{location}"
+    );
+    assert!(
+        reply.cookie("idsrv.interaction").is_some(),
+        "the interaction is bound to the browser"
+    );
+    let upstream = b.get(location.strip_prefix("http://server").unwrap()).await;
+    assert_eq!(upstream.status, StatusCode::FOUND);
+    // The whole sign-in completes from here.
+    let reply = callback(&f, &mut b, &upstream.location()).await;
+    let signed_in = b
+        .get(reply.location().strip_prefix("http://server").unwrap())
+        .await;
+    assert_eq!(signed_in.status, StatusCode::FOUND, "{}", signed_in.body);
+}
+
+#[tokio::test]
+async fn idp_local_keeps_the_login_page() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let reply = b
+        .get(&authorize_for("fed.client", "&acr_values=idp%3Alocal"))
+        .await;
+    assert!(
+        reply.location().contains("/Account/Login"),
+        "{}",
+        reply.location()
+    );
+}
+
+#[tokio::test]
+async fn single_provider_client_goes_straight_upstream() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let reply = b.get(&authorize_for("fed.only", "")).await;
+    assert!(
+        reply
+            .location()
+            .starts_with("http://server/federation/up/challenge?returnUrl="),
+        "{}",
+        reply.location()
+    );
+}
+
+#[tokio::test]
+async fn unknown_restriction_falls_back_to_login_page() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let reply = b.get(&authorize_for("fed.missing", "")).await;
+    assert!(
+        reply.location().contains("/Account/Login"),
+        "{}",
+        reply.location()
+    );
+    let context = login_context(&mut b, &return_url(&reply.location())).await;
+    assert_eq!(context["identityProviders"], serde_json::json!([]));
+    assert_eq!(context["enableLocalLogin"], false);
+}
+
+#[tokio::test]
+async fn prompt_none_still_errors() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let reply = b.get(&authorize_for("fed.only", "&prompt=none")).await;
+    assert!(
+        reply
+            .location()
+            .starts_with("https://client.test/callback?error=login_required"),
+        "{}",
+        reply.location()
+    );
+}

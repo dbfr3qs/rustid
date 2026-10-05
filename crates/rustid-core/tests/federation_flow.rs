@@ -301,6 +301,26 @@ fn id_token_checks() {
 }
 
 #[test]
+fn a_named_key_must_be_a_signing_key_for_the_algorithm() {
+    let k = key("k1", "RS256");
+    let rs256 = vec!["RS256".to_owned()];
+    let t = token(&k, &baseline("n1"));
+    let parse = |v: Value| serde_json::from_value::<rustid_core::jwt::PublicJwk>(v).unwrap();
+    let mut encryption = jwk(&k);
+    encryption["use"] = "enc".into();
+    assert_eq!(
+        validate(&t, &[parse(encryption)], &expect(&rs256, "n1")),
+        Err(IdTokenCheck::Signature)
+    );
+    let mut other_alg = jwk(&k);
+    other_alg["alg"] = "PS256".into();
+    assert_eq!(
+        validate(&t, &[parse(other_alg)], &expect(&rs256, "n1")),
+        Err(IdTokenCheck::Signature)
+    );
+}
+
+#[test]
 fn no_kid_uses_the_only_suitable_key() {
     let k = key("k1", "RS256");
     let rs256 = vec!["RS256".to_owned()];

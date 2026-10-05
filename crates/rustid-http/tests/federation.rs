@@ -563,3 +563,72 @@ async fn prompt_none_still_errors() {
         reply.location()
     );
 }
+
+#[tokio::test]
+async fn prompt_login_and_max_age_reach_the_provider() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let login = b
+        .get(&authorize_for("fed.client", "&prompt=login&max_age=0"))
+        .await;
+    let return_url = return_url(&login.location());
+    let upstream = challenge(&mut b, &return_url).await;
+    assert_eq!(
+        query(&upstream, "prompt").as_deref(),
+        Some("login"),
+        "{upstream}"
+    );
+    assert_eq!(
+        query(&upstream, "max_age").as_deref(),
+        Some("0"),
+        "{upstream}"
+    );
+    // Straight upstream through the idp hint too.
+    let hinted = b
+        .get(&authorize_for(
+            "fed.client",
+            "&prompt=login&max_age=30&acr_values=idp%3Aup",
+        ))
+        .await;
+    let upstream = b
+        .get(hinted.location().strip_prefix("http://server").unwrap())
+        .await
+        .location();
+    assert_eq!(query(&upstream, "prompt").as_deref(), Some("login"));
+    assert_eq!(query(&upstream, "max_age").as_deref(), Some("30"));
+}
+
+#[tokio::test]
+async fn stale_upstream_authentication_is_refused() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let now = chrono::Utc::now().timestamp();
+    for (auth_time, expected) in [
+        (Some(now - 3600), StatusCode::BAD_GATEWAY),
+        (None, StatusCode::BAD_GATEWAY),
+        (Some(now - 5), StatusCode::FOUND),
+    ] {
+        f.fake.edit(|s| match auth_time {
+            Some(t) => s.claims["auth_time"] = t.into(),
+            None => {
+                s.claims.as_object_mut().unwrap().remove("auth_time");
+            }
+        });
+        let login = b.get(&authorize_for("fed.client", "&max_age=60")).await;
+        let return_url = return_url(&login.location());
+        let upstream = challenge(&mut b, &return_url).await;
+        let reply = callback(&f, &mut b, &upstream).await;
+        assert_eq!(
+            reply.status, expected,
+            "auth_time {auth_time:?}: {}",
+            reply.body
+        );
+    }
+    let reasons: Vec<serde_json::Value> = f
+        .events
+        .named("User Login Failure")
+        .iter()
+        .map(|e| e["Reason"].clone())
+        .collect();
+    assert_eq!(reasons, ["stale_authentication", "stale_authentication"]);
+}

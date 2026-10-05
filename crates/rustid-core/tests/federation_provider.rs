@@ -4,15 +4,15 @@ use rustid_core::federation::session::{select_claims, subject_for};
 fn provider(json: serde_json::Value) -> IdentityProvider {
     serde_json::from_value(json).unwrap()
 }
-fn contoso() -> serde_json::Value {
-    serde_json::json!({ "scheme": "contoso", "displayName": "Contoso",
+fn examplecorp() -> serde_json::Value {
+    serde_json::json!({ "scheme": "examplecorp", "displayName": "Example Corp",
         "authority": "https://login.example.com/t/v2.0", "clientId": "abc",
-        "clientAuthentication": { "secretEnv": "CONTOSO_SECRET" } })
+        "clientAuthentication": { "secretEnv": "EXAMPLECORP_SECRET" } })
 }
 
 #[test]
 fn defaults() {
-    let p = provider(contoso());
+    let p = provider(examplecorp());
     assert!(p.enabled);
     assert_eq!(p.scopes, ["openid", "profile", "email"]);
     assert_eq!(
@@ -25,7 +25,7 @@ fn defaults() {
 
 #[test]
 fn unknown_fields_are_refused() {
-    let mut j = contoso();
+    let mut j = examplecorp();
     j["signOut"] = true.into();
     assert!(serde_json::from_value::<IdentityProvider>(j).is_err());
 }
@@ -33,13 +33,13 @@ fn unknown_fields_are_refused() {
 #[test]
 fn validation_rules() {
     let bad = |edit: &dyn Fn(&mut serde_json::Value), loopback: bool| {
-        let mut j = contoso();
+        let mut j = examplecorp();
         edit(&mut j);
         provider(j).validate(loopback).unwrap_err()
     };
     assert_eq!(
-        bad(&|j| j["scheme"] = "Contoso".into(), false),
-        ProviderError::Scheme("Contoso".into())
+        bad(&|j| j["scheme"] = "Example Corp".into(), false),
+        ProviderError::Scheme("Example Corp".into())
     );
     assert_eq!(
         bad(&|j| j["scheme"] = "-x".into(), false),
@@ -92,13 +92,13 @@ fn validation_rules() {
     ] {
         match bad(&*edit, false) {
             ProviderError::Invalid { scheme, message } => {
-                assert_eq!(scheme, "contoso");
+                assert_eq!(scheme, "examplecorp");
                 assert!(message.contains(needle), "{message}");
             }
             other => panic!("{other:?}"),
         }
     }
-    let mut j = contoso();
+    let mut j = examplecorp();
     j["authority"] = "http://localhost:5444".into();
     provider(j.clone()).validate(true).unwrap();
     assert!(provider(j).validate(false).is_err());
@@ -115,7 +115,7 @@ fn allowed_urls() {
 }
 
 fn secret_provider(scheme: &str, enabled: bool) -> Provider {
-    let mut j = contoso();
+    let mut j = examplecorp();
     j["scheme"] = scheme.into();
     j["enabled"] = enabled.into();
     Provider {

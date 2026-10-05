@@ -197,6 +197,7 @@ async fn challenge(
     let issuer = current_issuer(&state.options, &route.origin);
     let mut forward: Vec<(&str, String)> = Vec::new();
     let mut client_id = None;
+    let mut max_age = None;
     if !is_saml_return_url(state, local) {
         if !is_valid_return_url(local) {
             return page(
@@ -243,10 +244,25 @@ async fn challenge(
         if let Some(hint) = &request.login_hint {
             forward.push(("login_hint", hint.clone()));
         }
-        if request.prompt_modes.iter().any(|p| p == "login") {
+        // The authorize endpoint has already marked `prompt=login` and
+        // `max_age` as processed by the time the browser gets here; the
+        // provider still has to honour them.
+        if request.original_prompt_modes.iter().any(|p| p == "login") {
             forward.push(("prompt", "login".to_owned()));
         }
-        if let Some(max_age) = request.max_age {
+        let requested = request.max_age.map(i64::from).or_else(|| {
+            request
+                .raw
+                .get(rustid_core::authorize::PROCESSED_MAX_AGE)
+                .and_then(|m| m.parse::<i64>().ok())
+        });
+        // A client's SSO lifetime is a max_age too: a staler upstream
+        // session would send the browser straight back upstream.
+        max_age = match (requested, client.user_sso_lifetime.map(i64::from)) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (a, b) => a.or(b),
+        };
+        if let Some(max_age) = max_age {
             forward.push(("max_age", max_age.to_string()));
         }
     }
@@ -261,6 +277,7 @@ async fn challenge(
     };
     let mut correlation = Correlation::new(&provider.config.scheme, &return_url, now);
     correlation.client_id = client_id;
+    correlation.max_age = max_age;
     let redirect_uri = format!("{issuer}/federation/{}/callback", provider.config.scheme);
     let location = authorization_url(
         &provider.config,
@@ -389,6 +406,26 @@ async fn callback_answer(
         Ok(token) => token,
         Err(failure) => return refusal.failure(state, info, &failure),
     };
+    // With a max_age sent, the provider's auth_time is required (OIDC Core
+    // 3.1.2.1) and must be recent enough.
+    if let Some(max_age) = correlation.max_age {
+        let fresh = token
+            .payload
+            .get("auth_time")
+            .and_then(serde_json::Value::as_i64)
+            .is_some_and(|t| now - t <= max_age + skew);
+        if !fresh {
+            return refusal.answer(
+                state,
+                info,
+                StatusCode::BAD_GATEWAY,
+                "stale_authentication",
+                Some(format!(
+                    "the provider's auth_time is missing or older than max_age {max_age}"
+                )),
+            );
+        }
+    }
     let sign_in = sign_in(&provider.config, &token, now);
     let subject_id = sign_in.subject_id.clone();
     let continuation = Continuation::new(&correlation.return_url, sign_in);

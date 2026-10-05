@@ -39,6 +39,10 @@ pub struct Correlation {
     /// The client the sign-in is for, when known, for events.
     #[serde(default)]
     pub client_id: Option<String>,
+    /// The `max_age` sent upstream: the provider's `auth_time` must then
+    /// be at most this many seconds old.
+    #[serde(default)]
+    pub max_age: Option<i64>,
 }
 
 impl Correlation {
@@ -51,6 +55,7 @@ impl Correlation {
             return_url: return_url.to_owned(),
             created: now,
             client_id: None,
+            max_age: None,
         }
     }
 

@@ -22,11 +22,11 @@ identity_providers_file = "identity-providers.json"
 ```json
 [
   {
-    "scheme": "contoso",
-    "displayName": "Contoso (Entra ID)",
+    "scheme": "examplecorp",
+    "displayName": "Example Corp (Entra ID)",
     "authority": "https://login.microsoftonline.com/<tenant-id>/v2.0",
     "clientId": "<application id>",
-    "clientAuthentication": { "secretEnv": "CONTOSO_SECRET" },
+    "clientAuthentication": { "secretEnv": "EXAMPLECORP_SECRET" },
     "scopes": ["openid", "profile", "email"]
   }
 ]
@@ -61,8 +61,8 @@ identity_providers_file = "identity-providers.json"
 
   ```json
   "clientAuthentication": {
-    "method": "private_key_jwt", "keyFile": "contoso-key.pem", "keyId": "rustid-1",
-    "certificateFile": "contoso-cert.pem"
+    "method": "private_key_jwt", "keyFile": "examplecorp-key.pem", "keyId": "rustid-1",
+    "certificateFile": "examplecorp-cert.pem"
   }
   ```
 
@@ -73,7 +73,13 @@ rustid's redirect URI at each provider is `<rustid issuer>/federation/<scheme>/c
 - **Entra ID (one tenant):** set `authority` to `https://login.microsoftonline.com/<tenant-id>/v2.0`, register the redirect URI as a Web platform redirect, and use a client secret or a certificate with `private_key_jwt`.
 - **Okta:** set `authority` to `https://<your-domain>.okta.com/oauth2/default` for the default authorization server, or to your custom authorization server's issuer.
 - **Keycloak:** set `authority` to `https://<host>/realms/<realm>`.
-- **Google Workspace:** set `authority` to `https://accounts.google.com`. Use `claims` to include `hd`, the hosted domain, if your services need it.
+- **Google Workspace:** set `authority` to `https://accounts.google.com`. This endpoint signs in *any* Google account, not only your organisation's (see Who can sign in, below). Add `hd`, the hosted domain, to `claims` and refuse other domains.
+
+## Who can sign in
+
+rustid accepts every user the provider authenticates. A single-tenant provider (an Entra ID tenant, your Okta or Keycloak realm) only authenticates your organisation's users. A public or multi-tenant endpoint, such as Google's, authenticates anyone with an account there.
+
+To restrict users, copy the claim that identifies the organisation into the session (`claims`, for example `hd` or `tid`), and refuse other values in a `subject_active` hook ([hooks.md](hooks.md)). Also limit each client to the providers it should use with `identityProviderRestrictions`.
 
 ## Signing in
 
@@ -93,7 +99,7 @@ The local subject is derived from the provider's issuer and the user's subject t
 
 So one person who signs in through two providers has two subjects. rustid doesn't link accounts.
 
-The session's `idp` is the scheme. Its `amr` is the provider's `amr` when the id token has one, otherwise `["external"]`, and its `auth_time` is the provider's. A `max_age` or `prompt=login` on the client's request is passed on to the provider.
+The session's `idp` is the scheme. Its `amr` is the provider's `amr` when the id token has one, otherwise `["external"]`, and its `auth_time` is the provider's. A `max_age` or `prompt=login` on the client's request is passed on to the provider. A client's `userSsoLifetime` is passed on as `max_age` too, whichever is smaller. When `max_age` was sent, the provider's `auth_time` must be present and no older than that, or the sign-in fails as `stale_authentication`, rather than sending the browser back and forth.
 
 Profile hooks (`profile_claims`, `subject_active`) see these subjects like any other.
 
@@ -110,7 +116,7 @@ Profile hooks (`profile_claims`, `subject_active`) see these subjects like any o
   - the nonce;
   - a subject.
 - **Key rotation.** A token signed by a key rustid hasn't seen makes it fetch the provider's JWKS again, once per sign-in and at most sixty times a minute per provider. A token without `kid` whose signature fails on the cached keys does the same.
-- **Caching.** Discovery documents and key sets are cached for a day. Nothing is fetched at startup, so a provider that is down doesn't stop rustid from starting.
+- **Caching.** Discovery documents and key sets are cached for a day, so a key the provider withdraws is trusted until the cache expires, unless a token with an unknown key refreshes it first. Nothing is fetched at startup, so a provider that is down doesn't stop rustid from starting.
 - **Userinfo.** With `userinfo`, the response's `sub` must be the id token's.
 
 An upstream `access_denied` (the user refused, or the provider did) goes back to the client as `access_denied`. Any other failure shows a short error page. The details are in the log and in a `User Login Failure` event (id 1001), with `Provider`, `Reason` and `Detail`:
@@ -126,6 +132,7 @@ An upstream `access_denied` (the user refused, or the provider did) goes back to
 | `token_request_failed` | The token endpoint refused the code, or answered without an id token |
 | `id_token_invalid` | The id token failed a check (named in `Detail`) |
 | `userinfo_failed` | The userinfo call failed, or its `sub` didn't match |
+| `stale_authentication` | `max_age` was sent, and the provider's `auth_time` is missing or older |
 
 A successful sign-in raises `User Login Success` (id 1000), with `Provider`, `ProviderUserId` and `SubjectId`.
 

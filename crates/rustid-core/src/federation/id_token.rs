@@ -90,10 +90,17 @@ pub fn validate(
         return Err(IdTokenCheck::Algorithm);
     }
     let key = match jws.header_str("kid") {
-        Some(kid) => keys
-            .iter()
-            .find(|k| k.kid.as_deref() == Some(kid))
-            .ok_or(IdTokenCheck::UnknownKey)?,
+        Some(kid) => {
+            let key = keys
+                .iter()
+                .find(|k| k.kid.as_deref() == Some(kid))
+                .ok_or(IdTokenCheck::UnknownKey)?;
+            // The named key must be a signing key for this algorithm.
+            if !suits(key, alg) {
+                return Err(IdTokenCheck::Signature);
+            }
+            key
+        }
         None => {
             let mut suitable = keys.iter().filter(|k| suits(k, alg));
             match (suitable.next(), suitable.next()) {

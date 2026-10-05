@@ -1,6 +1,5 @@
-//! Exclusive canonicalization, byte-identical to
-//! `XmlDsigExcC14N(WithComments)Transform` on the oracle's cases
-//! (`fixtures/saml/oracle`).
+//! Exclusive canonicalization (with and without comments), byte-identical
+//! to an independent implementation on its cases (`fixtures/saml/oracle`).
 
 use std::path::{Path, PathBuf};
 

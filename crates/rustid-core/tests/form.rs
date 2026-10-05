@@ -30,7 +30,7 @@ fn get_drops_blank_values_and_joins_the_rest_with_commas() {
 }
 
 #[test]
-fn aspnet_form_limits_are_enforced() {
+fn form_limits_are_enforced() {
     let many: String = (0..1025)
         .map(|i| format!("k{i}=v"))
         .collect::<Vec<_>>()

@@ -10,8 +10,7 @@ pub struct Form {
 pub const MAX_VALUES: usize = 1024;
 pub const MAX_KEY_LENGTH: usize = 2048;
 
-/// Why a body isn't an acceptable form. Reading fails
-/// `InvalidDataException` for each, which the endpoints turn into
+/// Why a body isn't an acceptable form. The endpoints turn each into
 /// `invalid_request`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum FormError {
@@ -63,7 +62,7 @@ impl Form {
         }
     }
 
-    /// The first raw value, as `IFormCollection[key].FirstOrDefault()`.
+    /// The first raw value.
     /// Keys match case-insensitively's form collection.
     pub fn first(&self, key: &str) -> Option<&str> {
         self.entries

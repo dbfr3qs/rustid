@@ -46,7 +46,7 @@ impl DeviceCode {
     }
 }
 
-/// `string.Sha256()`: how device and user codes are stored.
+/// Base64 of the UTF-8 SHA-256: how device and user codes are stored.
 pub fn hash(code: &str) -> String {
     base64::engine::general_purpose::STANDARD
         .encode(digest::digest(&digest::SHA256, code.as_bytes()).as_ref())

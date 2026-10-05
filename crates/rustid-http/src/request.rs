@@ -79,8 +79,8 @@ pub(crate) fn strip_segment_prefix<'a>(path: &'a str, prefix: &str) -> Option<&'
     (rest.is_empty() || rest.starts_with('/')).then_some(rest)
 }
 
-/// RFC 3986 `host [ ":" port ]` as a Host header must be: an
-/// IPv6 literal in brackets or a reg-name, then an optional numeric port.
+/// Whether a Host header is RFC 3986 `host [ ":" port ]`: an IPv6 literal
+/// in brackets or a reg-name, then an optional numeric port.
 /// Anything else would end up verbatim in the issuer and every URL.
 pub fn is_valid_host(host: &str) -> bool {
     let valid_port = |p: &str| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit());

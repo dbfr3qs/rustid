@@ -24,7 +24,7 @@ fn err(message: impl Into<String>) -> XmlError {
 /// What a parse accepts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Limits {
-    /// Characters of input (`SamlOptions.MaxMessageSize`).
+    /// Characters of input.
     pub max_size: usize,
     pub max_depth: usize,
     pub max_attributes: usize,

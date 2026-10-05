@@ -13,7 +13,7 @@ use opentelemetry::metrics::{Counter, UpDownCounter};
 /// The meter and tracer name.
 pub const METER_NAME: &str = "rustid";
 
-/// Instrument names (`Telemetry.Metrics.Counters`).
+/// Counter instrument names.
 pub mod counters {
     pub const OPERATION: &str = "tokenservice.operation";
     pub const ACTIVE_REQUESTS: &str = "tokenservice.active_requests";

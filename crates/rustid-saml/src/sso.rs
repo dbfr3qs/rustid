@@ -396,7 +396,7 @@ fn resolve_acs(
         if request.acs_index.is_some() {
             return Err("Both ACS Url and Index were provided in the request");
         }
-        // `Uri.AbsoluteUri`: scheme and host lower-cased, default port
+        // Normalised: scheme and host lower-cased, default port
         // dropped, an empty path made "/".
         let Ok(parsed) = url::Url::parse(url) else {
             return Err("AssertionConsumerServiceUrl is not a valid absolute URI");

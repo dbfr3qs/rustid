@@ -347,7 +347,7 @@ pub(super) async fn issue_for_grant(
         .user_access_token_record(&effective, resources, user, None)
         .await?;
     // The token's `client_id` claim names the impersonated client, but it
-    // belongs to the one that asked (`Token.ClientId`).
+    // belongs to the one that asked.
     record.token.client_id.clone_from(&client.client_id);
     record.token.confirmation.clone_from(&proof.confirmation);
     let access_token = issuer

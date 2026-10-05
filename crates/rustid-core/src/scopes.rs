@@ -5,7 +5,7 @@ use crate::resources::{ApiResource, ApiScope, IdentityResource, Resources};
 
 pub const OFFLINE_ACCESS: &str = "offline_access";
 
-/// `ParseScopesString`: trimmed, split on spaces, empty entries removed,
+/// Trimmed, split on spaces, empty entries removed,
 /// de-duplicated and sorted. `None` when nothing remains.
 ///
 /// This sorts ordinally, which agrees with culture-aware sorting for

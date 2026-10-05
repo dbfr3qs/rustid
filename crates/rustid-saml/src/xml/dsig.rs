@@ -359,10 +359,10 @@ pub fn sign(
 }
 
 /// Content some verifiers canonicalize differently from the XML-DSig
-/// specification: some re-read the element from its serialization,
-/// so a carriage return in text becomes a line feed and a tab in an
-/// attribute value a space. Neither verifier would accept both forms, so
-/// such content isn't signed.
+/// specification: they re-read the element from its serialization, so a
+/// carriage return in text becomes a line feed and a tab in an attribute
+/// value a space. Those verifiers and the specification can't both accept
+/// the signature, so such content isn't signed.
 fn not_interoperable(element: &Element) -> Option<String> {
     for e in element.descendants() {
         if e.attrs.iter().any(|a| a.value.contains('\t')) {

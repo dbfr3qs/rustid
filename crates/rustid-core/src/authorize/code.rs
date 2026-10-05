@@ -43,7 +43,7 @@ pub struct AuthorizationCode {
     pub was_consent_shown: bool,
 }
 
-/// `string.Sha256()`: base64 of the UTF-8 SHA-256.
+/// Base64 of the UTF-8 SHA-256.
 pub fn sha256_base64(value: &str) -> String {
     STANDARD.encode(digest::digest(&digest::SHA256, value.as_bytes()).as_ref())
 }

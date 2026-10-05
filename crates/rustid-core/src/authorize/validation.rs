@@ -543,7 +543,7 @@ fn validate_client_and_redirect_uri(
     Ok(())
 }
 
-/// `string.IsUri()`: an absolute URI. A bare path (which reads as a
+/// An absolute URI. A bare path (which reads as a
 /// file URI) doesn't count.
 pub fn is_uri(value: &str) -> bool {
     url::Url::parse(value)
@@ -844,8 +844,8 @@ fn validate_optional_parameters(
     Ok(())
 }
 
-/// `int.TryParse` with the invariant culture: optional surrounding
-/// whitespace and sign, ASCII digits, within `Int32`.
+/// A lenient integer: optional surrounding whitespace and sign, ASCII
+/// digits, within `i32`.
 pub fn parse_lenient_int(value: &str) -> Option<i32> {
     let t = value.trim_matches(|c: char| matches!(c, '\u{9}'..='\u{d}' | ' '));
     let digits = t.strip_prefix(['+', '-']).unwrap_or(t);

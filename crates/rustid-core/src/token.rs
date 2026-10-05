@@ -387,7 +387,7 @@ pub async fn process(
         response.token_type = dpop::TOKEN_TYPE;
     }
     let grant_type = grant_type.unwrap_or_default();
-    // `TokenIssuedSuccessEvent` lists the identity token first.
+    // The token issued success event lists the identity token first.
     let mut tokens = Vec::new();
     if let Some(id_token) = &response.id_token {
         tokens.push(IssuedToken {

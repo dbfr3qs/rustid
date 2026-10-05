@@ -80,7 +80,7 @@ pub struct Response {
     pub assertion: Option<Assertion>,
 }
 
-/// `DateTimeUtc.ToString()`: whole seconds, `Z`.
+/// An `xs:dateTime` in whole seconds, `Z`.
 pub fn instant(t: DateTime<Utc>) -> String {
     t.format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }

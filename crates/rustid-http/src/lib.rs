@@ -266,8 +266,7 @@ async fn ready(State(state): State<AppState>) -> Response {
 #[derive(Debug, Clone, Copy)]
 pub struct LocalAddr(pub std::net::SocketAddr);
 
-/// Added by the server to requests that arrived over TLS (the
-/// `Request.IsHttps`): URLs built from the request use `https`, and the
+/// Added by the server to requests that arrived over TLS: URLs built from the request use `https`, and the
 /// session cookies are `Secure`.
 #[derive(Debug, Clone, Copy)]
 pub struct Https;
@@ -295,7 +294,7 @@ async fn protocol(State(state): State<AppState>, request: Request<Body>) -> Resp
         &parts.uri,
         parts.extensions.get::<Https>().is_some(),
     ) else {
-        // HTTP/1.1 requires a Host header (RFC 9112 §3.2).
+        // A missing or invalid Host header (RFC 9112 §3.2).
         return StatusCode::BAD_REQUEST.into_response();
     };
     let info = events::RequestInfo {

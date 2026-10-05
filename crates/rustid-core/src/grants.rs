@@ -35,7 +35,7 @@ pub struct GrantFilter {
     pub session_id: Option<String>,
     pub client_id: Option<String>,
     pub grant_type: Option<String>,
-    /// `ClientIds`: merged with `client_id` into one set to match.
+    /// Merged with `client_id` into one set to match.
     pub client_ids: Vec<String>,
     /// `Types`: merged with `grant_type` into one set to match.
     pub grant_types: Vec<String>,

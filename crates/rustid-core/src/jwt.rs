@@ -75,8 +75,8 @@ impl Jws {
         self.payload.get(name).and_then(Value::as_str)
     }
 
-    /// A NumericDate claim (`exp`, `nbf`, `iat`) read as the
-    /// usual JWT libraries read it: an integer, a number rounded half to even,
+    /// A NumericDate claim (`exp`, `nbf`, `iat`): an integer, a number
+    /// rounded half to even,
     /// or a string holding either. `Ok(None)` when absent; an error when
     /// present but not readable as a 64-bit integer, which makes validation reject
     /// the whole token.

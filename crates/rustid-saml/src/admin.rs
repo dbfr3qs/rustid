@@ -274,7 +274,7 @@ fn blank(text: &str) -> bool {
     text.trim().is_empty()
 }
 
-/// `Uri.TryCreate(…, UriKind.Absolute)`.
+/// An absolute URI.
 fn absolute(location: &str) -> bool {
     crate::xml::traverser::is_absolute_uri(location)
 }

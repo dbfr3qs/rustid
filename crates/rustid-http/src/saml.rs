@@ -57,9 +57,8 @@ pub(crate) async fn metadata(
     ([(CONTENT_TYPE, content_type)], xml).into_response()
 }
 
-/// The saml 2 front channel result http writer with an error: the message sealed
-/// into the error page URL, by `Response.Redirect` (a 302 to the URL as
-/// configured, not made absolute).
+/// A SAML front-channel error: the message sealed into the error page URL,
+/// and a 302 to that URL as configured (not made absolute).
 fn front_channel_error(
     state: &ProtocolState,
     description: &str,

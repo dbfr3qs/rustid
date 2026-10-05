@@ -73,8 +73,7 @@ pub(crate) fn expired(name: &str, path: &str, secure: bool, now: DateTime<Utc>) 
     out
 }
 
-/// The authentication cookie deleted as `Response.Cookies.Delete`
-/// writes it on sign-out: empty, expired at the epoch, `httponly`.
+/// The authentication cookie as sign-out deletes it: empty, expired at the epoch, `httponly`.
 pub(crate) fn deleted(name: &str, path: &str, secure: bool) -> String {
     let mut out = format!("{name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path={path}");
     if secure {
@@ -105,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn set_cookie_values_match_aspnet() {
+    fn set_cookie_values_are_written_exactly() {
         assert_eq!(
             cookie("idsrv", "v", "/", false, true),
             "idsrv=v; path=/; samesite=none; httponly"

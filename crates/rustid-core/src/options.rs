@@ -516,7 +516,7 @@ impl Default for KeyManagementOptions {
 }
 
 impl KeyManagementOptions {
-    /// `KeyManagementOptions.Validate`: defaults `RS256`, rejects bad values,
+    /// Defaults `RS256`, rejects bad values,
     /// and caps the key cache at half the propagation time.
     pub fn validated(mut self) -> Result<Self, String> {
         if self.signing_algorithms.is_empty() {

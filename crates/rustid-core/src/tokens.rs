@@ -111,7 +111,7 @@ pub fn client_access_token(
     }
 }
 
-/// Iss, nbf, iat, exp, aud, scope, then every
+/// `iss`, `nbf`, `iat`, `exp`, `aud`, `scope`, then every
 /// other claim type in first-seen order (arrays when repeated), then `jti`
 /// when given.
 pub fn jwt_payload(

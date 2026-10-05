@@ -49,7 +49,7 @@ pub fn validate_with(
     Ok(client)
 }
 
-/// `HashSet.Add`: insertion order, no duplicates.
+/// Insertion order, no duplicates.
 fn add(set: &mut Vec<String>, value: &str) {
     if !set.iter().any(|v| v == value) {
         set.push(value.to_owned());
@@ -149,12 +149,12 @@ fn grant_types(request: &RegistrationRequest, client: &mut Client) -> Step {
     Ok(())
 }
 
-/// `Uri.AbsoluteUri` of an absolute URI.
+/// An absolute URI in normalised form.
 pub(crate) fn absolute_uri(value: &str) -> Option<String> {
     url::Url::parse(value).ok().map(String::from)
 }
 
-/// `Uri.ToString()`: an absolute URI normalised, a relative one as given.
+/// An absolute URI normalised, a relative one as given.
 pub(crate) fn uri_string(value: &str) -> String {
     absolute_uri(value).unwrap_or_else(|| value.to_owned())
 }
@@ -223,7 +223,7 @@ fn scopes(request: &RegistrationRequest, default_scopes: &[String], client: &mut
     }
 }
 
-/// `JsonWebKey.HasPrivateKey`: every RSA private member, or an EC `d`.
+/// A private key: every RSA private member, or an EC `d`.
 fn has_private_key(jwk: &serde_json::Map<String, Value>) -> bool {
     let has = |m: &str| jwk.get(m).is_some_and(|v| !v.is_null());
     match jwk.get("kty").and_then(Value::as_str) {

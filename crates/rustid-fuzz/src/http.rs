@@ -91,8 +91,8 @@ pub fn reset() {
 }
 
 /// The route for selector byte `selector`, and whether a 500 there is a
-/// bug (every OIDC and admin route; SAML answers 500 where the XML reader's
-/// uncaught `XmlTraverser` exceptions do).
+/// bug (every OIDC and admin route; SAML answers 500 for the XML reader's
+/// unhandled errors).
 fn build_request(selector: u8, rest: &[u8]) -> (Request<Body>, bool) {
     use base64::Engine;
     let text = String::from_utf8_lossy(rest).into_owned();

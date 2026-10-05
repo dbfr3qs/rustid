@@ -40,12 +40,12 @@ pub(crate) async fn end_session(
         Params::parse_query(&route.query)
     } else if method == Method::POST {
         if !is_form_content_type(headers) {
-            // Read form throws `InvalidOperationException`: unhandled.
+            // Not a form at all: unhandled, a 500.
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
         match read_form(body).await {
             Some(form) => Params::from_form(&form),
-            // `InvalidDataException` is caught: a 400.
+            // An unreadable form: a 400.
             None => return StatusCode::BAD_REQUEST.into_response(),
         }
     } else {

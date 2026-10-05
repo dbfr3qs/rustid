@@ -1,5 +1,5 @@
 //! Reading an AuthnRequest, with
-//! `XmlTraverser`'s rules: required attributes, element order, unprocessed
+//! the traverser's rules: required attributes, element order, unprocessed
 //! children, and an enveloped signature checked against the issuer's keys.
 
 use std::path::Path;

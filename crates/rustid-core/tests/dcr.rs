@@ -247,7 +247,7 @@ fn jwks_become_jwk_secrets() {
     assert!(client.require_request_object);
 }
 
-/// `JsonWebKey.HasPrivateKey` (RSA private members or an EC `d`) with an
+/// A private key (RSA private members or an EC `d`) with an
 /// `HS` algorithm; and a key that isn't a JWK object.
 #[test]
 fn private_keys_for_hmac_and_malformed_keys_are_refused() {

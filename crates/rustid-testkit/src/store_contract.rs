@@ -2425,8 +2425,8 @@ pub async fn extended_properties(
 }
 
 /// Criteria AND together, while a single value
-/// and a list of the same criterion (`ClientId`/`ClientIds`,
-/// `Type`/`Types`) merge into one set.
+/// and a list of the same criterion (a client id and client ids, a type
+/// and types) merge into one set.
 pub async fn persisted_grant_filters(store: Arc<dyn PersistedGrantStore>) {
     let p = format!("pf{}-", Utc::now().timestamp_nanos_opt().unwrap());
     let make = |key: &str, subject: Option<&str>, client: &str, grant_type: &str| PersistedGrant {
@@ -3179,8 +3179,8 @@ pub async fn saml_logout_session_store(store: Arc<dyn rustid_saml::stores::Logou
             .all(|e| e.response.is_some())
     );
 
-    // Expiry: at the instant itself the session is gone (the storage store's
-    // `ExpiresAt <= now`).
+    // Expiry: at the instant itself the session is gone (expiry at or
+    // before now).
     assert_eq!(store.get(&id("one"), expires).await.unwrap(), None);
     assert!(
         !store

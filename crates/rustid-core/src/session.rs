@@ -134,7 +134,7 @@ impl UserSession {
 
     /// Records the client; `true` when it was new, so
     /// the cookie must be written again.
-    /// `AddSamlSession`: replaces the provider's earlier session.
+    /// Records a SAML session, replacing the provider's earlier one.
     pub fn add_saml_session(&mut self, session: SamlSpSession) {
         self.saml_sessions
             .retain(|s| s.entity_id != session.entity_id);

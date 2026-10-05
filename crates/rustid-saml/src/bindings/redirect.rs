@@ -62,7 +62,7 @@ impl Signed for Parsed {
     }
 }
 
-/// `Uri.UnescapeDataString`: valid `%XX` escapes decoded (as UTF-8), the
+/// Valid `%XX` escapes decoded (as UTF-8), the
 /// rest left as written.
 fn unescape(text: &str) -> String {
     let bytes = text.as_bytes();
@@ -91,7 +91,7 @@ fn decode_value(raw: &str) -> String {
     unescape(&raw.replace('+', " "))
 }
 
-/// `Uri.EscapeDataString`: everything but RFC 3986 unreserved characters is
+/// Everything but RFC 3986 unreserved characters is
 /// percent-encoded, upper case.
 pub fn escape(text: &str) -> String {
     let mut out = String::with_capacity(text.len());

@@ -163,7 +163,7 @@ pub fn url_encode(value: &str) -> String {
     out
 }
 
-/// `url.AddQueryString(query)`: appends with `?`, or `&` when the URL
+/// Appends with `?`, or `&` when the URL
 /// already has a query that doesn't end with `&`.
 pub fn add_query_string(url: &str, query: &str) -> String {
     let sep = if !url.contains('?') {
@@ -176,12 +176,12 @@ pub fn add_query_string(url: &str, query: &str) -> String {
     format!("{url}{sep}{query}")
 }
 
-/// `url.AddQueryString(name, value)`: the value is [`url_encode`]d.
+/// Appends one parameter; the value is [`url_encode`]d.
 pub fn add_query_param(url: &str, name: &str, value: &str) -> String {
     add_query_string(url, &format!("{name}={}", url_encode(value)))
 }
 
-/// `url.AddHashFragment(query)`: appends after `#`, adding one if missing.
+/// Appends after `#`, adding one if missing.
 pub fn add_hash_fragment(url: &str, query: &str) -> String {
     if url.contains('#') {
         format!("{url}{query}")

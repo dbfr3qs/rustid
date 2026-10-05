@@ -311,7 +311,7 @@ fn check(request: &ProofRequest<'_>) -> Result<(ValidProof, String, i64), DPoPEr
     ))
 }
 
-/// `JsonWebKey.HasPrivateKey`: every RSA private member, or an EC `d`.
+/// A private key: every RSA private member, or an EC `d`.
 fn has_private_key(jwk: &Map<String, Value>) -> bool {
     let has = |m: &str| jwk.get(m).is_some_and(|v| !v.is_null());
     match jwk.get("kty").and_then(Value::as_str) {
@@ -322,8 +322,7 @@ fn has_private_key(jwk: &Map<String, Value>) -> bool {
 }
 
 /// RFC 7638: SHA-256 over the key's required members, in order. A
-/// symmetric (`oct`) key has one too, as `JsonWebKey.CreateThumbprint`
-/// computes; it then fails the signature check, since only asymmetric
+/// symmetric (`oct`) key has one too; it then fails the signature check, since only asymmetric
 /// algorithms are supported.
 fn thumbprint(jwk: &Map<String, Value>) -> Option<String> {
     let member = |m: &str| jwk.get(m).and_then(Value::as_str);

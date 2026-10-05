@@ -19,7 +19,7 @@ use crate::stores::{SerializedKey, SigningKeyStore, StoreError};
 /// Data protection purpose for stored signing keys.
 pub const KEY_PROTECTION_PURPOSE: &str = "rustid.signing-keys.v1";
 
-/// `SerializedKey.Version` for keys this server writes.
+/// The stored key format version this server writes.
 const KEY_VERSION: i32 = 1;
 
 /// How long to wait for another task creating keys.

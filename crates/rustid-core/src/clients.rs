@@ -181,7 +181,7 @@ impl Default for Client {
 }
 
 impl Client {
-    /// `Client.IsImplicitOnly()`: implicit is the only allowed grant type.
+    /// Implicit is the only allowed grant type.
     pub fn is_implicit_only(&self) -> bool {
         self.allowed_grant_types.len() == 1 && self.allowed_grant_types[0] == "implicit"
     }
@@ -428,7 +428,7 @@ impl Clients {
     }
 }
 
-/// `string.GetOrigin()`: scheme, host and non-default port of an absolute URL.
+/// The scheme, host and non-default port of an absolute URL.
 pub fn url_origin(url: &str) -> Option<String> {
     let parsed = url::Url::parse(url).ok()?;
     let origin = parsed.origin();

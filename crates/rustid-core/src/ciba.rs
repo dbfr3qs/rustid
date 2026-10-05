@@ -320,7 +320,7 @@ pub async fn authorize(
     }
 }
 
-/// `Raw.Get`: blank values dropped, the rest joined with commas.
+/// Blank values dropped, the rest joined with commas.
 fn param(draft: &Draft, name: &str) -> Option<String> {
     let values: Vec<&str> = draft
         .parameters
@@ -452,7 +452,7 @@ async fn validate(
         .unwrap_or(ctx.options.ciba.default_lifetime);
     let expiry = match param(draft, "requested_expiry") {
         Some(requested) => {
-            // `int.TryParse` allows surrounding white space.
+            // Surrounding white space is allowed.
             let valid = (requested.len() <= 9)
                 .then(|| requested.trim().parse::<i32>().ok())
                 .flatten()

@@ -39,7 +39,7 @@ use crate::response::{internal_error, set_no_cache};
 
 /// The authorize callback's path, under the base URL.
 const CALLBACK_PATH: &str = "connect/authorize/callback";
-/// The form_post script.
+/// The form_post page script's hash, for its Content-Security-Policy.
 const AUTHORIZE_SCRIPT_HASH: &str = "sha256-orD0/VhH8hLqrLxKHD/HUEMdwqX6/0ve7c5hspX5VJ8=";
 /// The culture cookie's name (a wire name, kept for compatibility).
 pub const CULTURE_COOKIE: &str = ".AspNetCore.Culture";
@@ -330,8 +330,8 @@ async fn store_code(
         .map_err(|e| e.to_string())
 }
 
-/// The token issued success event and metric (`TokenIssuedSuccessEvent`
-/// lists the identity token, then the code, then the access token).
+/// The token issued success event and metric (the event lists the identity
+/// token, then the code, then the access token).
 fn raise_issued(
     state: &ProtocolState,
     info: &RequestInfo,

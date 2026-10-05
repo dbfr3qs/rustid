@@ -211,7 +211,7 @@ fn access_token(token: BundleToken) -> AccessTokenRecord {
 /// The claims a session models as fields rather than in `claims`.
 const SESSION_FIELDS: &[&str] = &["sub", "sid", "auth_time", "idp", "amr"];
 
-/// `RefreshToken.Subject` as the user session rustid keeps in the token.
+/// A refresh token's subject as the user session rustid keeps in the token.
 fn user_session(
     principal: BundlePrincipal,
     session_id: Option<&str>,

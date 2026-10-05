@@ -1,4 +1,4 @@
-//! `XmlTraverser` over the safe DOM: a cursor over one level of
+//! A traverser over the safe DOM: a cursor over one level of
 //! sibling nodes that records errors, including the rule
 //! that every element's children must be processed.
 //!
@@ -101,7 +101,7 @@ impl<'a> Traverser<'a> {
         }
     }
 
-    /// `MoveNext`: to the next element, skipping whitespace and comments.
+    /// Moves to the next element, skipping whitespace and comments.
     pub fn move_next(&mut self, expect_end: bool) -> Result<bool, Unhandled> {
         loop {
             if !self.children_handled {
@@ -315,7 +315,7 @@ impl<'a> Traverser<'a> {
         }
     }
 
-    /// `int.Parse`: surrounding whitespace and a sign allowed; an overflow
+    /// Surrounding whitespace and a sign allowed; an overflow
     /// is an unhandled failure.
     pub fn int_attribute(&self, name: &str) -> Result<Option<i32>, Unhandled> {
         let Some(value) = self.attribute(name) else {
@@ -349,8 +349,7 @@ pub fn inner_text(e: &Element) -> String {
     out
 }
 
-/// `Uri.TryCreate(value, UriKind.Absolute)`, near enough: a scheme and
-/// something after it.
+/// An absolute URI, near enough: a scheme and something after it.
 pub fn is_absolute_uri(value: &str) -> bool {
     url::Url::parse(value).is_ok()
 }

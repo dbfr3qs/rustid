@@ -197,7 +197,7 @@ struct Query<'a> {
 }
 
 /// `$1` subject, `$2` session and `$3` display name substrings, each null
-/// or blank when unused (`Contains`, case-sensitive), as the in-memory
+/// or blank when unused (substring matches, case-sensitive), as the in-memory
 /// store matches.
 const MATCHES: &str =
     "(($1::text IS NULL OR btrim($1) = '') AND ($2::text IS NULL OR btrim($2) = '')

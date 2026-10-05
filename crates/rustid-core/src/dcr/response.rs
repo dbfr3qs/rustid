@@ -55,7 +55,7 @@ pub fn build(
     put("logo_uri", code.then(|| json!(client.logo_uri)));
     put("client_uri", code.then(|| json!(client.client_uri)));
     put("jwks_uri", request.jwks_uri.clone().map(Value::String));
-    // `KeySet.Keys` has no JSON name: the response writes it `Keys`.
+    // The key set's keys have no JSON name: the response writes them `Keys`.
     put(
         "jwks",
         request.jwks.as_ref().map(|j| {

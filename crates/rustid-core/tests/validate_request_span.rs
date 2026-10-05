@@ -1,5 +1,4 @@
-//! Grant validation runs inside the `TokenRequestValidator.ValidateRequest`
-//! span. Its own test binary: tracing caches callsite interest process-wide,
+//! Grant validation runs inside the `token.validate_request` span. Its own test binary: tracing caches callsite interest process-wide,
 //! so a concurrent test creating the same spans with no subscriber could
 //! disable them for this one.
 

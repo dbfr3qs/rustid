@@ -4,3 +4,56 @@
 RSAPublicKey
 # The release checksum file.
 SHA256SUMS
+# Endpoint names in metrics and traces (wire values).
+AuthorizeEndpoint
+AuthorizeCallbackEndpoint
+BackchannelAuthenticationEndpoint
+CheckSessionEndpoint
+DeviceAuthorizationEndpoint
+DiscoveryEndpoint
+DiscoveryKeyEndpoint
+EndSessionCallbackEndpoint
+EndSessionEndpoint
+IntrospectionEndpoint
+MetadataEndpoint
+OAuthMetadataEndpoint
+PushedAuthorizationEndpoint
+SingleLogoutCallbackEndpoint
+SingleLogoutServiceEndpoint
+SingleSignOnCallbackEndpoint
+SingleSignOnServiceEndpoint
+TokenEndpoint
+TokenRevocationEndpoint
+UserInfoEndpoint
+# Callers named to the profile service and hooks (wire values).
+AccessTokenValidation
+AuthorizationCodeValidation
+BackchannelAuthenticationRequestIdValidation
+ClaimsProviderAccessToken
+ClaimsProviderIdentityToken
+DeviceCodeValidation
+ExtensionGrantValidation
+RefreshTokenValidation
+ResourceOwnerValidation
+Saml2SsoResponseGenerator
+SamlSsoEndpoint
+UserInfoRequestValidation
+# Client secret types (configuration values).
+X509CertificateBase64
+X509Name
+X509Thumbprint
+# SAML 2.0 and XML Signature element and parameter names.
+EntityDescriptor
+InclusiveNamespaces
+KeyInfo
+SigAlg
+SignedInfo
+SubjectConfirmationData
+# HTTP: the cookie attribute and the login page's return URL parameter.
+SameSite
+ReturnUrl
+# Linux /proc/self/status field.
+VmHWM
+# Admin API error and event fields (wire values).
+SchemaId
+IsActive

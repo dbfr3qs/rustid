@@ -64,7 +64,7 @@ pub struct Event {
     pub details: EventDetails,
 }
 
-/// An issued token in `TokenIssuedSuccessEvent`, its value obfuscated.
+/// An issued token in the token issued success event, its value obfuscated.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct IssuedToken {
@@ -219,7 +219,7 @@ pub enum EventDetails {
     },
 }
 
-/// `Event.Obfuscate`: `****` and the last four characters.
+/// Obfuscated: `****` and the last four characters.
 pub fn obfuscate(value: &str) -> String {
     let chars: Vec<char> = value.chars().collect();
     let last4: String = if chars.len() > 4 {

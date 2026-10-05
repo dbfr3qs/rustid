@@ -26,7 +26,7 @@ fn defaults() {
 #[test]
 fn unknown_fields_are_refused() {
     let mut j = examplecorp();
-    j["multiTenant"] = true.into();
+    j["somethingElse"] = true.into();
     assert!(serde_json::from_value::<IdentityProvider>(j).is_err());
 }
 
@@ -193,4 +193,28 @@ fn claim_selection_drops_protocol_claims_even_when_asked() {
             ("groups".into(), "y".into())
         ]
     );
+}
+
+#[test]
+fn multi_tenant_needs_a_list_of_tenant_ids() {
+    let with = |tenants: serde_json::Value| {
+        let mut j = examplecorp();
+        j["multiTenant"] = serde_json::json!({ "tenants": tenants });
+        provider(j)
+    };
+    with(serde_json::json!(["11111111-1111-1111-1111-111111111111"]))
+        .validate(false)
+        .unwrap();
+    for (tenants, needle) in [
+        (serde_json::json!([]), "must not be empty"),
+        (serde_json::json!(["not-a-guid"]), "GUID"),
+        (serde_json::json!(["*"]), "GUID"),
+    ] {
+        match with(tenants).validate(false).unwrap_err() {
+            ProviderError::Invalid { message, .. } => {
+                assert!(message.contains(needle), "{message}")
+            }
+            other => panic!("{other:?}"),
+        }
+    }
 }

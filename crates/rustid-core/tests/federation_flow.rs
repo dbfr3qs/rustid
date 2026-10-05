@@ -84,7 +84,7 @@ impl UpstreamClient for Fake {
         let mut s = self.0.lock().unwrap();
         s.gets.push(url.to_owned());
         match url {
-            DISCOVERY => Ok(s.discovery.clone()),
+            u if u.ends_with("/.well-known/openid-configuration") => Ok(s.discovery.clone()),
             JWKS => Ok(json!({ "keys": s.jwks })),
             _ => Err(UpstreamError(format!("unexpected GET {url}"))),
         }
@@ -690,9 +690,9 @@ async fn userinfo_is_called_only_when_enabled_and_its_sub_must_match() {
 fn metadata_userinfo_endpoint_must_be_https() {
     let mut m = metadata();
     m.userinfo_endpoint = Some("http://up.example/userinfo".into());
-    assert!(m.check(AUTHORITY, false).is_err());
+    assert!(m.check(AUTHORITY, false, false).is_err());
     m.userinfo_endpoint = Some("https://up.example/userinfo".into());
-    m.check(AUTHORITY, false).unwrap();
+    m.check(AUTHORITY, false, false).unwrap();
 }
 
 #[test]
@@ -817,5 +817,124 @@ async fn signout_return_urls_are_kept_server_side_and_taken_once() {
 fn metadata_end_session_endpoint_must_be_https() {
     let mut m = metadata();
     m.end_session_endpoint = Some("http://up.example/endsession".into());
-    assert!(m.check(AUTHORITY, false).is_err());
+    assert!(m.check(AUTHORITY, false, false).is_err());
+}
+
+const TENANT_A: &str = "11111111-1111-1111-1111-111111111111";
+const TENANT_B: &str = "22222222-2222-2222-2222-222222222222";
+
+fn multi_tenant_federation(fake: Arc<Fake>, tenants: &[&str]) -> Federation {
+    let mut config: IdentityProvider = serde_json::from_value(json!({
+        "scheme": "entra", "displayName": "Entra", "authority": "https://up.example/organizations/v2.0",
+        "clientId": "abc", "clientAuthentication": { "secret": "s" },
+        "multiTenant": { "tenants": tenants },
+    }))
+    .unwrap();
+    config.validate(false).unwrap();
+    config.scheme = "up".into();
+    fake.0.lock().unwrap().discovery["issuer"] = "https://up.example/{tenantid}/v2.0".into();
+    Federation::new(
+        Providers::new(vec![Provider {
+            config,
+            credential: Credential::Basic("s".into()),
+        }])
+        .unwrap(),
+        fake,
+        false,
+    )
+}
+
+fn tenant_token(k: &LoadedKey, nonce: &str, tid: Option<&str>, iss_tenant: &str) -> String {
+    let mut p = baseline(nonce);
+    p["iss"] = format!("https://up.example/{iss_tenant}/v2.0").into();
+    if let Some(tid) = tid {
+        p["tid"] = tid.into();
+    }
+    token(k, &p)
+}
+
+#[tokio::test]
+async fn multi_tenant_providers_check_the_tenant_and_its_issuer() {
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    let fed = multi_tenant_federation(fake.clone(), &[TENANT_A]);
+    let p = fed.providers.find("up").unwrap();
+    let c = Correlation::new("up", "/return", NOW);
+    let set = |t: String| fake.0.lock().unwrap().token_body = json!({ "id_token": t });
+
+    set(tenant_token(&k, &c.nonce, Some(TENANT_A), TENANT_A));
+    let t = fed
+        .redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap();
+    assert_eq!(t.issuer, format!("https://up.example/{TENANT_A}/v2.0"));
+    assert_eq!(
+        sign_in(&p.config, &t, NOW).subject_id,
+        subject_for(
+            &format!("https://up.example/{TENANT_A}/v2.0"),
+            "upstream-user"
+        )
+    );
+
+    set(tenant_token(&k, &c.nonce, Some(TENANT_B), TENANT_B));
+    let failure = fed
+        .redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap_err();
+    assert_eq!(failure.reason(), "tenant_not_allowed");
+    assert!(failure.detail().contains(TENANT_B), "{}", failure.detail());
+
+    set(tenant_token(&k, &c.nonce, None, TENANT_A));
+    assert_eq!(
+        fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+            .await
+            .unwrap_err()
+            .reason(),
+        "tenant_not_allowed"
+    );
+
+    // The tid is allowed, but the issuer names another tenant.
+    set(tenant_token(&k, &c.nonce, Some(TENANT_A), TENANT_B));
+    assert_eq!(
+        fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+            .await
+            .unwrap_err(),
+        Failure::IdTokenInvalid(IdTokenCheck::Issuer)
+    );
+}
+
+#[tokio::test]
+async fn tenant_ids_compare_without_case() {
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    let upper = "AAAAAAAA-1111-1111-1111-111111111111";
+    let lower = upper.to_lowercase();
+    let fed = multi_tenant_federation(fake.clone(), &[upper]);
+    let p = fed.providers.find("up").unwrap();
+    let c = Correlation::new("up", "/return", NOW);
+    fake.0.lock().unwrap().token_body =
+        json!({ "id_token": tenant_token(&k, &c.nonce, Some(&lower), &lower) });
+    fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap();
+}
+
+#[test]
+fn the_tenant_template_is_accepted_only_for_multi_tenant_providers() {
+    let mut m = metadata();
+    m.issuer = "https://up.example/{tenantid}/v2.0".into();
+    let authority = "https://up.example/organizations/v2.0";
+    m.check(authority, false, true).unwrap();
+    assert!(
+        m.check(authority, false, false).is_err(),
+        "single tenant: exact match"
+    );
+    // More than one segment differs.
+    m.issuer = "https://up.example/{tenantid}/v3.0".into();
+    assert!(m.check(authority, false, true).is_err());
+    // No template at all.
+    m.issuer = authority.into();
+    assert!(m.check(authority, false, true).is_err());
+    m.issuer = "https://other.example/{tenantid}/v2.0".into();
+    assert!(m.check(authority, false, true).is_err());
 }

@@ -67,6 +67,21 @@ pub struct Metadata {
     pub userinfo_endpoint: Option<String>,
 }
 
+/// The placeholder a multi-tenant provider's issuer has for the tenant.
+pub const TENANT_PLACEHOLDER: &str = "{tenantid}";
+
+/// Whether `issuer` is `authority` with exactly one path segment replaced
+/// by `{tenantid}`, as Entra ID publishes for its shared endpoints.
+pub fn is_tenant_template(issuer: &str, authority: &str) -> bool {
+    let (a, b): (Vec<&str>, Vec<&str>) =
+        (issuer.split('/').collect(), authority.split('/').collect());
+    if a.len() != b.len() {
+        return false;
+    }
+    let differing: Vec<(&&str, &&str)> = a.iter().zip(b.iter()).filter(|(x, y)| x != y).collect();
+    matches!(differing.as_slice(), [(x, _)] if **x == TENANT_PLACEHOLDER)
+}
+
 /// The algorithms an id token may be signed with.
 pub const ASYMMETRIC_ALGORITHMS: &[&str] = &[
     "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512",
@@ -75,11 +90,26 @@ pub const ASYMMETRIC_ALGORITHMS: &[&str] = &[
 impl Metadata {
     /// The issuer must be the authority (Discovery §4.3), and the endpoints
     /// https (or loopback, when allowed).
-    pub fn check(&self, authority: &str, allow_insecure_loopback: bool) -> Result<(), String> {
-        if self.issuer != authority {
+    pub fn check(
+        &self,
+        authority: &str,
+        allow_insecure_loopback: bool,
+        multi_tenant: bool,
+    ) -> Result<(), String> {
+        let issuer_ok = if multi_tenant {
+            is_tenant_template(&self.issuer, authority)
+        } else {
+            self.issuer == authority
+        };
+        if !issuer_ok {
             return Err(format!(
-                "the discovery issuer {:?} isn't the authority {authority:?}",
-                self.issuer
+                "the discovery issuer {:?} isn't the authority {authority:?}{}",
+                self.issuer,
+                if multi_tenant {
+                    " with one path segment replaced by {tenantid}"
+                } else {
+                    ""
+                }
             ));
         }
         let userinfo = self.userinfo_endpoint.as_ref();

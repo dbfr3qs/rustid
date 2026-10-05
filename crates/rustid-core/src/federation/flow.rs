@@ -59,6 +59,7 @@ pub enum Failure {
     TokenRequestFailed(String),
     IdTokenInvalid(IdTokenCheck),
     UserinfoFailed(String),
+    TenantNotAllowed(String),
 }
 
 impl Failure {
@@ -69,6 +70,7 @@ impl Failure {
             Failure::TokenRequestFailed(_) => "token_request_failed",
             Failure::IdTokenInvalid(_) => "id_token_invalid",
             Failure::UserinfoFailed(_) => "userinfo_failed",
+            Failure::TenantNotAllowed(_) => "tenant_not_allowed",
         }
     }
 
@@ -77,12 +79,34 @@ impl Failure {
         match self {
             Failure::MetadataUnavailable(d)
             | Failure::TokenRequestFailed(d)
-            | Failure::UserinfoFailed(d) => d.clone(),
+            | Failure::UserinfoFailed(d)
+            | Failure::TenantNotAllowed(d) => d.clone(),
             Failure::IdTokenInvalid(check) => {
                 format!("the id token failed the {} check", check.as_str())
             }
         }
     }
+}
+
+/// A multi-tenant provider's issuer for this token: the token's `tid`
+/// must be one of the tenants, and the issuer is the template with it.
+/// The id token checks that follow verify the signature over both.
+fn tenant_issuer(
+    multi: &super::provider::MultiTenant,
+    metadata: &Metadata,
+    id_token: &str,
+) -> Result<String, Failure> {
+    let tid = crate::jwt::Jws::decode(id_token)
+        .and_then(|jws| jws.claim_str("tid").map(str::to_owned))
+        .ok_or_else(|| Failure::TenantNotAllowed("the id token has no tid".into()))?;
+    if !multi.allows(&tid) {
+        return Err(Failure::TenantNotAllowed(format!(
+            "tenant {tid} isn't one of the provider's tenants"
+        )));
+    }
+    Ok(metadata
+        .issuer
+        .replace(super::upstream::TENANT_PLACEHOLDER, &tid))
 }
 
 fn cache_key(provider: &Provider) -> String {
@@ -140,7 +164,11 @@ impl Federation {
         let metadata: Metadata = serde_json::from_value(document)
             .map_err(|e| Failure::MetadataUnavailable(format!("the discovery document: {e}")))?;
         metadata
-            .check(authority, self.allow_insecure_loopback)
+            .check(
+                authority,
+                self.allow_insecure_loopback,
+                provider.config.multi_tenant.is_some(),
+            )
             .map_err(Failure::MetadataUnavailable)?;
         let metadata = Arc::new(metadata);
         self.store(
@@ -223,8 +251,12 @@ impl Federation {
                 Failure::TokenRequestFailed("the token response has no id_token".into())
             })?;
         let algorithms = metadata.id_token_algorithms();
+        let issuer = match &provider.config.multi_tenant {
+            None => provider.config.authority.clone(),
+            Some(multi) => tenant_issuer(multi, &metadata, id_token)?,
+        };
         let expect = Expectations {
-            issuer: &provider.config.authority,
+            issuer: &issuer,
             client_id: &provider.config.client_id,
             nonce: &correlation.nonce,
             algorithms: &algorithms,

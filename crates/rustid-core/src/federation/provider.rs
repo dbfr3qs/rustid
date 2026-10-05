@@ -41,6 +41,35 @@ pub struct IdentityProvider {
     /// (OpenID Connect RP-Initiated Logout 1.0).
     #[serde(default)]
     pub sign_out: bool,
+    /// One entry for a shared multi-tenant endpoint (Entra ID's
+    /// `organizations` or `common`), accepting the tenants listed.
+    #[serde(default)]
+    pub multi_tenant: Option<MultiTenant>,
+}
+
+/// The tenants a multi-tenant provider accepts.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MultiTenant {
+    pub tenants: Vec<String>,
+}
+
+impl MultiTenant {
+    /// Whether `tid` is one of the tenants (tenant ids compare without
+    /// case).
+    pub fn allows(&self, tid: &str) -> bool {
+        self.tenants.iter().any(|t| t.eq_ignore_ascii_case(tid))
+    }
+}
+
+/// A tenant id: a GUID, 8-4-4-4-12 hex digits.
+fn is_guid(value: &str) -> bool {
+    let groups: Vec<&str> = value.split('-').collect();
+    groups.len() == 5
+        && groups
+            .iter()
+            .zip([8, 4, 4, 4, 12])
+            .all(|(g, n)| g.len() == n && g.bytes().all(|b| b.is_ascii_hexdigit()))
 }
 
 fn enabled_default() -> bool {
@@ -156,6 +185,14 @@ impl IdentityProvider {
         }
         if !self.scopes.iter().any(|s| s == "openid") {
             return invalid("`scopes` must contain openid");
+        }
+        if let Some(multi) = &self.multi_tenant {
+            if multi.tenants.is_empty() {
+                return invalid("`multiTenant.tenants` must not be empty");
+            }
+            if !multi.tenants.iter().all(|t| is_guid(t)) {
+                return invalid("`multiTenant.tenants` entries must be tenant ids (GUIDs)");
+            }
         }
         let auth = &self.client_authentication;
         match auth.method {

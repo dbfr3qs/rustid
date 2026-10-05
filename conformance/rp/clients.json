@@ -1,0 +1,12 @@
+[
+  {
+    "clientId": "rp-driver",
+    "clientName": "Conformance RP driver",
+    "requireClientSecret": false,
+    "requirePkce": true,
+    "allowedGrantTypes": ["authorization_code"],
+    "redirectUris": ["https://client.test/callback"],
+    "allowedScopes": ["openid", "profile", "email"],
+    "requireConsent": false
+  }
+]

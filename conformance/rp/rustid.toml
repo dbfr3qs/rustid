@@ -1,0 +1,35 @@
+# rustid as a relying party for the OpenID Foundation's RP test plan
+# (scripts/conformance.sh rp): it signs users in through the suite, which
+# acts as the upstream provider at https://localhost:8443/test/a/rustid-rp/.
+# conformance/rp/run.py starts each sign-in. Relative paths are resolved
+# against this file's directory.
+listen = "127.0.0.1:9448"
+clients_file = "clients.json"
+resources_file = "../resources.json"
+identity_providers_file = "identity-providers.json"
+
+[log]
+level = "info"
+
+[protocol]
+issuer_uri = "https://localhost:9448"
+
+[protocol.key_management]
+enabled = false
+
+[protocol.events]
+raise_success_events = true
+raise_failure_events = true
+
+[[signing_keys]]
+kid = "rp-rsa"
+alg = "RS256"
+key_file = "../../fixtures/signing-key.pem"
+
+# The suite's certificate comes from the same local CA as rustid's.
+[federation]
+ca_file = "../../target/conformance/ca.pem"
+
+[tls]
+cert_file = "../../target/conformance/cert.pem"
+key_file = "../../target/conformance/key.pem"

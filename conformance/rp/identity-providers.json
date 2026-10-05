@@ -1,0 +1,11 @@
+[
+  {
+    "scheme": "oidf",
+    "displayName": "OpenID Foundation conformance suite",
+    "authority": "https://localhost:8443/test/a/rustid-rp/",
+    "clientId": "rustid-rp",
+    "clientAuthentication": { "secret": "rustid-rp-secret" },
+    "scopes": ["openid", "profile", "email"],
+    "userinfo": true
+  }
+]

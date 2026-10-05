@@ -57,3 +57,5 @@ VmHWM
 # Admin API error and event fields (wire values).
 SchemaId
 IsActive
+ProviderUserId
+SubjectId

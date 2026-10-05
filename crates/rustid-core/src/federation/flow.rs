@@ -1,7 +1,7 @@
 //! The configured providers, how rustid reaches them, and the two steps
 //! that need the network: discovery (cached for a day) and redeeming a
-//! code, which refetches the provider's keys once, at most once a minute,
-//! when a token names a key it doesn't know.
+//! code, which refetches the provider's keys once when a token's key isn't
+//! among them (a provider rotating keys), at most sixty times a minute.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -17,15 +17,16 @@ use crate::jwt::PublicJwk;
 
 /// How long discovery documents and key sets are kept.
 pub const METADATA_LIFETIME_SECONDS: i64 = 86_400;
-/// The least time between two key set fetches for one provider.
-pub const JWKS_REFETCH_SECONDS: i64 = 60;
+/// The most key set refetches for one provider in a minute.
+pub const JWKS_REFETCH_LIMIT: usize = 60;
 
 #[derive(Debug, Clone)]
 struct Cached {
     metadata: Arc<Metadata>,
     fetched_at: i64,
     keys: Option<Vec<PublicJwk>>,
-    keys_fetched_at: i64,
+    /// When the key set was refetched for unknown keys, in the last minute.
+    refetches: Vec<i64>,
 }
 
 /// Federation: the providers, the outbound client and the metadata cache.
@@ -148,7 +149,7 @@ impl Federation {
                 metadata: metadata.clone(),
                 fetched_at: now,
                 keys: None,
-                keys_fetched_at: 0,
+                refetches: Vec::new(),
             },
         );
         Ok(metadata)
@@ -158,7 +159,6 @@ impl Federation {
         &self,
         provider: &Provider,
         metadata: &Metadata,
-        now: i64,
     ) -> Result<Vec<PublicJwk>, Failure> {
         let span = tracing::info_span!("federation.jwks", scheme = %provider.config.scheme);
         let document = self
@@ -176,7 +176,6 @@ impl Federation {
             .collect();
         if let Some(mut entry) = self.cached(provider) {
             entry.keys = Some(keys.clone());
-            entry.keys_fetched_at = now;
             self.store(provider, entry);
         }
         Ok(keys)
@@ -235,18 +234,19 @@ impl Federation {
         let entry = self.cached(provider);
         let keys = match entry.as_ref().and_then(|e| e.keys.clone()) {
             Some(keys) => keys,
-            None => self.fetch_keys(provider, &metadata, now).await?,
+            None => self.fetch_keys(provider, &metadata).await?,
         };
+        let no_kid =
+            crate::jwt::Jws::decode(id_token).is_some_and(|jws| jws.header_str("kid").is_none());
         let token = match validate(id_token, &keys, &expect) {
-            Err(IdTokenCheck::UnknownKey) => {
-                let fetched_at = self
-                    .cached(provider)
-                    .map(|e| e.keys_fetched_at)
-                    .unwrap_or(0);
-                if now - fetched_at < JWKS_REFETCH_SECONDS {
-                    return Err(Failure::IdTokenInvalid(IdTokenCheck::UnknownKey));
+            // The provider may have rotated its keys: refetch them once.
+            Err(check @ (IdTokenCheck::UnknownKey | IdTokenCheck::Signature))
+                if check == IdTokenCheck::UnknownKey || no_kid =>
+            {
+                if !self.may_refetch(provider, now) {
+                    return Err(Failure::IdTokenInvalid(check));
                 }
-                let keys = self.fetch_keys(provider, &metadata, now).await?;
+                let keys = self.fetch_keys(provider, &metadata).await?;
                 validate(id_token, &keys, &expect).map_err(Failure::IdTokenInvalid)?
             }
             other => other.map_err(Failure::IdTokenInvalid)?,
@@ -257,6 +257,21 @@ impl Federation {
         let access_token = body.get("access_token").and_then(Value::as_str);
         self.with_userinfo(provider, &metadata, access_token, token)
             .await
+    }
+
+    /// Whether the key set may be refetched now (fewer than
+    /// `JWKS_REFETCH_LIMIT` refetches in the last minute), counting this one.
+    fn may_refetch(&self, provider: &Provider, now: i64) -> bool {
+        let mut cache = self.cache.lock().unwrap();
+        let Some(entry) = cache.get_mut(&cache_key(provider)) else {
+            return true;
+        };
+        entry.refetches.retain(|t| now - t < 60);
+        if entry.refetches.len() >= JWKS_REFETCH_LIMIT {
+            return false;
+        }
+        entry.refetches.push(now);
+        true
     }
 
     /// The token with the userinfo response's claims added: its `sub` must

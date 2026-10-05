@@ -487,6 +487,8 @@ impl LoadedKey {
             x: self.jwk.x.clone(),
             y: self.jwk.y.clone(),
             k: None,
+            alg: None,
+            use_: None,
         }
     }
 }
@@ -556,6 +558,8 @@ pub fn certificate_jwk(cert: &[u8]) -> Option<crate::jwt::PublicJwk> {
         x: None,
         y: None,
         k: None,
+        alg: None,
+        use_: None,
     };
     if key.first() == Some(&0x04) {
         let crv = match key.len() {

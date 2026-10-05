@@ -14,7 +14,10 @@
 # fapi2-ms (FAPI 2.0 Message Signing: signed requests and JARM, against a
 # fourth on https://localhost:9446, conformance/fapi2-ms/rustid.toml); dynamic
 # and 3rdparty (dynamic client registration, against a fifth on
-# https://localhost:9447, conformance/dynamic/rustid.toml; in the default run).
+# https://localhost:9447, conformance/dynamic/rustid.toml; in the default run);
+# rp (the relying-party plan against rustid's upstream federation, with the
+# suite as the upstream provider and a sixth rustid on https://localhost:9448,
+# conformance/rp/; conformance/rp/run.py starts each sign-in).
 # Needs Docker (the suite's published images), git, python3 and network
 # access the first time. rustid runs on https://localhost:9443 and the suite
 # on https://localhost:8443, both on loopback only; results are exported to
@@ -37,7 +40,7 @@ stop() {
     return
   fi
   "${COMPOSE[@]}" down >/dev/null 2>&1 || true
-  for pid in "$OUT/rustid.pid" "$OUT/rustid-fapi2.pid" "$OUT/rustid-fapi-ciba.pid" "$OUT/rustid-fapi2-ms.pid" "$OUT/rustid-dynamic.pid" "$OUT/approver.pid"; do
+  for pid in "$OUT/rustid.pid" "$OUT/rustid-fapi2.pid" "$OUT/rustid-fapi-ciba.pid" "$OUT/rustid-fapi2-ms.pid" "$OUT/rustid-dynamic.pid" "$OUT/rustid-rp.pid" "$OUT/approver.pid"; do
     if [ -f "$pid" ]; then
       kill "$(cat "$pid")" 2>/dev/null || true
       rm -f "$pid"
@@ -67,6 +70,7 @@ declare -A VARIANTS=(
   [fapi2-ms]="fapi2-message-signing-final-test-plan[fapi_profile=plain_fapi][authorization_request_type=simple][openid=openid_connect][client_auth_type=private_key_jwt][sender_constrain=dpop][fapi_request_method=signed_non_repudiation][fapi_response_mode=jarm]"
   [dynamic]="oidcc-dynamic-certification-test-plan[response_type=code]"
   [3rdparty]="oidcc-3rdparty-init-login-certification-test-plan[response_type=code]"
+  [rp]="oidcc-client-basic-certification-test-plan (conformance/rp/run.py)"
   [fapi-ciba]="fapi-ciba-id1-test-plan[client_auth_type=private_key_jwt][fapi_ciba_profile=plain_fapi][ciba_mode=poll][client_registration=static_client]"
 )
 PLANS=("$@")
@@ -91,8 +95,9 @@ FAPI2=0
 CIBA=0
 FAPI2_MS=0
 DYNAMIC=0
+RP=0
 for plan in "${PLANS[@]}"; do
-  case "$plan" in fapi2|fapi2-final) FAPI2=1 ;; fapi-ciba) CIBA=1 ;; fapi2-ms) FAPI2_MS=1 ;; dynamic|3rdparty) DYNAMIC=1 ;; esac
+  case "$plan" in fapi2|fapi2-final) FAPI2=1 ;; fapi-ciba) CIBA=1 ;; fapi2-ms) FAPI2_MS=1 ;; dynamic|3rdparty) DYNAMIC=1 ;; rp) RP=1 ;; esac
 done
 if [ "$FAPI2" = 1 ]; then
   ./target/debug/rustid-server --config conformance/fapi2/rustid.toml >"$OUT/rustid-fapi2.log" 2>&1 &
@@ -107,6 +112,10 @@ fi
 if [ "$FAPI2_MS" = 1 ]; then
   ./target/debug/rustid-server --config conformance/fapi2-ms/rustid.toml >"$OUT/rustid-fapi2-ms.log" 2>&1 &
   echo $! >"$OUT/rustid-fapi2-ms.pid"
+fi
+if [ "$RP" = 1 ]; then
+  ./target/debug/rustid-server --config conformance/rp/rustid.toml >"$OUT/rustid-rp.log" 2>&1 &
+  echo $! >"$OUT/rustid-rp.pid"
 fi
 if [ "$DYNAMIC" = 1 ]; then
   ./target/debug/rustid-server --config conformance/dynamic/rustid.toml >"$OUT/rustid-dynamic.log" 2>&1 &
@@ -146,11 +155,19 @@ fi
 if [ "$DYNAMIC" = 1 ]; then
   wait_for https://localhost:9447/.well-known/openid-configuration
 fi
+if [ "$RP" = 1 ]; then
+  wait_for https://localhost:9448/.well-known/openid-configuration
+fi
 wait_for https://localhost:8443/api/runner/available
 
 status=0
 for plan in "${PLANS[@]}"; do
   echo "== plan: $plan"
+  if [ "$plan" = rp ]; then
+    CONFORMANCE_SERVER=https://localhost:8443/ SUITE_DIR="$SUITE_DIR" \
+      "$OUT/venv/bin/python" "$ROOT/conformance/rp/run.py" || status=1
+    continue
+  fi
   CONFORMANCE_SERVER=https://localhost:8443/ \
   CONFORMANCE_SERVER_MTLS=https://localhost:8444/ \
   CONFORMANCE_DEV_MODE=1 \

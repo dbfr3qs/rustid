@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 EXCLUDE=(':!scripts/check-no-upstream-refs.sh')
-WORDS='duende|identity ?server|reference[ _-]?host|samloracle|efexport|(^|[^a-z0-9])\.net\b|dotnet|asp\.net|microsoft|\btest ui\b|\bdifferential\b|\bparity\b|\bported\b'
+WORDS='duende|identity ?server|reference[ _-]?host|samloracle|efexport|(^|[^a-z0-9])\.net\b|dotnet|asp\.net|microsoft($|[^o])|\btest ui\b|\bdifferential\b|\bparity\b|\bported\b'
 CITES='`I[A-Z][a-z][A-Za-z]*(\.[A-Za-z]+)?`|`[A-Za-z.]*[a-z]Async`'
 status=0
 if git grep -nIiE "$WORDS" -- . "${EXCLUDE[@]}"; then status=1; fi

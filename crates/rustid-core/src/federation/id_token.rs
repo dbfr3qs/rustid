@@ -63,8 +63,18 @@ pub struct Expectations<'a> {
     pub skew: i64,
 }
 
-fn key_type(alg: &str) -> &'static str {
-    if alg.starts_with("ES") { "EC" } else { "RSA" }
+/// Whether a key without a `kid` match can verify `alg`: its type and
+/// curve fit, and its `alg` and `use`, when given, say so. Other keys are
+/// ignored (RFC 7517 §5).
+fn suits(key: &PublicJwk, alg: &str) -> bool {
+    let fits = match alg {
+        "ES256" => key.kty == "EC" && key.crv.as_deref() == Some("P-256"),
+        "ES384" => key.kty == "EC" && key.crv.as_deref() == Some("P-384"),
+        "ES512" => key.kty == "EC" && key.crv.as_deref() == Some("P-521"),
+        _ => key.kty == "RSA",
+    };
+    fits && key.alg.as_deref().is_none_or(|a| a == alg)
+        && key.use_.as_deref().is_none_or(|u| u == "sig")
 }
 
 /// The checks, in order: format, algorithm, key, signature, issuer,
@@ -85,7 +95,7 @@ pub fn validate(
             .find(|k| k.kid.as_deref() == Some(kid))
             .ok_or(IdTokenCheck::UnknownKey)?,
         None => {
-            let mut suitable = keys.iter().filter(|k| k.kty == key_type(alg));
+            let mut suitable = keys.iter().filter(|k| suits(k, alg));
             match (suitable.next(), suitable.next()) {
                 (Some(key), None) => key,
                 _ => return Err(IdTokenCheck::Signature),
@@ -114,12 +124,10 @@ pub fn validate(
         Ok(Some(exp)) if exp.saturating_add(expect.skew) >= expect.now => {}
         _ => return Err(IdTokenCheck::Expired),
     }
+    // `iat` is required (OIDC Core §2) and not in the future.
     match jws.numeric_date("iat") {
-        Ok(Some(iat)) if iat > expect.now.saturating_add(expect.skew) => {
-            return Err(IdTokenCheck::IssuedInFuture);
-        }
-        Err(_) => return Err(IdTokenCheck::IssuedInFuture),
-        _ => {}
+        Ok(Some(iat)) if iat <= expect.now.saturating_add(expect.skew) => {}
+        _ => return Err(IdTokenCheck::IssuedInFuture),
     }
     if jws.claim_str("nonce") != Some(expect.nonce) {
         return Err(IdTokenCheck::Nonce);

@@ -282,6 +282,13 @@ fn id_token_checks() {
         check(&with(&|p| p["iat"] = (NOW + 301).into())),
         Err(IdTokenCheck::IssuedInFuture)
     );
+    // iat is required (OIDC Core 2).
+    assert_eq!(
+        check(&with(&|p| {
+            p.as_object_mut().unwrap().remove("iat");
+        })),
+        Err(IdTokenCheck::IssuedInFuture)
+    );
     assert_eq!(
         check(&with(&|p| p["nonce"] = "x".into())),
         Err(IdTokenCheck::Nonce)
@@ -299,6 +306,17 @@ fn no_kid_uses_the_only_suitable_key() {
     let rs256 = vec!["RS256".to_owned()];
     let t = raw_token(Some(&k), &json!({ "alg": "RS256" }), &baseline("n1"));
     validate(&t, &[k.public_jwk()], &expect(&rs256, "n1")).unwrap();
+    // Keys that can't apply are ignored (RFC 7517 section 5): another
+    // algorithm, an encryption key.
+    let parse = |v: Value| serde_json::from_value::<rustid_core::jwt::PublicJwk>(v).unwrap();
+    let mut other_alg = jwk(&key("x1", "RS256"));
+    other_alg.as_object_mut().unwrap().remove("kid");
+    other_alg["alg"] = "RS9999".into();
+    let mut encryption = jwk(&key("x2", "RS256"));
+    encryption.as_object_mut().unwrap().remove("kid");
+    encryption["use"] = "enc".into();
+    let ignored = [k.public_jwk(), parse(other_alg), parse(encryption)];
+    validate(&t, &ignored, &expect(&rs256, "n1")).unwrap();
     let two = [k.public_jwk(), key("k2", "RS256").public_jwk()];
     assert_eq!(
         validate(&t, &two, &expect(&rs256, "n1")),
@@ -455,48 +473,65 @@ async fn redeem_failures() {
 }
 
 #[tokio::test]
-async fn unknown_kid_refetches_once_per_minute() {
+async fn unknown_keys_refetch_the_key_set_once_per_sign_in_up_to_a_limit() {
     let k1 = key("k1", "RS256");
-    let k2 = key("k2", "RS256");
-    let k3 = key("k3", "RS256");
     let fake = Fake::new(&[&k1]);
     let fed = federation(fake.clone());
     let p = fed.providers.find("up").unwrap();
     let c = Correlation::new("up", "/return", NOW);
-    let set = |k: &LoadedKey| {
-        fake.0.lock().unwrap().token_body = json!({ "id_token": token(k, &baseline(&c.nonce)) })
-    };
+    let set = |t: String| fake.0.lock().unwrap().token_body = json!({ "id_token": t });
 
-    set(&k1);
+    set(token(&k1, &baseline(&c.nonce)));
     fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW)
         .await
         .unwrap();
     assert_eq!(fake.gets(JWKS), 1);
 
-    // The upstream rotates to k2: one refetch picks it up.
-    fake.0.lock().unwrap().jwks.push(jwk(&k2));
-    set(&k2);
-    fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW + 120)
+    // The provider rotates its key, seconds later: one refetch picks it up.
+    let k2 = key("k2", "RS256");
+    fake.0.lock().unwrap().jwks = vec![jwk(&k2)];
+    set(token(&k2, &baseline(&c.nonce)));
+    fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW + 5)
         .await
         .unwrap();
     assert_eq!(fake.gets(JWKS), 2);
 
-    // An unknown key within a minute of that refetch: no new GET.
-    set(&k3);
-    assert_eq!(
-        fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW + 150)
-            .await
-            .unwrap_err(),
-        Failure::IdTokenInvalid(IdTokenCheck::UnknownKey)
-    );
-    assert_eq!(fake.gets(JWKS), 2);
-    // A minute later it refetches (and still doesn't know the key).
+    // A token without kid whose signature fails on the cached keys: the
+    // provider may have rotated again, so one refetch.
+    let k3 = key("k3", "RS256");
+    fake.0.lock().unwrap().jwks = vec![jwk(&k3)];
+    set(raw_token(
+        Some(&k3),
+        &json!({ "alg": "RS256" }),
+        &baseline(&c.nonce),
+    ));
+    fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW + 6)
+        .await
+        .unwrap();
+    assert_eq!(fake.gets(JWKS), 3);
+
+    // A key the provider never publishes: one refetch per redemption, and
+    // no more than JWKS_REFETCH_LIMIT in a minute.
+    let limit = rustid_core::federation::flow::JWKS_REFETCH_LIMIT as i64;
+    let unknown = key("k9", "RS256");
+    set(token(&unknown, &baseline(&c.nonce)));
+    for _ in 0..limit {
+        assert_eq!(
+            fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW + 10)
+                .await
+                .unwrap_err(),
+            Failure::IdTokenInvalid(IdTokenCheck::UnknownKey)
+        );
+    }
+    // The limit is reached (k2, the no-kid token, then limit - 2 more).
+    assert_eq!(fake.gets(JWKS), 1 + limit as usize);
+    // A minute after the first refetch, refetching resumes.
     assert!(
-        fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW + 181)
+        fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW + 66)
             .await
             .is_err()
     );
-    assert_eq!(fake.gets(JWKS), 3);
+    assert_eq!(fake.gets(JWKS), 2 + limit as usize);
 }
 
 #[test]

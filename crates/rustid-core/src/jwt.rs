@@ -142,6 +142,12 @@ pub struct PublicJwk {
     /// The key of an `oct` (symmetric) JWK.
     #[serde(default)]
     pub k: Option<String>,
+    /// The algorithm the key is for, when the JWK says.
+    #[serde(default)]
+    pub alg: Option<String>,
+    /// `sig` or `enc`, when the JWK says.
+    #[serde(default, rename = "use")]
+    pub use_: Option<String>,
 }
 
 impl PublicJwk {

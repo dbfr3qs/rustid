@@ -1,0 +1,10 @@
+{
+  "alias": "rustid-rp",
+  "description": "rustid federation as a relying party",
+  "client": {
+    "client_id": "rustid-rp",
+    "client_secret": "rustid-rp-secret",
+    "redirect_uri": "https://localhost:9448/federation/oidf/callback"
+  },
+  "waitTimeoutSeconds": 5
+}

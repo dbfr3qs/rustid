@@ -7,6 +7,12 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-05
+
+### Changed
+
+- Documentation comments describe rustid in its own terms, and a CI check (`scripts/check-doc-references.sh`) keeps comments citing rustid's own items.
+
 ## [0.1.1] - 2026-10-05
 
 ### Changed
@@ -29,6 +35,7 @@ The first release.
 - Static Linux binaries (x86_64 and aarch64, musl) and a multi-arch container image on `ghcr.io/dbfr3qs/rustid`.
 - The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included.
 
-[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/dbfr3qs/rustid/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/dbfr3qs/rustid/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/dbfr3qs/rustid/releases/tag/v0.1.0

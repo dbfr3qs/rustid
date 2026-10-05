@@ -24,6 +24,7 @@ fn table(kind: EntityKind) -> (&'static str, &'static str) {
         EntityKind::Client => ("clients", "client_id"),
         EntityKind::Schema => ("data_extension_schemas", "name"),
         EntityKind::SamlServiceProvider => ("saml_service_providers", "entity_id"),
+        EntityKind::IdentityProvider => ("identity_providers", "scheme"),
     }
 }
 

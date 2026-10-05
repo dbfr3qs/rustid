@@ -176,6 +176,8 @@ pub enum EntityKind {
     Schema,
     /// A SAML service provider, keyed by entity id.
     SamlServiceProvider,
+    /// An upstream identity provider, keyed by scheme.
+    IdentityProvider,
 }
 
 impl EntityKind {
@@ -188,6 +190,7 @@ impl EntityKind {
             EntityKind::Client => "client",
             EntityKind::Schema => "schema",
             EntityKind::SamlServiceProvider => "saml_service_provider",
+            EntityKind::IdentityProvider => "identity_provider",
         }
     }
 }

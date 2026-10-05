@@ -107,6 +107,13 @@ pub struct ClientAuthentication {
     /// thumbprint the assertion then carries as `x5t`.
     #[serde(default)]
     pub certificate_file: Option<PathBuf>,
+    /// `private_key_jwt`: the PKCS#8 PEM private key itself, as the admin
+    /// API takes it (stored encrypted).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+    /// `private_key_jwt`: the certificate PEM itself.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub certificate: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -202,8 +209,14 @@ impl IdentityProvider {
                 }
             }
             ClientAuthMethod::PrivateKeyJwt => {
-                if auth.key_file.is_none() || auth.key_id.is_none() {
-                    return invalid("`private_key_jwt` needs `keyFile` and `keyId`");
+                if auth.key_id.is_none() || (auth.key_file.is_none() && auth.key.is_none()) {
+                    return invalid("`private_key_jwt` needs `keyId`, and `keyFile` or `key`");
+                }
+                if auth.key_file.is_some() && auth.key.is_some() {
+                    return invalid("set one of `keyFile` and `key`");
+                }
+                if auth.certificate_file.is_some() && auth.certificate.is_some() {
+                    return invalid("set one of `certificateFile` and `certificate`");
                 }
                 if let Some(alg) = &auth.algorithm
                     && !ASSERTION_ALGORITHMS.contains(&alg.as_str())
@@ -274,4 +287,62 @@ impl Providers {
     pub fn iter(&self) -> impl Iterator<Item = &Provider> {
         self.0.iter()
     }
+}
+
+/// The credential a provider's configuration describes: the secret given
+/// (or read from `secretEnv` through `env`), or the private key given
+/// inline or read from `keyFile`, relative to `base` (with its
+/// certificate). The configuration must have passed `validate`.
+pub fn resolve_credential(
+    config: &IdentityProvider,
+    base: &std::path::Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Credential, String> {
+    let auth = &config.client_authentication;
+    let secret = || -> Result<String, String> {
+        match (&auth.secret, &auth.secret_env) {
+            (Some(secret), _) => Ok(secret.clone()),
+            (None, Some(name)) => {
+                env(name).ok_or_else(|| format!("the environment variable {name} is not set"))
+            }
+            (None, None) => Err("no secret".into()),
+        }
+    };
+    Ok(match auth.method {
+        ClientAuthMethod::ClientSecretBasic => Credential::Basic(secret()?),
+        ClientAuthMethod::ClientSecretPost => Credential::Post(secret()?),
+        ClientAuthMethod::PrivateKeyJwt => {
+            let kid = auth.key_id.clone().ok_or("no keyId")?;
+            let alg = auth.algorithm.clone().unwrap_or_else(|| "RS256".to_owned());
+            let read = |inline: &Option<String>,
+                        file: &Option<PathBuf>,
+                        what: &str|
+             -> Result<Option<Vec<u8>>, String> {
+                let text = match (inline, file) {
+                    (Some(text), _) => text.clone(),
+                    (None, Some(path)) => {
+                        let path = base.join(path);
+                        std::fs::read_to_string(&path)
+                            .map_err(|e| format!("reading {}: {e}", path.display()))?
+                    }
+                    (None, None) => return Ok(None),
+                };
+                pem::parse(text.trim())
+                    .map(|p| Some(p.into_contents()))
+                    .map_err(|e| format!("the {what} isn't PEM: {e}"))
+            };
+            let key = read(&auth.key, &auth.key_file, "key")?.ok_or("no key")?;
+            let certificate = read(&auth.certificate, &auth.certificate_file, "certificate")?;
+            let origin = crate::keys::KeyOrigin {
+                key: auth
+                    .key_file
+                    .as_ref()
+                    .map_or("the inline key".to_owned(), |p| p.display().to_string()),
+                cert: None,
+            };
+            let loaded = LoadedKey::from_der(&kid, &alg, &key, certificate.as_deref(), &origin)
+                .map_err(|e| e.to_string())?;
+            Credential::PrivateKeyJwt(Arc::new(loaded))
+        }
+    })
 }

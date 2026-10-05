@@ -4,6 +4,7 @@
 
 pub mod api_resources;
 pub mod clients;
+pub mod identity_providers;
 pub mod query;
 pub mod resources;
 pub mod schemas;

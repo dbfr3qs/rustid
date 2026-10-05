@@ -109,8 +109,9 @@ fn unknown_restrictions_are_listed() {
         { "clientId": "b" },
     ]))
     .unwrap();
+    let known: Vec<String> = providers.iter().map(|p| p.config.scheme.clone()).collect();
     assert_eq!(
-        unknown_restrictions(&clients, &providers),
+        unknown_restrictions(&clients, &known),
         [("a".to_owned(), "gone".to_owned())]
     );
 }

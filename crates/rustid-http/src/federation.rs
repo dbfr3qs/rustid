@@ -70,12 +70,21 @@ pub(crate) async fn handle(
     if let Leg::SignoutCallback = leg {
         return signout_callback(state, incoming, scheme).await;
     }
-    let Some(provider) = state.stores.federation.providers.find(scheme) else {
-        return page(StatusCode::NOT_FOUND, "There is no such sign-in provider.");
+    let provider = match state.stores.federation.find(scheme).await {
+        Ok(Some(provider)) => provider,
+        Ok(None) => return page(StatusCode::NOT_FOUND, "There is no such sign-in provider."),
+        Err(e) => {
+            return crate::response::internal_error(
+                state,
+                incoming.info,
+                "FederationProvider",
+                &e.to_string(),
+            );
+        }
     };
     match leg {
-        Leg::Challenge => challenge(state, incoming, provider).await,
-        Leg::Callback => callback(state, incoming, provider).await,
+        Leg::Challenge => challenge(state, incoming, &provider).await,
+        Leg::Callback => callback(state, incoming, &provider).await,
         Leg::SignoutCallback => unreachable!("answered above"),
     }
 }
@@ -235,11 +244,18 @@ async fn challenge(
             .client
             .as_ref()
             .expect("validated request has a client");
-        if !state
-            .stores
-            .federation
-            .providers
-            .allowed_for(client)
+        let allowed = match state.stores.federation.allowed_for(client).await {
+            Ok(allowed) => allowed,
+            Err(e) => {
+                return crate::response::internal_error(
+                    state,
+                    info,
+                    "FederationChallenge",
+                    &e.to_string(),
+                );
+            }
+        };
+        if !allowed
             .iter()
             .any(|p| p.config.scheme == provider.config.scheme)
         {
@@ -532,13 +548,16 @@ pub(crate) async fn upstream_sign_out(
     return_url: &str,
 ) -> Option<Response> {
     let federation = &state.stores.federation;
-    let provider = federation
-        .providers
-        .find(&session.idp)
-        .filter(|p| p.config.sign_out)?;
+    let provider = match federation.find(&session.idp).await {
+        Ok(provider) => provider.filter(|p| p.config.sign_out)?,
+        Err(error) => {
+            tracing::warn!(scheme = %session.idp, %error, "signing out upstream skipped: the provider couldn't be read");
+            return None;
+        }
+    };
     let scheme = &provider.config.scheme;
     let now = chrono::Utc::now().timestamp();
-    let metadata = match federation.metadata(provider, now).await {
+    let metadata = match federation.metadata(&provider, now).await {
         Ok(metadata) => metadata,
         Err(failure) => {
             tracing::warn!(%scheme, detail = %failure.detail(), "signing out upstream skipped: the provider can't be reached");

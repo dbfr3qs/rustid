@@ -164,7 +164,8 @@ async fn metadata_is_checked_and_cached() {
         fake.clone(),
         false,
     );
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     match fed.metadata(p, NOW).await.unwrap_err() {
         Failure::MetadataUnavailable(detail) => assert!(detail.contains("issuer"), "{detail}"),
         other => panic!("{other:?}"),
@@ -187,7 +188,8 @@ async fn metadata_endpoints_must_be_https() {
         fake,
         false,
     );
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     assert!(matches!(
         fed.metadata(p, NOW).await,
         Err(Failure::MetadataUnavailable(_))
@@ -447,7 +449,8 @@ async fn redeem_happy_path() {
     let k = key("k1", "RS256");
     let fake = Fake::new(&[&k]);
     let fed = federation(fake.clone());
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let c = Correlation::new("up", "/return", NOW);
     fake.0.lock().unwrap().token_body = json!({ "id_token": token(&k, &baseline(&c.nonce)) });
     let t = fed
@@ -468,7 +471,8 @@ async fn redeem_failures() {
     let k = key("k1", "RS256");
     let fake = Fake::new(&[&k]);
     let fed = federation(fake.clone());
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let c = Correlation::new("up", "/return", NOW);
     fake.0.lock().unwrap().token_status = 400;
     fake.0.lock().unwrap().token_body = json!({ "error": "invalid_grant" });
@@ -497,7 +501,8 @@ async fn unknown_keys_refetch_the_key_set_once_per_sign_in_up_to_a_limit() {
     let k1 = key("k1", "RS256");
     let fake = Fake::new(&[&k1]);
     let fed = federation(fake.clone());
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let c = Correlation::new("up", "/return", NOW);
     let set = |t: String| fake.0.lock().unwrap().token_body = json!({ "id_token": t });
 
@@ -645,7 +650,8 @@ async fn userinfo_is_called_only_when_enabled_and_its_sub_must_match() {
 
     // Off by default: no userinfo call.
     let fed = federation(fake.clone());
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let t = fed
         .redeem(p, "code", "https://rp/cb", &c, 300, NOW)
         .await
@@ -656,7 +662,8 @@ async fn userinfo_is_called_only_when_enabled_and_its_sub_must_match() {
     // On: called with the access token; its claims join the token's, and
     // its protocol claims never replace the token's.
     let fed = userinfo_federation(fake.clone());
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let t = fed
         .redeem(p, "code", "https://rp/cb", &c, 300, NOW)
         .await
@@ -739,7 +746,8 @@ async fn redeemed_tokens_keep_their_compact_form() {
     let k = key("k1", "RS256");
     let fake = Fake::new(&[&k]);
     let fed = federation(fake.clone());
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let c = Correlation::new("up", "/return", NOW);
     let t = token(&k, &baseline(&c.nonce));
     fake.0.lock().unwrap().token_body = json!({ "id_token": t });
@@ -858,7 +866,8 @@ async fn multi_tenant_providers_check_the_tenant_and_its_issuer() {
     let k = key("k1", "RS256");
     let fake = Fake::new(&[&k]);
     let fed = multi_tenant_federation(fake.clone(), &[TENANT_A]);
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let c = Correlation::new("up", "/return", NOW);
     let set = |t: String| fake.0.lock().unwrap().token_body = json!({ "id_token": t });
 
@@ -910,7 +919,8 @@ async fn tenant_ids_compare_without_case() {
     let upper = "AAAAAAAA-1111-1111-1111-111111111111";
     let lower = upper.to_lowercase();
     let fed = multi_tenant_federation(fake.clone(), &[upper]);
-    let p = fed.providers.find("up").unwrap();
+    let p = fed.find("up").await.unwrap().unwrap();
+    let p = &*p;
     let c = Correlation::new("up", "/return", NOW);
     fake.0.lock().unwrap().token_body =
         json!({ "id_token": tenant_token(&k, &c.nonce, Some(&lower), &lower) });

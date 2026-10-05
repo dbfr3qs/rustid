@@ -196,11 +196,13 @@ async fn login_context(state: &ProtocolState, route: &Route, info: &RequestInfo)
                 .as_ref()
                 .expect("validated request has a client");
             // The providers this client may sign in through, as buttons.
-            let providers: Vec<serde_json::Value> = state
-                .stores
-                .federation
-                .providers
-                .allowed_for(client)
+            let allowed = match state.stores.federation.allowed_for(client).await {
+                Ok(allowed) => allowed,
+                Err(e) => {
+                    return internal_error(state, info, "GetAuthorizationContext", &e.to_string());
+                }
+            };
+            let providers: Vec<serde_json::Value> = allowed
                 .iter()
                 .map(|p| {
                     json!({

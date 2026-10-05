@@ -29,9 +29,22 @@ struct Cached {
     refetches: Vec<i64>,
 }
 
+/// Where federation's providers come from.
+enum Source {
+    /// A fixed set.
+    Static(Providers),
+    /// The configuration store, read on every use; resolved providers are
+    /// kept by scheme and version, so a change is seen at once.
+    Store {
+        configuration: Arc<dyn crate::stores::ConfigurationStore>,
+        protector: Arc<crate::data_protection::DataProtector>,
+        resolved: Mutex<HashMap<String, (i32, Arc<Provider>)>>,
+    },
+}
+
 /// Federation: the providers, the outbound client and the metadata cache.
 pub struct Federation {
-    pub providers: Providers,
+    source: Source,
     pub upstream: Arc<dyn UpstreamClient>,
     pub allow_insecure_loopback: bool,
     cache: Mutex<HashMap<String, Cached>>,
@@ -39,9 +52,7 @@ pub struct Federation {
 
 impl std::fmt::Debug for Federation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Federation")
-            .field("providers", &self.providers)
-            .finish_non_exhaustive()
+        f.debug_struct("Federation").finish_non_exhaustive()
     }
 }
 
@@ -114,17 +125,121 @@ fn cache_key(provider: &Provider) -> String {
 }
 
 impl Federation {
+    /// Federation over a fixed set of providers.
     pub fn new(
         providers: Providers,
         upstream: Arc<dyn UpstreamClient>,
         allow_insecure_loopback: bool,
     ) -> Federation {
         Federation {
-            providers,
+            source: Source::Static(providers),
             upstream,
             allow_insecure_loopback,
             cache: Mutex::new(HashMap::new()),
         }
+    }
+
+    /// Federation over the providers in the configuration store, whose
+    /// secrets `protector` opens.
+    pub fn from_store(
+        configuration: Arc<dyn crate::stores::ConfigurationStore>,
+        protector: Arc<crate::data_protection::DataProtector>,
+        upstream: Arc<dyn UpstreamClient>,
+        allow_insecure_loopback: bool,
+    ) -> Federation {
+        Federation {
+            source: Source::Store {
+                configuration,
+                protector,
+                resolved: Mutex::new(HashMap::new()),
+            },
+            upstream,
+            allow_insecure_loopback,
+            cache: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// A stored provider, resolved once per version. One that can't be
+    /// resolved (its secret's environment variable has gone, say) is
+    /// logged and left out.
+    fn resolved(
+        resolved: &Mutex<HashMap<String, (i32, Arc<Provider>)>>,
+        protector: &crate::data_protection::DataProtector,
+        entity: &crate::stores::StoredEntity,
+    ) -> Option<Arc<Provider>> {
+        if let Some((version, provider)) = resolved.lock().unwrap().get(&entity.key)
+            && *version == entity.version
+        {
+            return Some(provider.clone());
+        }
+        match crate::admin::identity_providers::resolve(entity, protector, &|name| {
+            std::env::var(name).ok()
+        }) {
+            Ok(provider) => {
+                let provider = Arc::new(provider);
+                resolved
+                    .lock()
+                    .unwrap()
+                    .insert(entity.key.clone(), (entity.version, provider.clone()));
+                Some(provider)
+            }
+            Err(error) => {
+                tracing::warn!(scheme = %entity.key, %error, "identity provider left out: it can't be used");
+                None
+            }
+        }
+    }
+
+    /// Every provider, enabled or not.
+    pub async fn providers(&self) -> Result<Vec<Arc<Provider>>, crate::stores::StoreError> {
+        match &self.source {
+            Source::Static(providers) => Ok(providers.iter().cloned().map(Arc::new).collect()),
+            Source::Store {
+                configuration,
+                protector,
+                resolved,
+            } => Ok(configuration
+                .list(crate::stores::EntityKind::IdentityProvider)
+                .await?
+                .iter()
+                .filter_map(|entity| Self::resolved(resolved, protector, entity))
+                .collect()),
+        }
+    }
+
+    /// An enabled provider.
+    pub async fn find(
+        &self,
+        scheme: &str,
+    ) -> Result<Option<Arc<Provider>>, crate::stores::StoreError> {
+        let provider = match &self.source {
+            Source::Static(providers) => providers.find(scheme).cloned().map(Arc::new),
+            Source::Store {
+                configuration,
+                protector,
+                resolved,
+            } => configuration
+                .read_by_key(crate::stores::EntityKind::IdentityProvider, scheme)
+                .await?
+                .and_then(|entity| Self::resolved(resolved, protector, &entity)),
+        };
+        Ok(provider.filter(|p| p.config.enabled))
+    }
+
+    /// The enabled providers `client` may sign in through: all of them when
+    /// it has no restrictions, otherwise those it names.
+    pub async fn allowed_for(
+        &self,
+        client: &crate::clients::Client,
+    ) -> Result<Vec<Arc<Provider>>, crate::stores::StoreError> {
+        let restrictions = &client.identity_provider_restrictions;
+        Ok(self
+            .providers()
+            .await?
+            .into_iter()
+            .filter(|p| p.config.enabled)
+            .filter(|p| restrictions.is_empty() || restrictions.contains(&p.config.scheme))
+            .collect())
     }
 
     fn cached(&self, provider: &Provider) -> Option<Cached> {

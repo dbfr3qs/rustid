@@ -169,7 +169,7 @@ async fn process(
         Interaction::Error(error, description) => {
             error_result(state, route, info, &request, error, description.as_deref()).await
         }
-        Interaction::Login => match federation_target(state, &request) {
+        Interaction::Login => match federation_target(state, &request).await {
             // Straight to the provider: the `idp:` hint names one, or it is
             // the only way this client signs in.
             Some(scheme) => page(&format!("/federation/{scheme}/challenge"), "returnUrl"),
@@ -648,9 +648,19 @@ fn interaction_page(
 /// The provider a sign-in goes straight to: the one the `idp:` hint names,
 /// when the client may use it, or the client's only provider when it has
 /// no local login.
-fn federation_target(state: &ProtocolState, request: &ValidatedAuthorizeRequest) -> Option<String> {
+async fn federation_target(
+    state: &ProtocolState,
+    request: &ValidatedAuthorizeRequest,
+) -> Option<String> {
     let client = request.client.as_ref()?;
-    let allowed = state.stores.federation.providers.allowed_for(client);
+    let allowed = match state.stores.federation.allowed_for(client).await {
+        Ok(allowed) => allowed,
+        Err(error) => {
+            // The login page still works.
+            tracing::warn!(%error, "identity providers couldn't be read");
+            return None;
+        }
+    };
     if let Some(idp) = request.idp()
         && let Some(provider) = allowed.iter().find(|p| p.config.scheme == idp)
     {

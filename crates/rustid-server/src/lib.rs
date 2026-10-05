@@ -406,30 +406,69 @@ async fn build_saml(
 }
 
 /// The upstream identity providers, and the client that reaches them.
-fn build_federation(config: &ServerConfig) -> anyhow::Result<rustid_core::federation::Federation> {
-    let Some(path) = &config.identity_providers_file else {
-        return Ok(Default::default());
-    };
+/// Providers live in the configuration store, where the admin API manages
+/// them; `identity_providers_file` is checked (startup fails on a bad
+/// entry) and imported into it, its file paths made absolute.
+async fn build_federation(
+    config: &ServerConfig,
+    configuration: Arc<dyn rustid_core::stores::ConfigurationStore>,
+    protector: Arc<rustid_core::data_protection::DataProtector>,
+) -> anyhow::Result<rustid_core::federation::Federation> {
     let insecure = config.federation.allow_insecure_loopback;
-    let providers = federation::load_providers(path, insecure, &|name| std::env::var(name).ok())
-        .with_context(|| format!("loading {}", path.display()))?;
-    if let Some(clients) = &config.clients_file {
-        let clients = rustid_core::clients::Clients::load(clients)?;
-        for (client, scheme) in federation::unknown_restrictions(&clients.clients, &providers) {
-            tracing::warn!(%client, %scheme, "a client's identityProviderRestrictions names an identity provider that isn't configured");
-        }
+    if let Some(path) = &config.identity_providers_file {
+        let providers =
+            federation::load_providers(path, insecure, &|name| std::env::var(name).ok())
+                .with_context(|| format!("loading {}", path.display()))?;
+        let base = path.parent().unwrap_or(Path::new("."));
+        let configs: Vec<rustid_core::federation::provider::IdentityProvider> = providers
+            .iter()
+            .map(|p| {
+                let mut config = p.config.clone();
+                let auth = &mut config.client_authentication;
+                for file in [auth.key_file.as_mut(), auth.certificate_file.as_mut()]
+                    .into_iter()
+                    .flatten()
+                {
+                    *file = base.join(&*file);
+                }
+                config
+            })
+            .collect();
+        rustid_core::admin::identity_providers::import(
+            configuration.as_ref(),
+            &protector,
+            &configs,
+        )
+        .await
+        .with_context(|| format!("importing {}", path.display()))?;
     }
     let upstream =
         federation::HttpUpstreamClient::with_ca_file(config.federation.ca_file.as_deref())?;
-    tracing::info!(
-        providers = providers.iter().count(),
-        "upstream federation is configured"
-    );
-    Ok(rustid_core::federation::Federation::new(
-        providers,
+    let federation = rustid_core::federation::Federation::from_store(
+        configuration,
+        protector,
         std::sync::Arc::new(upstream),
         insecure,
-    ))
+    );
+    let schemes: Vec<String> = federation
+        .providers()
+        .await?
+        .iter()
+        .map(|p| p.config.scheme.clone())
+        .collect();
+    if let Some(clients) = &config.clients_file {
+        let clients = rustid_core::clients::Clients::load(clients)?;
+        for (client, scheme) in federation::unknown_restrictions(&clients.clients, &schemes) {
+            tracing::warn!(%client, %scheme, "a client's identityProviderRestrictions names an identity provider that isn't configured");
+        }
+    }
+    if !schemes.is_empty() {
+        tracing::info!(
+            providers = schemes.len(),
+            "upstream federation is configured"
+        );
+    }
+    Ok(federation)
 }
 
 async fn build_state_and_saml(
@@ -478,7 +517,15 @@ async fn build_state_and_saml(
         });
     let manager = key_manager(config, pg).await?;
     let keys = KeyService::new(material, manager);
-    stores.federation = std::sync::Arc::new(build_federation(config)?);
+    let interaction = interaction_state(config)?;
+    stores.federation = std::sync::Arc::new(
+        build_federation(
+            config,
+            stores.configuration.clone(),
+            interaction.protector.clone(),
+        )
+        .await?,
+    );
     stores.request_uri = std::sync::Arc::new(request_uri::HttpRequestUriFetcher::with_ca_file(
         config.request_uri.ca_file.as_deref(),
     )?);
@@ -502,7 +549,6 @@ async fn build_state_and_saml(
         }
         stores.grant_validation = hooks;
     }
-    let interaction = interaction_state(config)?;
     let dcr = dcr_settings(&config.dynamic_client_registration)?;
     stores.sessions = session_store.map(|(store, outbox)| {
         Arc::new(rustid_core::server_side_sessions::ServerSideSessions {

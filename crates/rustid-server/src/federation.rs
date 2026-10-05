@@ -76,16 +76,13 @@ pub fn load_providers(
 
 /// Clients whose restrictions name a provider that isn't configured, as
 /// (client id, scheme) pairs.
-pub fn unknown_restrictions(clients: &[Client], providers: &Providers) -> Vec<(String, String)> {
-    let known: Vec<&str> = providers.iter().map(|p| p.config.scheme.as_str()).collect();
+pub fn unknown_restrictions(clients: &[Client], known: &[String]) -> Vec<(String, String)> {
     clients
         .iter()
         .flat_map(|c| {
             c.identity_provider_restrictions
                 .iter()
-                .filter(|s| {
-                    s.as_str() != rustid_core::session::LOCAL_IDP && !known.contains(&s.as_str())
-                })
+                .filter(|s| s.as_str() != rustid_core::session::LOCAL_IDP && !known.contains(s))
                 .map(|s| (c.client_id.clone(), s.clone()))
         })
         .collect()

@@ -238,6 +238,35 @@ pub fn federated_custom(
     }
 }
 
+/// As [`federated`], but federation reads its providers from the
+/// configuration store, which starts with none: the admin service adds
+/// them. Returns the store and the protector the admin service needs.
+pub fn federated_from_store() -> (
+    Federated,
+    Arc<dyn rustid_core::stores::ConfigurationStore>,
+    Arc<rustid_core::data_protection::DataProtector>,
+) {
+    let f = federated();
+    let mut state = (*f.app.0).clone();
+    let configuration = state.stores.configuration.clone();
+    let protector = state.interaction.protector.clone();
+    state.stores.federation = Arc::new(Federation::from_store(
+        configuration.clone(),
+        protector.clone(),
+        f.fake.clone(),
+        false,
+    ));
+    (
+        Federated {
+            app: AppState::new(state),
+            fake: f.fake,
+            events: f.events,
+        },
+        configuration,
+        protector,
+    )
+}
+
 pub fn federated() -> Federated {
     federated_with(Default::default())
 }

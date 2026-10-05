@@ -936,3 +936,66 @@ async fn multi_tenant_callbacks_accept_a_tenant_issuer_that_matches_the_token() 
         .collect();
     assert_eq!(reasons, ["issuer_mismatch", "issuer_mismatch"]);
 }
+
+#[tokio::test]
+async fn providers_managed_through_admin_take_effect_at_once() {
+    use rustid_core::admin::identity_providers::{IdentityProviderAdmin, IdentityProviderInput};
+    let (f, configuration, protector) = federated_from_store();
+    let admin = IdentityProviderAdmin::new(protector);
+    let mut b = Browser::new(&f.app);
+    let login = b.get(&authorize_for("fed.client", "")).await;
+    let first = return_url(&login.location());
+    // No provider yet.
+    let none = b
+        .get(&format!(
+            "/federation/up/challenge?returnUrl={}",
+            encode(&first)
+        ))
+        .await;
+    assert_eq!(none.status, StatusCode::NOT_FOUND);
+
+    let provider = serde_json::json!({
+        "scheme": "up", "displayName": "Upstream", "authority": AUTHORITY,
+        "clientId": "rustid", "clientAuthentication": { "secret": "secret" },
+    });
+    let saved = admin
+        .create(
+            configuration.as_ref(),
+            IdentityProviderInput::from_json(provider.clone()).unwrap(),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    // Usable at once: a full sign-in, with the secret from the store.
+    signed_in_upstream(&f, &mut b).await;
+    assert_eq!(session(&mut b).await["idp"], "up");
+    assert_eq!(
+        f.fake.state.lock().unwrap().posts[0].basic,
+        Some(("rustid".into(), "secret".into()))
+    );
+
+    // Disabled through admin: the next challenge and callback are 404.
+    let mut disabled = provider;
+    disabled["enabled"] = false.into();
+    admin
+        .update(
+            configuration.as_ref(),
+            &saved.id,
+            IdentityProviderInput::from_json(disabled).unwrap(),
+            1,
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    let mut b2 = Browser::new(&f.app);
+    let login = b2.get(&authorize_for("fed.client", "")).await;
+    let reply = b2
+        .get(&format!(
+            "/federation/up/challenge?returnUrl={}",
+            encode(&return_url(&login.location()))
+        ))
+        .await;
+    assert_eq!(reply.status, StatusCode::NOT_FOUND);
+    let reply = b2.get("/federation/up/callback?code=c&state=s").await;
+    assert_eq!(reply.status, StatusCode::NOT_FOUND);
+}

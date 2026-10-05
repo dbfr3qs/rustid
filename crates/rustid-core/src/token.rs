@@ -213,7 +213,7 @@ pub async fn process(
             return Err(TokenError::new(error).into());
         }
     };
-    // `TryReadProofTokens`: one DPoP header at most.
+    // One DPoP header at most.
     if ctx.dpop_proofs.len() > 1 {
         telemetry::token_issued_failure(Some(&client.client_id), None, INVALID_REQUEST);
         return Err(
@@ -226,7 +226,7 @@ pub async fn process(
         .get("grant_type")
         .filter(|g| g.len() <= ctx.options.input_length_restrictions.grant_type);
     // Whose code was presented, once validation has loaded it, for the
-    // failure event (`ValidatedRequest.Subject`).
+    // failure event.
     let mut subject_id = None;
     let (validated, proof) =
         match validate_request(ctx, &client, confirmation, form, &mut subject_id).await {
@@ -251,7 +251,7 @@ pub async fn process(
                         endpoint: "Token",
                         redirect_uri: None,
                         subject_id: subject_id.clone(),
-                        // `RequestedScopes` is only set by grants that take a
+                        // Requested scopes are only set by grants that take a
                         // scope parameter.
                         scopes: (grant_type.as_deref() != Some("authorization_code"))
                             .then(|| form.get("scope"))
@@ -573,8 +573,8 @@ async fn validate_request(
     Ok((validated, proof))
 }
 
-/// How the request proved possession of a key (`ValidatedTokenRequest`'s
-/// `ProofType`, `ProofKeyThumbprint` and `Confirmation`).
+/// How the request proved possession of a key: the proof type, the key's
+/// thumbprint and the confirmation.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct RequestProof {
     pub proof_type: ProofType,
@@ -584,7 +584,7 @@ pub(crate) struct RequestProof {
     pub confirmation: Option<String>,
 }
 
-/// `ValidateProofToken`: a client certificate (binding the token when it
+/// A client certificate (binding the token when it
 /// authenticated the client, or always with `always_emit_confirmation_claim`),
 /// then a DPoP proof, which takes precedence; a client that requires DPoP
 /// must send one.
@@ -779,7 +779,7 @@ async fn validate_authorization_code(
     ))
 }
 
-/// `ValidateAuthorizationCodeWithProofKeyParameters`: the verifier is
+/// The verifier is
 /// present, 43 to 128 characters, and transforms to the stored challenge
 /// (compared, as stored, as base64 SHA-256 in constant time).
 fn pkce_matches(verifier: Option<&str>, code: &AuthorizationCode) -> bool {

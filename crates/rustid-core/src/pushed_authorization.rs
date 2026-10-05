@@ -132,8 +132,8 @@ pub async fn push(
         .unwrap_or(ctx.options.pushed_authorization.lifetime);
     let reference = new_handle();
     // The client's credentials are never stored (nor shown to the UI in
-    // the authorization context later), as `ToOptimizedFullDictionary`
-    // strips them; nothing at the authorize endpoint reads them.
+    // the authorization context later): they are stripped here, and
+    // nothing at the authorize endpoint reads them.
     for credential in ["client_secret", "client_assertion", "client_assertion_type"] {
         parameters.remove(credential);
     }
@@ -189,7 +189,7 @@ async fn validate_proof(
         )
     })?
     .map_err(|e| match e.nonce {
-        // `CreateServerNonceResult`: an empty description.
+        // An empty description.
         Some(nonce) => PushError {
             error: dpop::USE_DPOP_NONCE.to_owned(),
             description: Some(String::new()),

@@ -26,7 +26,7 @@ pub const TOKEN_TYPE: &str = "DPoP";
 pub const NONCE_PURPOSE: &str = "DPoPProofValidation-nonce";
 const REPLAY_PURPOSE: &str = "DPoPReplay-jti-";
 
-/// `DPoPTokenExpirationValidationMode`: how a proof's freshness is checked.
+/// How a proof's freshness is checked.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DPoPValidationMode {
     /// No built-in check.
@@ -102,7 +102,7 @@ pub struct ProofRequest<'a> {
     /// Unix seconds.
     pub now: i64,
     /// At a protected resource: the access token the proof comes with,
-    /// which it must be bound to (`ValidateAccessToken`).
+    /// which it must be bound to.
     pub access_token: Option<BoundToken<'a>>,
 }
 
@@ -340,7 +340,7 @@ fn thumbprint(jwk: &Map<String, Value>) -> Option<String> {
     Some(b64url(digest.as_ref()))
 }
 
-/// `IsExpired`: issued too far in the future, or past its validity.
+/// Issued too far in the future, or past its validity.
 fn expired(now: i64, skew: i64, validity: i64, issued: i64) -> bool {
     now + skew < issued || issued + validity < now - skew
 }
@@ -360,7 +360,7 @@ fn nonce_time(protector: &DataProtector, nonce: &str) -> i64 {
         .unwrap_or(0)
 }
 
-/// `IsHtuMatch`: scheme and host without regard to case, the port (the
+/// Scheme and host without regard to case, the port (the
 /// scheme's default when absent), and the exact path.
 fn same_endpoint(expected: &str, htu: &str) -> bool {
     let (Ok(expected), Ok(htu)) = (url::Url::parse(expected), url::Url::parse(htu)) else {

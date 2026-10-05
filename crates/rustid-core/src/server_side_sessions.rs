@@ -1,4 +1,4 @@
-//! Server-side sessions (`AddServerSideSessions`): the session ticket is
+//! Server-side sessions: the session ticket is
 //! kept in a store and the `idsrv` cookie carries only its key. The record,
 //! its filters and the key-ordered paging of query sessions.
 
@@ -66,8 +66,8 @@ pub struct SessionQuery {
 }
 
 impl SessionQuery {
-    /// Whether a session passes the query's substring filters (`Contains`,
-    /// case-sensitive). With no filter set, every session does.
+    /// Whether a session passes the query's substring filters
+    /// (case-sensitive). With no filter set, every session does.
     pub fn matches(&self, session: &ServerSideSession) -> bool {
         let blank = |f: &Option<String>| f.as_deref().is_none_or(|v| v.trim().is_empty());
         if blank(&self.subject_id) && blank(&self.session_id) && blank(&self.display_name) {
@@ -234,7 +234,7 @@ impl PageSource for SortedSessions {
     }
 }
 
-/// `CryptoRandom.CreateUniqueId(32, Hex)`: a new session key.
+/// A new session key: 32 random bytes as upper-case hex.
 pub fn new_key() -> String {
     use aws_lc_rs::rand::SecureRandom;
     let mut bytes = [0u8; 32];
@@ -360,7 +360,7 @@ pub const KEY_PURPOSE: &str = "rustid.session.key";
 /// The scheme recorded with each session (`idsrv`).
 pub const SCHEME: &str = crate::session::SESSION_COOKIE;
 
-/// `PersistedGrantTokenTypes`: what a session's end takes with it.
+/// What a session's end takes with it.
 pub const TOKEN_GRANT_TYPES: &[&str] = &[
     crate::refresh_tokens::REFRESH_TOKEN,
     crate::grants::REFERENCE_TOKEN,
@@ -708,7 +708,7 @@ pub async fn query_user_sessions(
     })
 }
 
-/// `RemoveSessionsContext`: which sessions, and what goes with them.
+/// Which sessions, and what goes with them.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RemoveSessions {
     pub subject_id: Option<String>,

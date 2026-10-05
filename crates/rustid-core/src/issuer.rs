@@ -1,5 +1,4 @@
-//! Issuer and base URL derivation, mirroring the issuer name service and
-//! `DefaultServerUrls`.
+//! Issuer and base URL derivation.
 
 use crate::options::ProtocolOptions;
 
@@ -25,7 +24,7 @@ impl RequestOrigin {
         format!("{}{}", self.origin(), self.base_path)
     }
 
-    /// `GetUnicodeOrigin()`: Punycode labels decoded, port preserved.
+    /// Punycode labels decoded, port preserved.
     pub fn unicode_origin(&self) -> String {
         format!("{}://{}", self.scheme, unicode_host(&self.host))
     }

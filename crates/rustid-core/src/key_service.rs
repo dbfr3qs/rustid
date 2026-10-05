@@ -171,7 +171,7 @@ impl KeyService {
         Ok(Some(cert))
     }
 
-    /// `GetSigningCredentialsAsync(allowedAlgorithms)`: with no algorithms,
+    /// The signing key for `allowed_algorithms`: with no algorithms,
     /// the first static key, else the automatic key for the default
     /// algorithm; otherwise the first signing key with an allowed algorithm.
     pub async fn signing_key(

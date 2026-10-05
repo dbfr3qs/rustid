@@ -14,7 +14,7 @@ use crate::params::Params;
 use crate::session::UserSession;
 use crate::stores::{PersistedGrantStore, StoreError};
 
-/// `PersistedGrantTypes.AuthorizationCode`.
+/// The persisted grant type of authorization codes.
 pub const AUTHORIZATION_CODE: &str = "authorization_code";
 
 /// What a code stands for until it is redeemed.
@@ -33,7 +33,7 @@ pub struct AuthorizationCode {
     pub code_challenge_method: Option<String>,
     pub dpop_key_thumbprint: Option<String>,
     pub is_open_id: bool,
-    /// `RawScopeValues`, in request order.
+    /// The requested scopes, in request order.
     pub requested_scopes: Vec<String>,
     pub requested_resource_indicators: Vec<String>,
     pub redirect_uri: String,
@@ -110,7 +110,7 @@ impl AuthorizationCode {
     }
 }
 
-/// `AuthorizeResponse.ToNameValueCollection` for a code flow response:
+/// The parameters of a code flow response:
 /// `code`, `state`, `session_state`, then `iss` when the option is on.
 pub fn code_response_parameters(
     request: &ValidatedAuthorizeRequest,

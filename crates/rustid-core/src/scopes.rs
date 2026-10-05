@@ -29,12 +29,12 @@ pub struct ValidatedResources {
     pub api_scopes: Vec<ApiScope>,
     pub api_resources: Vec<ApiResource>,
     pub offline_access: bool,
-    /// `RawScopeValues`: the granted scopes in request (sorted) order.
+    /// The granted scopes in request (sorted) order.
     pub scopes: Vec<String>,
 }
 
 impl ValidatedResources {
-    /// `GetRequiredScopeValues`: the requested scopes whose identity
+    /// The requested scopes whose identity
     /// resource or API scope is required.
     pub fn required_scope_values(&self) -> Vec<String> {
         self.scopes
@@ -49,7 +49,7 @@ impl ValidatedResources {
             .collect()
     }
 
-    /// `ResourceValidationResult.Filter`: only the given scope values, in
+    /// Only the given scope values, in
     /// the original order, with the resources they need.
     pub fn filter(&self, scope_values: &[String]) -> ValidatedResources {
         let keep = |name: &str| scope_values.iter().any(|v| v == name);
@@ -82,7 +82,7 @@ impl ValidatedResources {
         }
     }
 
-    /// `FilterByResourceIndicator`: with an indicator, only the API resource
+    /// With an indicator, only the API resource
     /// it names, the API scopes of that resource, and the requested scopes
     /// among them (plus `offline_access`); identity resources stay, for the
     /// id token. Without one, the API resources that don't insist on being
@@ -139,7 +139,7 @@ impl ValidatedResources {
         out
     }
 
-    /// `FindMatchingSigningAlgorithms`: the algorithms every constraining API
+    /// The algorithms every constraining API
     /// resource allows. `Ok(empty)` when none constrains; `Err` when their
     /// lists have nothing in common.
     pub fn allowed_signing_algorithms(&self) -> Result<Vec<String>, NoCommonSigningAlgorithm> {

@@ -18,6 +18,7 @@ cat >"$tmp/src/lib.rs" <<'EOF'
 /// Like `JsonWebToken.Claims` but ours.
 pub struct UserSession;
 // `ProfileDataRequestContext` was here.
+/// `CryptoRandom.CreateUniqueId(32, Hex)` and `AsList().Get(key)`.
 /// `Option` and `Vec` are fine; so is `ETag` (no compound case).
 pub fn x() -> Option<Vec<u8>> { None }
 EOF
@@ -28,14 +29,14 @@ g add -A && g commit -q -m fixture
 status=0
 out=$(CHECK_ROOT=$tmp "$check" 2>&1) || status=$?
 [ "$status" = 1 ] || fail "exit $status with dangling citations, want 1"
-for want in 'src/lib.rs:2: `JsonWebToken.Claims`' 'src/lib.rs:4: `ProfileDataRequestContext`' 'docs/a.md:1: `NameValueCollection.GetValues`'; do
+for want in 'src/lib.rs:2: `JsonWebToken.Claims`' 'src/lib.rs:4: `ProfileDataRequestContext`' 'src/lib.rs:5: `CryptoRandom.CreateUniqueId(32, Hex)`' 'src/lib.rs:5: `AsList().Get(key)`' 'docs/a.md:1: `NameValueCollection.GetValues`'; do
   grep -qF "$want" <<<"$out" || fail "did not report $want"
 done
 for name in UserSession Allowed Option Vec ETag; do
   if grep -q "\`$name" <<<"$out"; then fail "reported $name"; fi
 done
 
-sed -i -e 's/Like `JsonWebToken.Claims` but ours./A session./' -e '/ProfileDataRequestContext/d' "$tmp/src/lib.rs"
+sed -i -e 's/Like `JsonWebToken.Claims` but ours./A session./' -e '/ProfileDataRequestContext/d' -e '/CryptoRandom/d' "$tmp/src/lib.rs"
 echo 'See the docs.' >"$tmp/docs/a.md"
 g commit -q -am fixed
 CHECK_ROOT=$tmp "$check" >/dev/null 2>&1 || fail "still fails after the fix"

@@ -12,10 +12,10 @@ use crate::session::UserSession;
 use crate::stores::{StoreError, find_enabled_client};
 use crate::tokens::{AccessToken, CLAIM_VALUE_JSON, Claim, jwt_payload, new_jwt_id};
 
-/// `DefaultLogoutTokenLifetime`: five minutes.
+/// Five minutes.
 pub const LOGOUT_TOKEN_LIFETIME_SECONDS: i64 = 300;
 
-/// `OidcConstants.Events.BackChannelLogout`.
+/// The back-channel logout token's event (OpenID Connect Back-Channel Logout 1.0).
 pub const BACK_CHANNEL_LOGOUT_EVENT: &str = "http://schemas.openid.net/event/backchannel-logout";
 
 /// Posts a logout token to a client's back-channel logout URI as the form
@@ -35,7 +35,7 @@ impl BackChannelSender for NoBackChannelSender {
     async fn send(&self, _: &str, _: &str) {}
 }
 
-/// `BackChannelLogoutRequest`: one client to notify.
+/// One client to notify.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackChannelRequest {
     pub client_id: String,

@@ -1,6 +1,6 @@
 //! Data extension schemas (entity attribute values): the
 //! attributes an entity kind's `extendedProperties` may carry, and the
-//! validation of those values (`AttributeValueCollection.TryValidateAgainst`),
+//! validation of those values,
 //! with stable messages.
 
 use std::collections::BTreeMap;
@@ -199,7 +199,7 @@ fn definitions_error(message: &str) -> AdminError {
     AdminError::invalid_value("AttributeDefinitions", message)
 }
 
-/// `AttributeCode`'s rules.
+/// An attribute code's rules.
 fn code_error(code: &str) -> Option<AdminError> {
     if code.is_empty() {
         return Some(AdminError::required("AttributeDefinitions"));
@@ -218,7 +218,7 @@ fn code_error(code: &str) -> Option<AdminError> {
     Some(definitions_error(message))
 }
 
-/// `AttributeDisplayName` and `AttributeDescription`'s length.
+/// The length limit of an attribute's display name and description.
 fn text_error(text: &Option<String>) -> Option<AdminError> {
     text.as_deref()
         .filter(|t| t.chars().count() > MAX_TEXT)
@@ -257,7 +257,7 @@ impl SchemaConfiguration {
     }
 
     /// The definition for `code` (case-insensitive); the last wins, as
-    /// `InMemorySchemaStore` keeps the last of duplicates.
+    /// the schema store keeps the last of duplicates.
     pub fn definition(&self, code: &str) -> Option<&AttributeDefinition> {
         self.attribute_definitions
             .iter()
@@ -266,7 +266,7 @@ impl SchemaConfiguration {
     }
 }
 
-/// `TryValidateAgainst`: the errors, in order (each value in input
+/// The errors, in order (each value in input
 /// order, then each missing required attribute). No schema defines nothing.
 pub fn validate_extended_properties(
     values: &Map<String, Value>,
@@ -311,7 +311,7 @@ pub fn validate_extended_properties(
     errors
 }
 
-/// `EavPropertyMapper.ExtractStringProperties`: the string-typed values, for
+/// The string-typed values, for
 /// the runtime models' `properties`.
 pub fn string_properties(
     values: &Map<String, Value>,
@@ -515,7 +515,7 @@ pub fn stored_extended_properties(data: &Value) -> Map<String, Value> {
         .unwrap_or_default()
 }
 
-/// `EavMapper.ToAttributeValues`: the stored values the current schema
+/// The stored values the current schema
 /// still accepts. Reads show only these, so after a schema change an update
 /// sent back from a read succeeds and drops the rest.
 pub async fn readable_extended_properties(

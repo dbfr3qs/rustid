@@ -1,5 +1,5 @@
-//! `DynamicClientRegistrationResponse(request, client)`: the registered
-//! client's metadata, null members omitted (`WhenWritingNull`).
+//! The registration response: the registered client's metadata, null
+//! members omitted.
 
 use serde_json::{Map, Value, json};
 
@@ -8,7 +8,7 @@ use crate::clients::{AccessTokenType, Client, RefreshTokenExpiration, RefreshTok
 
 const AUTHORIZATION_CODE: &str = "authorization_code";
 
-/// `InteractiveFlowsEnabled`: a grant that sends the user to authorize.
+/// A grant that sends the user to authorize.
 fn interactive(client: &Client) -> bool {
     client
         .allowed_grant_types

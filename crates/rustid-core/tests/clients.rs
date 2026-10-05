@@ -201,7 +201,7 @@ fn identity_token_settings_default() {
     assert!(c.always_include_user_claims_in_id_token);
 }
 
-/// `PairWiseSubjectSalt` round-trips; nothing derives
+/// The pairwise subject salt round-trips; nothing derives
 /// pairwise subjects from it.
 #[test]
 fn the_pairwise_subject_salt_is_kept() {

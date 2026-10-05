@@ -100,7 +100,7 @@ pub fn failure(error: &str, client: Option<&str>) {
     instruments().operation.add(1, &tags);
 }
 
-/// `UnHandledException`: a server-side failure, `result=internal_error`.
+/// A server-side failure, `result=internal_error`.
 pub fn internal_error(kind: &str, method: &str) {
     instruments().operation.add(
         1,
@@ -112,7 +112,7 @@ pub fn internal_error(kind: &str, method: &str) {
     );
 }
 
-/// `IncreaseActiveRequests` / `DecreaseActiveRequests`.
+/// Counts a request in (`delta` 1) or out (`delta` -1) of an endpoint.
 pub fn active_requests(endpoint: &str, path: &str, delta: i64) {
     instruments()
         .active_requests
@@ -198,7 +198,7 @@ pub struct TokenIssued<'a> {
     /// `Jwt` or `Reference`.
     pub access_token_type: Option<&'a str>,
     pub refresh_token_issued: bool,
-    /// `None`, `Dpop` or `ClientCertificate`.
+    /// `None`, `DPoP` or `ClientCertificate`.
     pub proof_type: &'a str,
     pub id_token_issued: bool,
 }

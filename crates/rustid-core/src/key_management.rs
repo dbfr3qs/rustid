@@ -22,7 +22,7 @@ pub const KEY_PROTECTION_PURPOSE: &str = "rustid.signing-keys.v1";
 /// `SerializedKey.Version` for keys this server writes.
 const KEY_VERSION: i32 = 1;
 
-/// How long to wait for another task creating keys (`CacheLockTimeout`).
+/// How long to wait for another task creating keys.
 const NEW_KEY_LOCK_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// The time source, replaceable in tests.

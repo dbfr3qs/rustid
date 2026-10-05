@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::data_protection::DataProtector;
 use crate::tokens::Claim;
 
-/// The authentication cookie's name (`DefaultCookieAuthenticationScheme`).
+/// The authentication cookie's name.
 pub const SESSION_COOKIE: &str = "idsrv";
 /// The identity provider of users who sign in locally.
 pub const LOCAL_IDP: &str = "local";
@@ -29,15 +29,15 @@ pub struct UserSession {
     /// Clients that received a response in this session, for logout.
     pub client_ids: Vec<String>,
     /// SAML service providers that received an assertion in this session
-    /// (`SamlSpSessionData`), for single logout.
+    ///, for single logout.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub saml_sessions: Vec<SamlSpSession>,
     pub issued: DateTime<Utc>,
     pub expires: DateTime<Utc>,
-    /// A persistent cookie (`IsPersistent`, "remember me"): it has `expires`.
+    /// A persistent cookie ("remember me"): it has `expires`.
     #[serde(default)]
     pub persistent: bool,
-    /// `AllowRefresh`: `Some(false)` stops sliding renewal.
+    /// `Some(false)` stops sliding renewal.
     #[serde(default)]
     pub allow_refresh: Option<bool>,
     /// Token use extended the session: renew the cookie on the next request.
@@ -51,7 +51,7 @@ pub struct UserSession {
     pub key: Option<String>,
 }
 
-/// `SamlSpSessionData`: a service provider's session within the user's.
+/// A service provider's session within the user's.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SamlSpSession {
@@ -70,9 +70,9 @@ pub struct SignIn {
     /// Seconds since the epoch; now when absent.
     pub auth_time: Option<i64>,
     pub claims: Vec<Claim>,
-    /// A persistent cookie (`IsPersistent`).
+    /// A persistent cookie.
     pub persistent: bool,
-    /// `AllowRefresh`; `Some(false)` stops sliding renewal.
+    /// `Some(false)` stops sliding renewal.
     pub allow_refresh: Option<bool>,
 }
 
@@ -167,7 +167,7 @@ impl UserSession {
     }
 }
 
-/// `CryptoRandom.CreateUniqueId(16, Hex)`.
+/// A new session id: 16 random bytes as upper-case hex.
 pub fn new_session_id() -> String {
     crate::tokens::new_jwt_id()
 }

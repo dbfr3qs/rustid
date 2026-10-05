@@ -1,2 +1,4 @@
 # Names cited in comments and docs that are not Rust identifiers:
 # specification and protocol terms.
+# PKCS#1 ASN.1 type (RFC 8017).
+RSAPublicKey

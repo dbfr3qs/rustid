@@ -295,7 +295,7 @@ async fn respond(
     })
 }
 
-/// `DeviceFlowAuthorizationRequest`: what a device page shows.
+/// What a device page shows.
 #[derive(Debug, Clone)]
 pub struct DeviceAuthorizationContext {
     pub client: std::sync::Arc<Client>,

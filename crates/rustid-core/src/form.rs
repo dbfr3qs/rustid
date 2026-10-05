@@ -6,7 +6,7 @@ pub struct Form {
     entries: Vec<(String, String)>,
 }
 
-/// `FormOptions` defaults: `ValueCountLimit` and `KeyLengthLimit`.
+/// Form limits: the most values, and the longest key.
 pub const MAX_VALUES: usize = 1024;
 pub const MAX_KEY_LENGTH: usize = 2048;
 
@@ -72,7 +72,7 @@ impl Form {
             .map(|(_, v)| v.as_str())
     }
 
-    /// `AsNameValueCollection().Get(key)`: blank values dropped, remaining
+    /// Blank values dropped, remaining
     /// values joined with commas; `None` when nothing remains.
     pub fn get(&self, key: &str) -> Option<String> {
         let values: Vec<&str> = self.values(key).collect();
@@ -91,7 +91,7 @@ impl Form {
         decode(raw)
     }
 
-    /// Non-blank values for `key`, as `NameValueCollection.GetValues`.
+    /// Non-blank values for `key`, in arrival order.
     pub fn values<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + 'a {
         self.entries
             .iter()

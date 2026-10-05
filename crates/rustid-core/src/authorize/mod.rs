@@ -20,15 +20,15 @@ pub use validation::{
     AuthorizeContext, AuthorizeError, AuthorizeFailure, return_url_query, validate, validate_pushed,
 };
 
-/// `Constants.ProcessedPrompt`: prompt values already acted on, added to
+/// Prompt values already acted on, added to
 /// the return URL so the callback doesn't act on them again.
 pub const PROCESSED_PROMPT: &str = "suppressed_prompt";
-/// `Constants.ProcessedMaxAge`.
+/// Marks `max_age` as already acted on, in the return URL.
 pub const PROCESSED_MAX_AGE: &str = "suppressed_max_age";
 /// The `request_uri` prefix of pushed authorization requests (RFC 9126).
 pub const PAR_REQUEST_URI_PREFIX: &str = "urn:ietf:params:oauth:request_uri";
 
-/// `OidcConstants.AuthorizeErrors` that the endpoint returns to the client
+/// Authorize errors that the endpoint returns to the client
 /// instead of showing the error page.
 pub const SAFE_ERRORS: &[&str] = &[
     "access_denied",

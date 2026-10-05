@@ -7,7 +7,7 @@ use crate::form::Form;
 
 /// Parameters in first-seen key order. Keys match case-insensitively and
 /// keep the casing they first arrived with; each key holds its values in
-/// arrival order, as `NameValueCollection` does.
+/// arrival order.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Params {
     entries: Vec<(String, Vec<String>)>,
@@ -17,7 +17,7 @@ pub struct Params {
 }
 
 impl Params {
-    /// `AsNameValueCollection()` over a query or form: blank values are
+    /// A query's or form's pairs: blank values are
     /// dropped, and a key whose values are all blank is absent.
     pub fn from_pairs<K: AsRef<str>, V: AsRef<str>>(
         pairs: impl IntoIterator<Item = (K, V)>,
@@ -78,12 +78,12 @@ impl Params {
         self.entries.push((key, values));
     }
 
-    /// `Get(key)`: the values joined with commas, `None` when absent.
+    /// The values joined with commas, `None` when absent.
     pub fn get(&self, key: &str) -> Option<String> {
         self.position(key).map(|i| self.entries[i].1.join(","))
     }
 
-    /// `GetValues(key)`: empty when absent.
+    /// The values; empty when absent.
     pub fn values(&self, key: &str) -> &[String] {
         self.position(key)
             .map(|i| self.entries[i].1.as_slice())
@@ -94,7 +94,7 @@ impl Params {
         self.position(key).is_some()
     }
 
-    /// `Add(key, value)`: appends to the key's values, or adds the key last.
+    /// Appends to the key's values, or adds the key last.
     pub fn add(&mut self, key: &str, value: &str) {
         match self.position(key) {
             Some(i) => self.entries[i].1.push(value.to_owned()),
@@ -126,7 +126,7 @@ impl Params {
         self.entries.iter().map(|(k, v)| (k.as_str(), v.as_slice()))
     }
 
-    /// `ToQueryString()`: every value as `key=value` with [`url_encode`],
+    /// Every value as `key=value` with [`url_encode`],
     /// keys in order; an empty value is written as the bare key.
     pub fn to_query_string(&self) -> String {
         let mut out = String::new();
@@ -146,7 +146,7 @@ impl Params {
     }
 }
 
-/// `UrlEncoder.Default.Encode`: UTF-8 percent-encoding of everything but
+/// UTF-8 percent-encoding of everything but
 /// ASCII letters, digits and `! $ ( ) * , - . ; @ _ ~`.
 pub fn url_encode(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
@@ -190,7 +190,7 @@ pub fn add_hash_fragment(url: &str, query: &str) -> String {
     }
 }
 
-/// `IsLocalUrl()`: `/` or `/path` (not `//` or `/\`), or the same after
+/// `/` or `/path` (not `//` or `/\`), or the same after
 /// `~`, with no control characters.
 pub fn is_local_url(url: &str) -> bool {
     let rest = if let Some(rest) = url.strip_prefix("~/") {
@@ -203,7 +203,7 @@ pub fn is_local_url(url: &str) -> bool {
     !rest.starts_with('/') && !rest.starts_with('\\') && !rest.chars().any(char::is_control)
 }
 
-/// `FromSpaceSeparatedString()`: trimmed, split on spaces, empties removed.
+/// Trimmed, split on spaces, empties removed.
 pub fn split_spaces(value: &str) -> Vec<String> {
     value
         .trim()

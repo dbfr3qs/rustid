@@ -15,7 +15,7 @@ use crate::params::{Params, add_query_param, utf16_len};
 use crate::session::UserSession;
 use crate::stores::{StoreError, find_enabled_client};
 
-/// A validated end session request (`ValidatedEndSessionRequest`).
+/// A validated end session request.
 #[derive(Debug, Clone, Default)]
 pub struct EndSessionRequest {
     pub raw: Params,
@@ -34,7 +34,7 @@ pub struct EndSessionRequest {
     pub state: Option<String>,
 }
 
-/// `ValidateIdentityTokenAsync(token, null, false)`: an identity token this
+/// An identity token this
 /// server issued (its signature and issuer), to an enabled client named by
 /// its single audience; the lifetime isn't checked. The claims and client.
 pub async fn validate_identity_token_hint(
@@ -213,7 +213,7 @@ impl LogoutMessage {
         }
     }
 
-    /// `ContainsPayload`: worth a `logoutId` on the logout page's URL.
+    /// Worth a `logoutId` on the logout page's URL.
     pub fn contains_payload(&self) -> bool {
         self.client_id.as_deref().is_some_and(|c| !c.is_empty())
             || !self.client_ids.is_empty()
@@ -251,7 +251,7 @@ pub struct LogoutNotificationContext {
 }
 
 /// Whether any of the SAML SPs can be sent a front-channel LogoutRequest
-/// (`AnySamlServiceProviderHasFrontChannelLogout`); the SAML IdP answers.
+///; the SAML IdP answers.
 #[async_trait::async_trait]
 pub trait SamlFrontChannel: Send + Sync {
     async fn any_front_channel(&self, entity_ids: &[String]) -> Result<bool, StoreError>;

@@ -1,5 +1,5 @@
 //! Access token contents: claims and the JWT
-//! payload (`CreateJwtPayloadDictionary`).
+//! payload.
 
 use serde_json::{Map, Value};
 
@@ -51,7 +51,7 @@ pub struct AccessToken {
     pub lifetime: i64,
     pub audiences: Vec<String>,
     pub claims: Vec<Claim>,
-    /// The `cnf` binding the token to a proof key (`Token.Confirmation`),
+    /// The `cnf` binding the token to a proof key,
     /// as JSON.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub confirmation: Option<String>,
@@ -87,7 +87,7 @@ pub fn client_access_token(
     for scope in resources.scopes.iter().filter(|s| *s != OFFLINE_ACCESS) {
         claims.push(Claim::string("scope", scope));
     }
-    // ClaimComparer: duplicates of type and value are dropped.
+    // Duplicates of type and value are dropped.
     let mut distinct: Vec<Claim> = Vec::new();
     for claim in claims {
         if !distinct
@@ -111,7 +111,7 @@ pub fn client_access_token(
     }
 }
 
-/// `CreateJwtPayloadDictionary`: iss, nbf, iat, exp, aud, scope, then every
+/// Iss, nbf, iat, exp, aud, scope, then every
 /// other claim type in first-seen order (arrays when repeated), then `jti`
 /// when given.
 pub fn jwt_payload(
@@ -206,7 +206,7 @@ pub fn jwt_payload(
     Ok(payload)
 }
 
-/// `AddObject`: the JSON form of a claim value by its value type.
+/// The JSON form of a claim value by its value type.
 fn claim_json(claim: &Claim) -> Result<Value, ClaimValueError> {
     let error = || ClaimValueError {
         claim_type: claim.claim_type.clone(),
@@ -233,7 +233,7 @@ fn claim_json(claim: &Claim) -> Result<Value, ClaimValueError> {
     })
 }
 
-/// `Constants.Filters.ClaimsServiceFilterClaimTypes`: claim types the
+/// Claim types the
 /// profile service may not supply, because the protocol owns them.
 pub const PROTOCOL_CLAIM_TYPES: &[&str] = &[
     "at_hash",
@@ -257,7 +257,7 @@ pub const PROTOCOL_CLAIM_TYPES: &[&str] = &[
     "cnf",
 ];
 
-/// `FilterRequestedClaimTypes`: distinct types, without the ones a token's
+/// Distinct types, without the ones a token's
 /// protocol claims own.
 fn requested_types<'a>(types: impl Iterator<Item = &'a String>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
@@ -298,7 +298,7 @@ pub fn includes_identity_claims(client: &Client, request: &IdentityTokenRequest<
     request.include_all_identity_claims || client.always_include_user_claims_in_id_token
 }
 
-/// `GetStandardSubjectClaims` and `GetOptionalClaims`: `sub`, `auth_time`,
+/// `sub`, `auth_time`,
 /// `idp`, each `amr`, then `acr` when the session has one.
 fn subject_claims(session: &UserSession) -> Vec<Claim> {
     let mut claims = vec![
@@ -317,7 +317,7 @@ fn subject_claims(session: &UserSession) -> Vec<Claim> {
     claims
 }
 
-/// `ClaimComparer`: duplicates of type and value are dropped.
+/// Duplicates of type and value are dropped.
 fn distinct(claims: Vec<Claim>) -> Vec<Claim> {
     let mut out: Vec<Claim> = Vec::new();
     for claim in claims {
@@ -458,7 +458,7 @@ pub fn hash_claim_value(value: &str, algorithm: &str) -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(half)
 }
 
-/// `CryptoRandom.CreateUniqueId(16, Hex)`: 16 random bytes as upper-case hex.
+/// A new JWT id: 16 random bytes as upper-case hex.
 pub fn new_jwt_id() -> String {
     use aws_lc_rs::rand::SecureRandom;
     let mut bytes = [0u8; 16];

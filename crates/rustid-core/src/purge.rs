@@ -7,9 +7,9 @@ use chrono::{DateTime, Duration, Utc};
 
 use crate::stores::{StoreError, Stores};
 
-/// One run's settings: the batch size (`StoragePurgeOptions.BatchSize`,
-/// clamped) and EF's `RemoveConsumedTokens` and
-/// `ConsumedTokenCleanupDelay` (seconds).
+/// One run's settings: the batch size (clamped), whether consumed
+/// tokens are removed too, and how long after consumption they are kept
+/// (seconds).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PurgeSettings {
     pub batch: usize,

@@ -67,13 +67,13 @@ pub struct ConsentResponse {
 }
 
 impl ConsentResponse {
-    /// `Granted`: some scopes and no error.
+    /// Granted: some scopes and no error.
     pub fn granted(&self) -> bool {
         !self.scopes_values_consented.is_empty() && self.error.is_none()
     }
 }
 
-/// `ConsentRequest.Id`: base64url SHA-256 of
+/// Base64url SHA-256 of
 /// `{client}:{subject}:{nonce}:{scopes}`, the scopes parsed, sorted,
 /// de-duplicated and comma-joined; a missing part is empty.
 pub fn consent_request_id(
@@ -145,7 +145,7 @@ pub async fn delete_response(grants: &dyn PersistedGrantStore, id: &str) -> Resu
 }
 
 /// `Consent`, serialised so
-/// records migrated from the EF store read back.
+/// records imported from a migration bundle read back.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct UserConsent {

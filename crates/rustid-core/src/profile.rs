@@ -27,7 +27,7 @@ pub mod active_callers {
     pub const BACKCHANNEL_AUTHENTICATION: &str = "BackchannelAuthenticationRequestIdValidation";
 }
 
-/// `ProfileDataRequestContext`: who asks, for which client and subject,
+/// Who asks, for which client and subject,
 /// and which claim types the resources request.
 #[derive(Debug, Clone, Copy)]
 pub struct ProfileRequest<'a> {
@@ -39,7 +39,7 @@ pub struct ProfileRequest<'a> {
     pub requested_claim_types: &'a [String],
 }
 
-/// `IsActiveContext`.
+/// What the profile service is asked when checking a subject is active.
 #[derive(Debug, Clone, Copy)]
 pub struct ActiveRequest<'a> {
     pub caller: &'a str,
@@ -66,7 +66,7 @@ pub trait ProfileService: Send + Sync {
 }
 
 /// `DefaultProfileService`: the subject's claims of the requested types
-/// (`AddRequestedClaims`); every subject is active.
+///; every subject is active.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DefaultProfileService;
 
@@ -87,7 +87,7 @@ impl ProfileService for DefaultProfileService {
     }
 }
 
-/// `AddRequestedClaims`: the claims whose type was requested.
+/// The claims whose type was requested.
 pub fn requested_claims(claims: &[Claim], requested: &[String]) -> Vec<Claim> {
     claims
         .iter()
@@ -96,7 +96,7 @@ pub fn requested_claims(claims: &[Claim], requested: &[String]) -> Vec<Claim> {
         .collect()
 }
 
-/// `FilterProtocolClaims`: what a profile service may not set.
+/// What a profile service may not set.
 pub fn without_protocol_claims(claims: Vec<Claim>) -> Vec<Claim> {
     claims
         .into_iter()

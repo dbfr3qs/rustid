@@ -10,9 +10,9 @@ use serde::{Deserialize, Deserializer};
 pub const SECRET_TYPE_SHARED: &str = "SharedSecret";
 pub const SECRET_TYPE_JWK: &str = "JWK";
 pub const SECRET_TYPE_X509_BASE64: &str = "X509CertificateBase64";
-/// `SecretTypes.X509CertificateThumbprint`: a certificate's SHA-1 thumbprint.
+/// A certificate's SHA-1 thumbprint.
 pub const SECRET_TYPE_X509_THUMBPRINT: &str = "X509Thumbprint";
-/// `SecretTypes.X509CertificateName`: a certificate's subject name.
+/// A certificate's subject name.
 pub const SECRET_TYPE_X509_NAME: &str = "X509Name";
 
 #[derive(Debug, Clone, PartialEq, Deserialize, serde::Serialize)]
@@ -101,7 +101,7 @@ pub struct Client {
     /// Seconds between device flow (and CIBA) polls; the options' when
     /// absent.
     pub polling_interval: Option<i32>,
-    /// `PairWiseSubjectSalt`: stored; nothing derives
+    /// Stored; nothing derives
     /// pairwise subjects from it.
     pub pair_wise_subject_salt: Option<String>,
     /// Token requests must carry a DPoP proof.
@@ -228,7 +228,7 @@ impl serde::Serialize for AccessTokenType {
     }
 }
 
-/// `TokenUsage`: `ReUse` = 0 (the default), `OneTimeOnly` = 1.
+/// `ReUse` = 0 (the default), `OneTimeOnly` = 1.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RefreshTokenUsage {
     #[default]
@@ -236,7 +236,7 @@ pub enum RefreshTokenUsage {
     OneTimeOnly,
 }
 
-/// `TokenExpiration`: `Sliding` = 0, `Absolute` = 1.
+/// `Sliding` = 0, `Absolute` = 1.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RefreshTokenExpiration {
     Sliding,
@@ -330,7 +330,7 @@ impl Default for Secret {
 }
 
 impl Secret {
-    /// `HasExpired`: an expiration strictly before now.
+    /// An expiration strictly before now.
     pub fn has_expired(&self, now: DateTime<Utc>) -> bool {
         self.expiration.is_some_and(|e| e < now)
     }

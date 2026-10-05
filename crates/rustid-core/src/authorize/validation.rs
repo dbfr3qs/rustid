@@ -17,7 +17,7 @@ use crate::session::UserSession;
 use crate::stores::{StoreError, Stores};
 use crate::telemetry;
 
-/// `Constants.SupportedResponseTypes`, in order.
+/// The supported response types, in order.
 pub const RESPONSE_TYPES: &[&str] = &[
     "code",
     "token",
@@ -28,14 +28,14 @@ pub const RESPONSE_TYPES: &[&str] = &[
     "code id_token token",
 ];
 
-/// `Constants.SupportedDisplayModes`.
+/// The supported `display` values.
 pub const DISPLAY_MODES: &[&str] = &["page", "popup", "touch", "wap"];
 
 pub const AUTHORIZATION_CODE: &str = "authorization_code";
 pub const IMPLICIT: &str = "implicit";
 pub const HYBRID: &str = "hybrid";
 
-/// `Constants.ResponseTypeToGrantTypeMapping`.
+/// The grant type a response type belongs to.
 fn grant_type_for(response_type: &str) -> &'static str {
     match response_type {
         "code" => AUTHORIZATION_CODE,
@@ -44,7 +44,7 @@ fn grant_type_for(response_type: &str) -> &'static str {
     }
 }
 
-/// `Constants.AllowedResponseModesForGrantType`; the first is the default.
+/// The response modes a grant type allows; the first is the default.
 /// With JARM, the JWT forms of each (never `query.jwt` for responses that
 /// carry tokens: JARM 2.3.1).
 fn allowed_response_modes(grant_type: &str, jarm: bool) -> &'static [&'static str] {
@@ -63,7 +63,7 @@ fn allowed_response_modes(grant_type: &str, jarm: bool) -> &'static [&'static st
     }
 }
 
-/// `Constants.ScopeRequirement`.
+/// Which scopes a response type requires.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ScopeRequirement {
     None,
@@ -81,7 +81,7 @@ fn scope_requirement(response_type: &str) -> ScopeRequirement {
     }
 }
 
-/// `ResponseTypeEqualityComparer`: the same space-separated values in any
+/// The same space-separated values in any
 /// order (an exact split on single spaces).
 fn matching_response_type(value: &str) -> Option<&'static str> {
     let mut wanted: Vec<&str> = value.split(' ').collect();
@@ -314,7 +314,7 @@ async fn load_request_object(
             if utf16_len(uri) > 512 {
                 return Err((INVALID_REQUEST_URI, Some("request_uri is too long")));
             }
-            // `DefaultJwtRequestUriHttpClient`: a 200, of the JAR media type
+            // A 200, of the JAR media type
             // when validation is strict.
             let fetched = ctx.stores.request_uri.fetch(uri).await.filter(|f| {
                 f.status == 200
@@ -341,7 +341,7 @@ async fn load_request_object(
     Ok(())
 }
 
-/// `ValidatePushedAuthorizationRequest`: the pushed request must exist,
+/// The pushed request must exist,
 /// PAR must still be enabled, the request must be the same client's and
 /// unexpired; its parameters replace the query's, keeping the processed
 /// prompt and `max_age` markers, which are never pushed.
@@ -403,7 +403,7 @@ async fn load_pushed_request(
 /// The return URL's query for the UI: a pushed
 /// request by reference with the processed markers; a request with a
 /// request object without the parameters the object carries
-/// (`ToOptimizedQueryString`), always keeping `client_id` and
+///, always keeping `client_id` and
 /// `response_type`; otherwise every parameter.
 pub fn return_url_query(r: &ValidatedAuthorizeRequest) -> String {
     if let Some(reference) = &r.pushed_reference {
@@ -551,7 +551,7 @@ pub fn is_uri(value: &str) -> bool {
         .is_ok_and(|u| u.scheme() != "file" || value.to_ascii_lowercase().starts_with("file"))
 }
 
-/// `ValidateCoreParameters`: state, response type, response mode, PKCE,
+/// State, response type, response mode, PKCE,
 /// grant type and access tokens via the browser.
 fn validate_core_parameters(options: &ProtocolOptions, r: &mut ValidatedAuthorizeRequest) -> Step {
     r.state = r.raw.get("state");
@@ -725,7 +725,7 @@ async fn validate_scope_and_resources(
 
 /// Prompt values: all supported, and `none` or `create` only alone.
 fn parse_prompt(value: &str, supported: &[String]) -> Option<Result<Vec<String>, ()>> {
-    // `Split(' ', RemoveEmptyEntries)`: no trimming of other whitespace.
+    // Split on single spaces, dropping empty entries; other whitespace is not trimmed.
     let prompts: Vec<String> = value
         .split(' ')
         .filter(|p| !p.is_empty())

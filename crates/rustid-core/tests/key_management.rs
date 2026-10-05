@@ -1,5 +1,5 @@
 //! Key manager behaviour, through the
-//! public API: a manual clock stands in for `TimeProvider` and a counting
+//! public API: a manual clock stands in for the system clock and a counting
 //! in-memory store for the signing key store.
 
 use std::sync::atomic::{AtomicUsize, Ordering};

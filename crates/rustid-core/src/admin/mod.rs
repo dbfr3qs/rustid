@@ -90,7 +90,7 @@ impl<'de> serde::Deserialize<'de> for EntityId {
     }
 }
 
-/// `StorageError`: a machine-readable code, a message, and the properties
+/// A machine-readable code, a message, and the properties
 /// it concerns.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -171,7 +171,7 @@ pub struct Saved {
 /// store failure.
 pub type SaveResult = Result<Result<Saved, Vec<AdminError>>, StoreError>;
 
-/// `GetResult`: an item with its id and version.
+/// An item with its id and version.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Versioned<T> {
     pub id: EntityId,

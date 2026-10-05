@@ -19,7 +19,7 @@ use crate::options::OutboxProcessorOptions;
 use crate::server_side_sessions::{ServerSideSession, open_ticket, process_expiration};
 use crate::stores::StoreError;
 
-/// `EntityExpired` for a server-side session; the payload is the session.
+/// A server-side session expired; the payload is the session.
 pub const SESSION_EXPIRED: &str = "session_expired";
 
 /// How long a claim holds an event before another instance may take it.
@@ -147,7 +147,7 @@ impl OutboxStore for InMemoryOutbox {
     }
 }
 
-/// `ComputeDelay`: `retry_delay` times `multiplier^(attempts - 1)`, at most
+/// `retry_delay` times `multiplier^(attempts - 1)`, at most
 /// `max_retry_delay`; `retry_delay` when the multiplier is unusable.
 pub fn retry_delay(options: &OutboxProcessorOptions, attempts: i32) -> Duration {
     let base = options.retry_delay.0 as f64;

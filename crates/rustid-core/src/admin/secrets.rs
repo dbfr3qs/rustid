@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 
 use super::EntityId;
 
-/// `SecretHashAlgorithm`.
+/// How a secret's plaintext is hashed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum HashAlgorithm {
     #[default]
@@ -28,7 +28,7 @@ impl HashAlgorithm {
     }
 }
 
-/// `HashSecret`: base64 of the SHA-256 or SHA-512 of the UTF-8 plaintext,
+/// Base64 of the SHA-256 or SHA-512 of the UTF-8 plaintext,
 /// what the shared secret validator compares with.
 pub fn hash_secret(plaintext: &str, algorithm: HashAlgorithm) -> String {
     let digest = match algorithm {
@@ -54,7 +54,7 @@ pub fn derived_secret_id(secret_type: &str, value: &str) -> EntityId {
     EntityId(bytes)
 }
 
-/// `ClientSecretConfiguration` / `ApiResourceSecretConfiguration`.
+/// A client or API resource secret as the admin API shows it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SecretConfiguration {
@@ -65,7 +65,7 @@ pub struct SecretConfiguration {
     pub secret_type: String,
 }
 
-/// `CreateClientSecret` / create secret's arguments.
+/// The arguments of a create secret call.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CreateSecret {

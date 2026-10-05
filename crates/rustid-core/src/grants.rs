@@ -75,7 +75,7 @@ impl GrantFilter {
     }
 }
 
-/// `CryptoRandom.CreateUniqueId(32, Hex)` plus the format suffix: 64
+/// 32 random bytes as hex plus the format suffix: 64
 /// upper-case hex characters then `-1`.
 pub fn new_handle() -> String {
     use aws_lc_rs::rand::SecureRandom;

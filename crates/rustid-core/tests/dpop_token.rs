@@ -1,4 +1,4 @@
-//! DPoP at the token endpoint (`DPoPTokenEndpointTests`): bound access and
+//! DPoP at the token endpoint: bound access and
 //! refresh tokens, `requireDPoP`, server nonces, codes bound by `dpop_jkt`,
 //! and the refresh token proof rules.
 

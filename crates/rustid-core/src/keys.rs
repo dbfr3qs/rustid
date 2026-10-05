@@ -402,7 +402,7 @@ pub fn generate_pkcs8(alg: &str, rsa_key_size: u32) -> Result<Vec<u8>, KeyError>
     }
 }
 
-/// `X509KeyContainer`: a self-signed certificate for the key, subject
+/// A self-signed certificate for the key, subject
 /// `CN={issuer}`, digital signature usage, server authentication extended
 /// usage, valid from `not_before` to `not_after`. DER.
 pub fn self_signed_certificate(

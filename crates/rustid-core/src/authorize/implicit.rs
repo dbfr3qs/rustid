@@ -14,7 +14,7 @@ pub struct BrowserTokens {
     pub id_token: Option<String>,
     pub access_token: Option<String>,
     pub expires_in: i64,
-    /// `RawScopeValues`, sent with an access token.
+    /// The requested scopes, sent with an access token.
     pub scope: String,
 }
 
@@ -66,7 +66,7 @@ pub async fn browser_tokens(
             authorization_code: code,
             state_hash: state_hash.as_deref(),
             session_id,
-            // `AccessTokenRequested` is true for every response type but a
+            // An access token is requested by every response type but a
             // bare `id_token`: a code can still be redeemed for one.
             include_all_identity_claims: request.response_type == Some("id_token"),
         };
@@ -87,7 +87,7 @@ pub async fn browser_tokens(
     })
 }
 
-/// `AuthorizeResponse.ToNameValueCollection` for implicit and hybrid
+/// The parameters of implicit and hybrid
 /// responses: `code`, `id_token`, then `access_token`, `token_type`,
 /// `expires_in` and `scope`, then `state` and `session_state`. Nothing sets
 /// issuer on these responses, so there is no `iss`.

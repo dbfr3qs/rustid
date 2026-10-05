@@ -61,7 +61,7 @@ pub struct ValidatedAuthorizeRequest {
     pub display_mode: Option<String>,
     pub max_age: Option<i32>,
     pub login_hint: Option<String>,
-    /// `AuthenticationContextReferenceClasses`, de-duplicated.
+    /// The requested `acr_values`, de-duplicated.
     pub acr_values: Vec<String>,
     pub ui_locales: Option<String>,
     /// The session id: empty for anonymous users.
@@ -70,13 +70,13 @@ pub struct ValidatedAuthorizeRequest {
     pub request_object: Option<String>,
     /// Where the request is being validated (`AuthorizeRequestType`).
     pub request_type: AuthorizeRequestType,
-    /// The request object's parameters (`RequestObjectValues`).
+    /// The request object's parameters.
     pub request_object_values: Vec<(String, String)>,
-    /// The pushed request this one uses (`PushedAuthorizationReferenceValue`).
+    /// The pushed request this one uses.
     pub pushed_reference: Option<String>,
-    /// The consent page was shown and answered (`WasConsentShown`).
+    /// The consent page was shown and answered.
     pub was_consent_shown: bool,
-    /// What the consent page said the grant is for (`Description`).
+    /// What the consent page said the grant is for.
     pub description: Option<String>,
 }
 
@@ -91,17 +91,17 @@ impl ValidatedAuthorizeRequest {
             .find_map(|acr| acr.strip_prefix(prefix))
     }
 
-    /// `GetIdP()`: the value of the first `idp:` entry.
+    /// The value of the first `idp:` entry.
     pub fn idp(&self) -> Option<&str> {
         self.prefixed_acr_value(ACR_IDP_PREFIX)
     }
 
-    /// `GetTenant()`: the value of the first `tenant:` entry.
+    /// The value of the first `tenant:` entry.
     pub fn tenant(&self) -> Option<&str> {
         self.prefixed_acr_value(ACR_TENANT_PREFIX)
     }
 
-    /// `RemoveIdP()`: drops every `idp:` entry, from the raw parameters too.
+    /// Drops every `idp:` entry, from the raw parameters too.
     pub fn remove_idp(&mut self) {
         self.acr_values
             .retain(|acr| !acr.starts_with(ACR_IDP_PREFIX));
@@ -113,7 +113,7 @@ impl ValidatedAuthorizeRequest {
         }
     }
 
-    /// `RemovePrompt()`: records `login`, `select_account` and `create` as
+    /// Records `login`, `select_account` and `create` as
     /// processed and stops acting on them.
     pub fn remove_prompt(&mut self) {
         let processed: Vec<&str> = ["login", "select_account", "create"]
@@ -125,14 +125,14 @@ impl ValidatedAuthorizeRequest {
             .retain(|m| !matches!(m.as_str(), "login" | "select_account" | "create"));
     }
 
-    /// `RemoveMaxAge()`: records `max_age` as processed and clears it.
+    /// Records `max_age` as processed and clears it.
     pub fn remove_max_age(&mut self) {
         if let Some(max_age) = self.max_age.take() {
             self.raw.add(PROCESSED_MAX_AGE, &max_age.to_string());
         }
     }
 
-    /// `GenerateSessionStateValue()`: the OIDC session management value
+    /// The OIDC session management value
     /// `base64url(sha256(client_id + origin + session_id + salt)).salt`,
     /// for OpenID requests with a known session id and redirect URI.
     pub fn session_state_value(&self) -> Option<String> {

@@ -1,5 +1,5 @@
-//! A protected resource on the server itself (the local API authentication handler
-//! in `DPoPAndBearer` mode), for conformance runs:
+//! A protected resource on the server itself, accepting bearer and
+//! DPoP-bound tokens, for conformance runs:
 //! A bearer token, or a DPoP-bound token with a proof bound to it.
 
 use crate::access_tokens::{ValidationContext, validate};

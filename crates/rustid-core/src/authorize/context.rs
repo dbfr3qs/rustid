@@ -1,6 +1,5 @@
 //! Return URLs and the authorization context a UI reads for them
-//! (the OIDC return url parser, get authorization context,
-//! `AuthorizationRequest`).
+//! (`AuthorizationContext`).
 
 use serde::Serialize;
 
@@ -12,7 +11,7 @@ use crate::scopes::OFFLINE_ACCESS;
 use crate::session::UserSession;
 use crate::stores::StoreError;
 
-/// `IsValidReturnUrl`: a local URL whose path ends with the authorize or
+/// A local URL whose path ends with the authorize or
 /// callback route (case-sensitive, compared ordinally).
 pub fn is_valid_return_url(return_url: &str) -> bool {
     if !is_local_url(return_url) {
@@ -22,7 +21,7 @@ pub fn is_valid_return_url(return_url: &str) -> bool {
     path.ends_with("/connect/authorize") || path.ends_with("/connect/authorize/callback")
 }
 
-/// `ReadQueryStringAsNameValueCollection`: the return URL's query, blank
+/// The return URL's query, blank
 /// values dropped, keys keeping their first casing.
 pub fn return_url_parameters(return_url: &str) -> Params {
     let Some((_, query)) = return_url.split_once('?') else {
@@ -38,7 +37,7 @@ pub fn return_url_parameters(return_url: &str) -> Params {
     }))
 }
 
-/// `AuthorizationRequest`: what the UI is told about the request it is
+/// What the UI is told about the request it is
 /// completing. Field names are camelCase.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -52,11 +51,11 @@ pub struct AuthorizationContext {
     pub idp: Option<String>,
     pub tenant: Option<String>,
     pub login_hint: Option<String>,
-    /// The prompt values as requested (`OriginalPromptModes`).
+    /// The prompt values as requested.
     pub prompt_modes: Vec<String>,
-    /// `GetAcrValues()`: without the `idp:` and `tenant:` entries.
+    /// The `acr_values` without the `idp:` and `tenant:` entries.
     pub acr_values: Vec<String>,
-    /// The requested scopes that validated (`RawScopeValues`).
+    /// The requested scopes that validated.
     pub scopes: Vec<String>,
     /// Every request parameter, repeated values joined with commas.
     pub parameters: serde_json::Map<String, serde_json::Value>,
@@ -92,7 +91,7 @@ pub async fn authorization_context(
 }
 
 impl AuthorizationContext {
-    /// `AuthorizationRequest`'s constructor.
+    /// The context of a validated request.
     pub fn of(request: &ValidatedAuthorizeRequest) -> AuthorizationContext {
         let client = request
             .client

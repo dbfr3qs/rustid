@@ -1,6 +1,6 @@
 //! RFC 8707 resource indicators at the token endpoint: parsing one
 //! indicator, and narrowing validated resources to it
-//! (`ResourceValidationResult.FilterByResourceIndicator`).
+//!.
 
 use rustid_core::clients::Client;
 use rustid_core::form::Form;

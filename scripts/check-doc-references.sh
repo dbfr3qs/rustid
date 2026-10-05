@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fails when a comment or doc cites, in backticks, a type or method that
 # rustid's code doesn't have: a compound PascalCase name (`SomeTypeName`),
-# a call (`Name()`) or a member (`Type.Member`, `Type::member`) whose
+# a call (`Name()`, `Name(args)`, `Name().member`) or a member (`Type.Member`, `Type::member`) whose
 # leading name never appears in the Rust code outside comments. Comments
 # describe rustid in its own terms and cite its own items. Names that are
 # legitimately not Rust identifiers go in scripts/doc-references.allow.
@@ -25,7 +25,7 @@ trap 'rm -f "$known"' EXIT
   my $status = 0;
   while (<STDIN>) {
     my ($loc, $text) = /^([^:]+:\d+):(.*)$/ or next;
-    while ($text =~ /`([A-Z][A-Za-z0-9]*)((?:(?:\.|::)[A-Za-z_][A-Za-z0-9_]*)*)(\(\))?`/g) {
+    while ($text =~ /`([A-Z][A-Za-z0-9]*)((?:(?:\.|::)[A-Za-z_][A-Za-z0-9_]*)*)((?:\([^`()]*\)(?:(?:\.|::)[A-Za-z_][A-Za-z0-9_]*(?:\([^`()]*\))?)*)?)`/g) {
       my ($head, $member, $call) = ($1, $2, $3 // "");
       next unless $head =~ /[a-z0-9][A-Z]/ || $member ne "" || $call ne "";
       next if $known{$head};

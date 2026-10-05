@@ -51,7 +51,7 @@ pub enum ProofType {
 }
 
 impl RefreshToken {
-    /// `GetAccessToken(resourceIndicator)`.
+    /// The access token for a resource indicator, or the default one.
     pub fn access_token_for(&self, resource: Option<&str>) -> Option<&AccessTokenRecord> {
         match resource.filter(|r| !r.is_empty()) {
             Some(r) => self.resource_access_tokens.get(r),
@@ -59,7 +59,7 @@ impl RefreshToken {
         }
     }
 
-    /// `SetAccessToken(token, resourceIndicator)`.
+    /// Sets the access token for a resource indicator, or the default one.
     pub fn set_access_token(&mut self, record: AccessTokenRecord, resource: Option<&str>) {
         match resource.filter(|r| !r.is_empty()) {
             Some(r) => {
@@ -69,7 +69,7 @@ impl RefreshToken {
         }
     }
 
-    /// The access tokens' distinct confirmations (`AccessTokens` values).
+    /// The access tokens' distinct confirmations.
     fn confirmations(&self) -> Vec<&str> {
         let mut cnfs: Vec<&str> = Vec::new();
         let records = self
@@ -84,7 +84,7 @@ impl RefreshToken {
         cnfs
     }
 
-    /// `GetProofKeyThumbprints`: the key thumbprints the access tokens are
+    /// The key thumbprints the access tokens are
     /// bound to (`jkt`, or a certificate's `x5t#S256`).
     pub fn proof_thumbprints(&self) -> Vec<String> {
         self.confirmations()
@@ -105,7 +105,7 @@ impl RefreshToken {
             .map_or(ProofType::None, |(proof_type, _)| proof_type)
     }
 
-    /// `CreationTime.HasExceeded(Lifetime)`.
+    /// Whether the lifetime has passed since creation.
     pub fn has_expired(&self, now: DateTime<Utc>) -> bool {
         self.creation_time + Duration::seconds(self.lifetime) < now
     }
@@ -264,7 +264,7 @@ pub async fn update(
     Ok(Some(handle.to_owned()))
 }
 
-/// `GetProofKeyThumbprint`: a `cnf`'s kind and thumbprint.
+/// A `cnf`'s kind and thumbprint.
 fn proof_key(cnf: &str) -> Option<(ProofType, String)> {
     let value: serde_json::Value = serde_json::from_str(cnf).ok()?;
     let member = |name: &str| {

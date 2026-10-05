@@ -1,5 +1,5 @@
-//! Conversions between claims and JSON: reading a validated JWT payload the
-//! way `JsonWebToken` produces claims, and `ToClaimsDictionary`.
+//! Conversions between claims and JSON: reading a validated JWT payload
+//! as claims, and claims as a JSON object.
 
 use serde_json::{Map, Value};
 
@@ -46,7 +46,7 @@ fn scalar_claim(name: &str, value: &Value) -> Claim {
     }
 }
 
-/// `ToClaimsDictionary`: distinct claims keyed by type in first-seen order;
+/// Distinct claims keyed by type in first-seen order;
 /// a repeated type becomes an array of its values. Each value is converted
 /// by its value type, falling back to the string when it does not parse.
 pub fn to_dictionary(claims: &[Claim]) -> Map<String, Value> {
@@ -78,7 +78,7 @@ pub fn to_dictionary(claims: &[Claim]) -> Map<String, Value> {
     out
 }
 
-/// `ClaimsExtensions.GetValue`.
+/// A claim's value as JSON, by its value type.
 fn value_of(claim: &Claim) -> Value {
     let vt = claim.value_type.as_str();
     let text = claim.value.as_str();
@@ -102,7 +102,7 @@ fn value_of(claim: &Claim) -> Value {
     parsed.unwrap_or_else(|| Value::String(text.to_owned()))
 }
 
-/// A double as System.Text.Json writes it: whole numbers below 10^15 have
+/// A double as JSON on the wire: whole numbers below 10^15 have
 /// no fraction or exponent, so they read back as JSON integers.
 pub fn wire_double(f: f64) -> Value {
     if f.fract() == 0.0 && f.abs() < 1e15 {

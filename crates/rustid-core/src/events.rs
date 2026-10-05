@@ -1,6 +1,6 @@
-//! Events: `Event`, `EventIds`, the event service gating by
-//! `EventsOptions`, and a sink that writes events to the log
-//! `DefaultEventSink` does. Phase 2 adds the events hook as another sink.
+//! Events: `Event`, their ids, the event service gating by
+//! `EventsOptions`, and a sink that writes events to the log.
+//! Phase 2 adds the events hook as another sink.
 
 use std::sync::Arc;
 
@@ -17,7 +17,7 @@ pub enum EventType {
     Error,
 }
 
-/// `EventIds`.
+/// Event ids.
 pub mod ids {
     pub const CLIENT_AUTHENTICATION_SUCCESS: i32 = 1010;
     pub const CLIENT_AUTHENTICATION_FAILURE: i32 = 1011;
@@ -308,7 +308,7 @@ impl Event {
         )
     }
 
-    /// `BackchannelAuthenticationSuccessEvent`.
+    /// A CIBA request was allowed.
     pub fn backchannel_authentication_success(details: EventDetails) -> Self {
         Event::new(
             "BackchannelAuthentication",
@@ -320,7 +320,7 @@ impl Event {
         )
     }
 
-    /// `BackchannelAuthenticationFailureEvent`.
+    /// A CIBA request was refused or failed.
     pub fn backchannel_authentication_failure(details: EventDetails) -> Self {
         Event::new(
             "BackchannelAuthentication",
@@ -332,7 +332,7 @@ impl Event {
         )
     }
 
-    /// `DeviceAuthorizationSuccessEvent`.
+    /// A device authorization was approved.
     pub fn device_authorization_success(details: EventDetails) -> Self {
         Event::new(
             "Device",
@@ -344,7 +344,7 @@ impl Event {
         )
     }
 
-    /// `DeviceAuthorizationFailureEvent`.
+    /// A device authorization was denied or failed.
     pub fn device_authorization_failure(details: EventDetails) -> Self {
         Event::new(
             "Device",
@@ -434,7 +434,7 @@ impl Event {
         )
     }
 
-    /// `SamlSsoSuccessEvent`.
+    /// A SAML response was issued to a service provider.
     pub fn saml_sso_success(
         sp_entity_id: &str,
         subject_id: Option<&str>,
@@ -458,7 +458,7 @@ impl Event {
         )
     }
 
-    /// `SamlSsoFailureEvent`.
+    /// SAML single sign-on failed.
     pub fn saml_sso_failure(sp_entity_id: Option<&str>, error: &str, endpoint: &str) -> Self {
         Event::new(
             "Saml",
@@ -474,7 +474,7 @@ impl Event {
         )
     }
 
-    /// `SamlSloSuccessEvent`.
+    /// SAML single logout completed for a service provider.
     pub fn saml_slo_success(
         sp_entity_id: &str,
         session_index: Option<&str>,
@@ -494,7 +494,7 @@ impl Event {
         )
     }
 
-    /// `SamlSloFailureEvent`.
+    /// SAML single logout failed.
     pub fn saml_slo_failure(sp_entity_id: Option<&str>, error: &str) -> Self {
         Event::new(
             "Saml",
@@ -509,7 +509,7 @@ impl Event {
         )
     }
 
-    /// `SamlLogoutRequestValidationFailureEvent`.
+    /// A SAML logout request failed validation.
     pub fn saml_logout_request_validation_failure(
         sp_entity_id: Option<&str>,
         error: &str,
@@ -529,7 +529,7 @@ impl Event {
         )
     }
 
-    /// `SamlAuthnRequestValidationFailureEvent`.
+    /// A SAML AuthnRequest failed validation.
     pub fn saml_authn_request_validation_failure(
         sp_entity_id: Option<&str>,
         error: &str,
@@ -573,7 +573,7 @@ pub trait EventSink: Send + Sync {
     fn persist(&self, event: &Event);
 }
 
-/// `DefaultEventSink`: each event as JSON in an information log line.
+/// Each event as JSON in an information log line.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct LogEventSink;
 
@@ -622,7 +622,7 @@ impl EventService {
         EventService { options, sink }
     }
 
-    /// `CanRaiseEventType`.
+    /// Whether events of this type are raised, by the options.
     pub fn can_raise(&self, event_type: EventType) -> bool {
         match event_type {
             EventType::Success => self.options.raise_success_events,

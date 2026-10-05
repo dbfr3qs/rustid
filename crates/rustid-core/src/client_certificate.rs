@@ -1,6 +1,6 @@
 //! Client certificates (RFC 8705): what client authentication and bound
-//! tokens read from a TLS client certificate,
-//! exposes it (`Thumbprint`, `Subject`), and whether its chain is trusted
+//! tokens read from a TLS client certificate (its thumbprints and
+//! subject), and whether its chain is trusted
 //! by the configured client CA roots.
 
 use aws_lc_rs::digest;
@@ -58,11 +58,11 @@ impl ClientCaRoots {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClientCertificate {
     pub der: Vec<u8>,
-    /// SHA-1 of the DER, uppercase hex (`X509Certificate2.Thumbprint`).
+    /// SHA-1 of the DER, uppercase hex.
     pub thumbprint: String,
     /// SHA-256 of the DER, base64url (`x5t#S256`).
     pub x5t_s256: String,
-    /// The subject as `X500DistinguishedName.Name` formats it.
+    /// The subject's distinguished name, most-specific RDN first.
     pub subject: String,
     /// The chain leads to a configured client CA root.
     pub trusted: bool,
@@ -99,13 +99,12 @@ impl ClientCertificate {
         })
     }
 
-    /// Whether `now` is within the certificate's validity period (the
-    /// certificate authentication handler's `ValidateValidityPeriod`).
+    /// Whether `now` is within the certificate's validity period.
     pub fn valid_at(&self, now: chrono::DateTime<chrono::Utc>) -> bool {
         (self.not_before..=self.not_after).contains(&now.timestamp())
     }
 
-    /// `CreateThumbprintCnf`: the `cnf` binding a token to the certificate.
+    /// The `cnf` binding a token to the certificate.
     pub fn cnf(&self) -> String {
         json!({ "x5t#S256": self.x5t_s256 }).to_string()
     }
@@ -147,7 +146,7 @@ fn quoted(value: &str) -> String {
     }
 }
 
-/// `X500DistinguishedName.Name`: RDNs most-specific first, `, `-separated;
+/// RDNs most-specific first, `, `-separated;
 /// a multi-valued RDN's attributes joined by ` + `.
 fn subject_name_text(cert: &X509Certificate<'_>) -> String {
     let rdns: Vec<String> =

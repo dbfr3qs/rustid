@@ -10,17 +10,17 @@ use crate::admin::secrets::{HashAlgorithm, hash_secret};
 use crate::clients::{SECRET_TYPE_JWK, Secret};
 use crate::stores::{ConfigurationStore, StoreError};
 
-/// `DynamicClientRegistrationOptions`, and where clients are managed.
+/// Dynamic client registration settings, and where clients are managed.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DcrOptions {
-    /// `SecretLifetime`, in seconds: generated secrets expire after it.
+    /// In seconds: generated secrets expire after it.
     pub secret_lifetime: Option<i64>,
     /// RFC 7592 management, when on.
     pub management: Option<ManagementUri>,
     /// Scopes a client gets when it asks for none (empty by
     /// default).
     pub default_scopes: Vec<String>,
-    /// `RequirePkce` for registered clients; unset, the `Client` default
+    /// Whether registered clients require PKCE; unset, the `Client` default
     /// (required).
     pub require_pkce: Option<bool>,
 }
@@ -42,7 +42,7 @@ pub fn parse(body: &[u8]) -> Result<RegistrationRequest, RegistrationError> {
         .ok_or_else(|| RegistrationError::metadata("malformed metadata document"))
 }
 
-/// `CryptoRandom.CreateUniqueId()`: 32 random bytes, base64url.
+/// 32 random bytes, base64url.
 pub(crate) fn unique_id() -> String {
     use aws_lc_rs::rand::SecureRandom;
     use base64::Engine;

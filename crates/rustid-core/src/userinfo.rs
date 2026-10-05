@@ -12,7 +12,7 @@ use crate::tokens::Claim;
 
 pub const INSUFFICIENT_SCOPE: &str = "insufficient_scope";
 
-/// `Constants.Filters.ProtocolClaimsFilter`: claims of the access token that
+/// Claims of the access token that
 /// don't describe the user.
 pub const PROTOCOL_CLAIMS_FILTER: &[&str] = &[
     "at_hash",
@@ -32,7 +32,7 @@ pub const PROTOCOL_CLAIMS_FILTER: &[&str] = &[
 ];
 
 /// Validates the access token (it must carry the `openid` scope and exactly
-/// one `sub`) and returns the userinfo claims as `ToClaimsDictionary`
+/// one `sub`) and returns the userinfo claims as `claims::to_dictionary`
 /// writes them. The user is the token's non-protocol claims; the default
 /// profile service returns those of the types the token's identity scopes
 /// ask for, and `sub` is always included. The verdict's error is a

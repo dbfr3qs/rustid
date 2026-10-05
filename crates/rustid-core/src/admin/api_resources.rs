@@ -32,7 +32,7 @@ fn nullable_map<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Map<String, Va
     Ok(Option::<Map<String, Value>>::deserialize(d)?.unwrap_or_default())
 }
 
-/// `CreateApiResource` / `UpdateApiResource`.
+/// An API resource to create or update.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ApiResourceInput {
@@ -159,7 +159,7 @@ fn blank(values: &[String]) -> bool {
 pub struct ApiResourceAdmin;
 
 impl ApiResourceAdmin {
-    /// `ValidateStructure`.
+    /// Checks the input's own fields, before any store lookups.
     fn structure(input: &ApiResourceInput) -> Option<AdminError> {
         if input.name.trim().is_empty() {
             return Some(AdminError::required("Name"));

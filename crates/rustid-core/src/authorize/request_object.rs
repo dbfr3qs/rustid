@@ -9,10 +9,10 @@ use crate::jwt::Jws;
 use crate::options::ProtocolOptions;
 use crate::secrets::request_object_keys;
 
-/// `JwtClaimTypes.JwtTypes.AuthorizationRequest`.
+/// The `typ` of a JWT-secured authorization request (RFC 9101).
 pub const AUTHORIZATION_REQUEST_JWT_TYPE: &str = "oauth-authz-req+jwt";
 
-/// `Constants.Filters.JwtRequestClaimTypesFilter`: claims about the object
+/// Claims about the object
 /// itself, never authorize parameters.
 const FILTERED_CLAIMS: &[&str] = &["aud", "exp", "iat", "iss", "nbf", "jti"];
 
@@ -41,8 +41,7 @@ pub fn validate(
 }
 
 /// [`validate`] with the context's strictness, and `jti` kept among the
-/// parameters when `include_jti` (`JwtRequestValidationContext.IncludeJti`,
-/// as CIBA validates request objects).
+/// parameters when `include_jti` (as CIBA validates request objects).
 pub fn validate_with(
     options: &ProtocolOptions,
     issuer: &str,
@@ -102,7 +101,7 @@ pub fn validate_with(
     Some(parameters(&jws, include_jti))
 }
 
-/// `ValidAudience` with `IgnoreTrailingSlashWhenValidatingAudience`.
+/// The audience is the issuer, ignoring a trailing slash on either.
 fn audience_matches(aud: Option<&Value>, issuer: &str) -> bool {
     let issuer = issuer.trim_end_matches('/');
     let matches = |a: &str| a.trim_end_matches('/') == issuer;
@@ -113,7 +112,7 @@ fn audience_matches(aud: Option<&Value>, issuer: &str) -> bool {
     }
 }
 
-/// `JsonWebToken.Claims` minus the filtered ones: strings as they are,
+/// The payload's claims minus the filtered ones: strings as they are,
 /// numbers and booleans as text, each array element a claim of its own,
 /// and objects as JSON.
 fn parameters(jws: &Jws, include_jti: bool) -> Vec<(String, String)> {

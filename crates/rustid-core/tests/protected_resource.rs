@@ -1,5 +1,5 @@
-//! A protected resource (the local API authentication handler in
-//! `DPoPAndBearer` mode, for conformance runs): bearer
+//! A protected resource (bearer and DPoP-bound tokens, for conformance
+//! runs): bearer
 //! tokens, and DPoP-bound tokens with a proof bound to them.
 
 mod support;

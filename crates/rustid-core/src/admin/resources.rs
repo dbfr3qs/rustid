@@ -1,5 +1,5 @@
-//! API scope and identity resource admin (`ApiScopeAdmin`,
-//! `IdentityResourceAdmin`): the two have the same fields, validation and
+//! API scope and identity resource admin: the two have the same fields,
+//! validation and
 //! queries, so one service serves both kinds.
 
 use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ fn nullable_map<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Map<String, Va
     Ok(Option::<Map<String, Value>>::deserialize(d)?.unwrap_or_default())
 }
 
-/// `ApiScopeConfiguration` / `IdentityResourceConfiguration`, and the
+/// An API scope or identity resource as the admin API shows it, and the
 /// create and update inputs, which have the same fields.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -66,7 +66,7 @@ impl Default for ResourceConfiguration {
     }
 }
 
-/// `ApiScopeListItem` / `IdentityResourceListItem`.
+/// An API scope or identity resource in a list.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceListItem {
@@ -77,7 +77,7 @@ pub struct ResourceListItem {
     pub description: Option<String>,
 }
 
-/// `ApiScopeFilter` / `IdentityResourceFilter`: a name substring, and
+/// A name substring, and
 /// enabled or not.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ResourceFilter {
@@ -140,7 +140,7 @@ impl ResourceAdmin {
             .map(|_| AdminError::already_exists(sibling.error_name(), name)))
     }
 
-    /// `ValidateStructure`.
+    /// Checks the input's own fields, before any store lookups.
     fn validate(&self, input: &ResourceConfiguration) -> Option<AdminError> {
         if input.name.trim().is_empty() {
             return Some(AdminError::required("Name"));

@@ -26,7 +26,7 @@ const DCR_PROPERTY_PREFIX: &str = "dcr_";
 /// the configuration validator always applies.
 const OIDC: &str = "oidc";
 
-/// `CreateClient` / `UpdateClient`: the client (its `client_secrets` are
+/// The client (its `client_secrets` are
 /// ignored), the secrets to create with it (create only), and extended
 /// properties.
 #[derive(Debug, Clone, Default, PartialEq)]

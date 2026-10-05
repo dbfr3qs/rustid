@@ -38,7 +38,7 @@ const MISSING_USER_CODE: &str = "missing_user_code";
 const INVALID_USER_CODE: &str = "invalid_user_code";
 const INVALID_BINDING_MESSAGE: &str = "invalid_binding_message";
 
-/// `BackChannelAuthenticationRequest`: a pending (or decided) request.
+/// A pending (or decided) request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CibaRequest {
     /// The stored key (the hash of the `auth_req_id`).
@@ -71,7 +71,7 @@ impl CibaRequest {
     }
 }
 
-/// What the user validator gets (`BackchannelAuthenticationUserValidatorContext`).
+/// What the user validator gets.
 #[derive(Debug, Clone, Copy)]
 pub struct CibaUserRequest<'a> {
     pub client: &'a Client,
@@ -84,7 +84,7 @@ pub struct CibaUserRequest<'a> {
     pub binding_message: Option<&'a str>,
 }
 
-/// The user validator's answer (`BackchannelAuthenticationUserValidationResult`).
+/// The user validator's answer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CibaUserResult {
     /// The user; without a subject id the request fails.
@@ -98,7 +98,7 @@ pub enum CibaUserResult {
     },
 }
 
-/// What the notification service gets (`BackchannelUserLoginRequest`).
+/// What the notification service gets.
 #[derive(Debug, Clone, Copy)]
 pub struct CibaNotification<'a> {
     pub internal_id: &'a str,
@@ -689,7 +689,7 @@ fn subject(subject_id: String, claims: Vec<Claim>, now: DateTime<Utc>) -> UserSe
     }
 }
 
-/// `BackchannelUserLoginRequest`: what a UI shows the user.
+/// What a UI shows the user.
 #[derive(Debug, Clone)]
 pub struct CibaLoginRequest {
     pub internal_id: String,

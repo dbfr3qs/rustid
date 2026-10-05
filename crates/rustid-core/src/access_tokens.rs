@@ -1,5 +1,5 @@
 //! JWT access tokens are checked
-//! as `JsonWebTokenHandler` checks them, reference tokens are
+//! for signature, issuer, audience and lifetime; reference tokens are
 //! looked up in the grant store.
 
 use chrono::{DateTime, Utc};
@@ -41,7 +41,7 @@ impl ValidatedToken {
 }
 
 /// Validates an access token. The verdict's error is `invalid_token` or
-/// `expired_token`, as `ProtectedResourceErrors`; the outer error is a store
+/// `expired_token`; the outer error is a store
 /// failure.
 #[tracing::instrument(name = "access_token.validate", skip_all)]
 pub async fn validate(
@@ -165,7 +165,7 @@ fn validate_jwt(
     Ok(ValidatedToken { claims })
 }
 
-/// `JsonWebTokenHandler` key selection: the key named by `kid` when there is
+/// Key selection: the key named by `kid` when there is
 /// one, otherwise every validation key.
 fn signature_is_valid(keys: &[std::sync::Arc<LoadedKey>], jws: &Jws) -> bool {
     let named = jws

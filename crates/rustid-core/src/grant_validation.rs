@@ -28,7 +28,7 @@ pub struct ExtensionRequest<'a> {
     pub parameters: &'a [(String, String)],
 }
 
-/// The user a grant authenticated (`GrantValidationResult.Subject`).
+/// The user a grant authenticated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GrantSubject {
     pub subject_id: String,
@@ -39,7 +39,7 @@ pub struct GrantSubject {
     pub claims: Vec<Claim>,
 }
 
-/// A validator's verdict (`GrantValidationResult`).
+/// A validator's verdict.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GrantResult {
     Subject(GrantSubject),
@@ -53,7 +53,7 @@ pub enum GrantResult {
 }
 
 /// Changes an extension grant validator makes to the request,
-/// validators set `ValidatedTokenRequest` properties.
+/// which the token request applies after validation.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RequestChanges {
     /// Issue the token to this client instead (impersonation).

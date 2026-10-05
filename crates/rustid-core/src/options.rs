@@ -141,7 +141,7 @@ impl Default for ProtocolOptions {
 
 impl ProtocolOptions {
     /// Applies the startup adjustments. Setting
-    /// `CreateAccountUrl` adds `create` to the supported prompt values.
+    /// `create_account_url` adds `create` to the supported prompt values.
     pub fn finalize(mut self) -> Self {
         let has_create = self
             .user_interaction
@@ -886,7 +886,7 @@ impl Default for InputLengthRestrictions {
 }
 
 /// A time span in whole seconds. Deserializes the `[d.]hh:mm:ss` text
-/// form System.Text.Json uses, or a plain number of seconds.
+/// form, or a plain number of seconds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TimeSpan(pub i64);
 
@@ -908,7 +908,7 @@ impl<'de> Deserialize<'de> for TimeSpan {
 }
 
 impl serde::Serialize for TimeSpan {
-    /// The `[-][d.]hh:mm:ss` text System.Text.Json writes.
+    /// The `[-][d.]hh:mm:ss` text form.
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let sign = if self.0 < 0 { "-" } else { "" };
         let total = self.0.unsigned_abs();

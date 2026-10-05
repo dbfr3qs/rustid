@@ -1,4 +1,4 @@
-//! Queries over admin entities (`QueryRequest` and
+//! Queries over admin entities (the query and
 //! `QueryResult`): sort direction, the page, offset or continuation-token
 //! range, and the paged result.
 
@@ -14,12 +14,12 @@ pub enum Direction {
     Descending,
 }
 
-/// `DataRangeSize.Default`.
+/// The page size when a query names none.
 pub const DEFAULT_PAGE_SIZE: u32 = 25;
-/// `DataRangeSize.MaxValue`.
+/// The largest page size a query can ask for.
 pub const MAX_PAGE_SIZE: u32 = 1000;
 
-/// `DataRange`: a 1-based page, an offset, or a continuation token (none
+/// A 1-based page, an offset, or a continuation token (none
 /// for the beginning).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Range {

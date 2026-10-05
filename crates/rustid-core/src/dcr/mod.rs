@@ -13,12 +13,12 @@ pub use process::{DcrOptions, ManagementUri, parse, register};
 pub use request::{KeySet, RegistrationRequest};
 pub use validate::validate;
 
-/// `DynamicClientRegistrationErrors.InvalidClientMetadata`.
+/// RFC 7591's error for invalid client metadata.
 pub const INVALID_CLIENT_METADATA: &str = "invalid_client_metadata";
-/// `DynamicClientRegistrationErrors.InvalidRedirectUri`.
+/// RFC 7591's error for an invalid redirect URI.
 pub const INVALID_REDIRECT_URI: &str = "invalid_redirect_uri";
 
-/// `DynamicClientRegistrationError`: a 400 with this JSON body.
+/// A 400 with this JSON body.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegistrationError {
     pub error: &'static str,
@@ -26,7 +26,7 @@ pub struct RegistrationError {
 }
 
 impl RegistrationError {
-    /// `StepResult.Failure(description)`: `invalid_client_metadata`.
+    /// An `invalid_client_metadata` error with this description.
     pub fn metadata(description: &str) -> Self {
         Self::new(INVALID_CLIENT_METADATA, description)
     }

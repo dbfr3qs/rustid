@@ -31,7 +31,7 @@ pub struct ReferenceToken {
 }
 
 impl ReferenceToken {
-    /// `CreationTime.HasExceeded(Lifetime, now)`: no clock skew.
+    /// Whether the lifetime has passed since creation, with no clock skew.
     pub fn has_expired(&self, now: DateTime<Utc>) -> bool {
         now > self.expiration()
     }

@@ -16,7 +16,7 @@ use crate::resources::{ApiResource, Resources};
 pub enum StoreError {
     #[error("store backend failed: {0}")]
     Backend(String),
-    /// `PersistedGrantFilter.Validate`: a filter needs at least one criterion.
+    /// A filter needs at least one criterion.
     #[error("a grant filter needs at least one of subject, session, client or type")]
     EmptyFilter,
     #[error("a signing key with id {0} is already stored")]
@@ -554,7 +554,7 @@ pub struct Stores {
     pub ciba: Arc<dyn crate::ciba::CibaService>,
     /// Likewise: the password and extension grant validators.
     pub grant_validation: Arc<dyn crate::grant_validation::GrantValidator>,
-    /// Server-side sessions, when enabled (`AddServerSideSessions`).
+    /// Server-side sessions, when enabled.
     pub sessions: Option<Arc<crate::server_side_sessions::ServerSideSessions>>,
 }
 

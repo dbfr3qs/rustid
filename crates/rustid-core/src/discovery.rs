@@ -10,7 +10,7 @@ pub const DISCOVERY_PATH: &str = ".well-known/openid-configuration";
 pub const JWKS_PATH: &str = ".well-known/openid-configuration/jwks";
 pub const OAUTH_METADATA_PATH: &str = ".well-known/oauth-authorization-server";
 
-/// `Constants.SupportedResponseTypes`.
+/// The response types discovery advertises.
 pub const RESPONSE_TYPES: &[&str] = &[
     "code",
     "token",
@@ -20,7 +20,7 @@ pub const RESPONSE_TYPES: &[&str] = &[
     "code token",
     "code id_token token",
 ];
-/// `Constants.SupportedResponseModes`.
+/// The response modes discovery advertises.
 pub const RESPONSE_MODES: &[&str] = &["form_post", "query", "fragment"];
 
 /// Capabilities that come from registered services rather than from
@@ -290,7 +290,7 @@ pub fn discovery_document(ctx: &DiscoveryContext<'_>) -> Map<String, Value> {
         m.insert("response_modes_supported".into(), strs(&modes));
     }
 
-    // `GetSupportedAuthMethods`: the parsers' methods, then mTLS's.
+    // The parsers' methods, then mTLS's.
     let mut methods = ctx.features.auth_methods();
     if o.mutual_tls.enabled {
         methods.push("tls_client_auth".to_owned());

@@ -76,7 +76,7 @@ impl Jws {
     }
 
     /// A NumericDate claim (`exp`, `nbf`, `iat`) read as the
-    /// `JsonWebToken` reads it: an integer, a number rounded half to even,
+    /// usual JWT libraries read it: an integer, a number rounded half to even,
     /// or a string holding either. `Ok(None)` when absent; an error when
     /// present but not readable as a 64-bit integer, which makes validation reject
     /// the whole token.
@@ -115,7 +115,7 @@ impl Jws {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidNumericDate;
 
-/// `Convert.ToInt64(double)`: round half to even, failing outside the range.
+/// Rounds half to even, failing outside the `i64` range.
 fn round_to_i64(f: f64) -> Option<i64> {
     let r = f.round_ties_even();
     // 2^63 is exactly representable; every double below it fits in an i64.

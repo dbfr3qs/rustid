@@ -1,4 +1,4 @@
-//! `DynamicClientRegistrationRequest`: the registration body.
+//! The registration body.
 
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};

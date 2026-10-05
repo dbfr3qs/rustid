@@ -48,6 +48,10 @@ pub struct UserSession {
     /// The server-side session's key, when the cookie holds only that.
     #[serde(skip)]
     pub key: Option<String>,
+    /// The upstream provider's id token, for `id_token_hint` when signing
+    /// out there (kept only with server-side sessions).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub upstream_id_token: Option<String>,
 }
 
 /// A service provider's session within the user's.
@@ -73,6 +77,8 @@ pub struct SignIn {
     pub persistent: bool,
     /// `Some(false)` stops sliding renewal.
     pub allow_refresh: Option<bool>,
+    /// The upstream provider's id token, kept for signing out there.
+    pub upstream_id_token: Option<String>,
 }
 
 impl UserSession {
@@ -121,6 +127,7 @@ impl UserSession {
             force_renewal: false,
             issuer: None,
             key,
+            upstream_id_token: sign_in.upstream_id_token,
         }
     }
 

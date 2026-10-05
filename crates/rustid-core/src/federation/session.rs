@@ -107,5 +107,6 @@ pub fn sign_in(
         claims: select_claims(&token.payload, &provider.claims),
         persistent: false,
         allow_refresh: None,
+        upstream_id_token: None,
     }
 }

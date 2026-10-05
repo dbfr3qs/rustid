@@ -37,6 +37,10 @@ pub struct IdentityProvider {
     /// its claims join the id token's (OIDC Core §5.3).
     #[serde(default)]
     pub userinfo: bool,
+    /// Signing out of rustid also signs the user out of the provider
+    /// (OpenID Connect RP-Initiated Logout 1.0).
+    #[serde(default)]
+    pub sign_out: bool,
 }
 
 fn enabled_default() -> bool {

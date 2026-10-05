@@ -26,7 +26,7 @@ fn defaults() {
 #[test]
 fn unknown_fields_are_refused() {
     let mut j = examplecorp();
-    j["signOut"] = true.into();
+    j["multiTenant"] = true.into();
     assert!(serde_json::from_value::<IdentityProvider>(j).is_err());
 }
 

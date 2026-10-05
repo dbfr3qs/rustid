@@ -11,6 +11,8 @@ use crate::jwt::{Jws, PublicJwk};
 /// An id token that passed every check.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValidatedIdToken {
+    /// The token as received, for `id_token_hint` at sign-out.
+    pub raw: String,
     pub issuer: String,
     pub subject: String,
     pub payload: Map<String, Value>,
@@ -145,6 +147,7 @@ pub fn validate(
         .ok_or(IdTokenCheck::Subject)?
         .to_owned();
     Ok(ValidatedIdToken {
+        raw: token.to_owned(),
         issuer: expect.issuer.to_owned(),
         subject,
         payload: jws.payload,

@@ -108,3 +108,68 @@ pub fn authorization_url(
         .join("&");
     add_query_string(&metadata.authorization_endpoint, &query)
 }
+
+pub const SIGNOUT_COOKIE: &str = "idsrv.federation.signout";
+pub const SIGNOUT_PURPOSE: &str = "rustid.federation.signout";
+
+/// A sign-out sent upstream, sealed into its own cookie: where the browser
+/// goes once the provider sends it back.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignoutCorrelation {
+    pub scheme: String,
+    pub state: String,
+    pub return_url: String,
+    /// Seconds since the epoch.
+    pub created: i64,
+}
+
+impl SignoutCorrelation {
+    pub fn new(scheme: &str, return_url: &str, now: i64) -> SignoutCorrelation {
+        SignoutCorrelation {
+            scheme: scheme.to_owned(),
+            state: random_value(),
+            return_url: return_url.to_owned(),
+            created: now,
+        }
+    }
+
+    pub fn seal(&self, protector: &DataProtector) -> String {
+        let json = serde_json::to_vec(self).expect("a correlation serializes");
+        protector.protect(SIGNOUT_PURPOSE, &json)
+    }
+
+    /// The correlation in `cookie`; `None` when it can't be read or has
+    /// expired.
+    pub fn open(protector: &DataProtector, cookie: &str, now: i64) -> Option<SignoutCorrelation> {
+        let json = protector.unprotect(SIGNOUT_PURPOSE, cookie).ok()?;
+        let correlation: SignoutCorrelation = serde_json::from_slice(&json).ok()?;
+        (now - correlation.created <= CORRELATION_LIFETIME_SECONDS).then_some(correlation)
+    }
+}
+
+/// The provider's end-session URL for RP-Initiated Logout: `id_token_hint`
+/// when rustid kept the token, `client_id`, where to come back, and
+/// `state`. `None` when the provider advertises no `end_session_endpoint`.
+pub fn end_session_url(
+    provider: &IdentityProvider,
+    metadata: &Metadata,
+    id_token_hint: Option<&str>,
+    post_logout_redirect_uri: &str,
+    state: &str,
+) -> Option<String> {
+    let endpoint = metadata.end_session_endpoint.as_deref()?;
+    let mut query: Vec<(&str, &str)> = Vec::new();
+    if let Some(hint) = id_token_hint {
+        query.push(("id_token_hint", hint));
+    }
+    query.push(("client_id", &provider.client_id));
+    query.push(("post_logout_redirect_uri", post_logout_redirect_uri));
+    query.push(("state", state));
+    let query = query
+        .iter()
+        .map(|(k, v)| format!("{k}={}", url_encode(v)))
+        .collect::<Vec<_>>()
+        .join("&");
+    Some(add_query_string(endpoint, &query))
+}

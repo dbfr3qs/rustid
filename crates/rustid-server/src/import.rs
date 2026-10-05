@@ -258,6 +258,7 @@ fn user_session(
         force_renewal: false,
         issuer: None,
         key: None,
+        upstream_id_token: None,
     })
 }
 

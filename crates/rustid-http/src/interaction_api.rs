@@ -976,6 +976,7 @@ async fn login(
             .collect(),
         persistent: body.remember,
         allow_refresh: body.allow_refresh,
+        upstream_id_token: None,
     };
     let continuation = Continuation::new(&body.return_url, sign_in);
     match continuation

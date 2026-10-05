@@ -40,6 +40,8 @@ pub struct Continuation {
     pub persistent: bool,
     #[serde(default)]
     pub allow_refresh: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub upstream_id_token: Option<String>,
 }
 
 impl Continuation {
@@ -53,6 +55,7 @@ impl Continuation {
             claims: sign_in.claims,
             persistent: sign_in.persistent,
             allow_refresh: sign_in.allow_refresh,
+            upstream_id_token: sign_in.upstream_id_token,
         }
     }
 
@@ -65,6 +68,7 @@ impl Continuation {
             claims: self.claims.clone(),
             persistent: self.persistent,
             allow_refresh: self.allow_refresh,
+            upstream_id_token: self.upstream_id_token.clone(),
         }
     }
 

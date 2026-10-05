@@ -561,6 +561,7 @@ fn sign_in_session() {
     payload["email"] = "ada@example.com".into();
     payload["groups"] = json!(["x"]);
     let token = |p: &Value| ValidatedIdToken {
+        raw: String::new(),
         issuer: AUTHORITY.into(),
         subject: "upstream-user".into(),
         payload: p.as_object().unwrap().clone(),
@@ -692,4 +693,91 @@ fn metadata_userinfo_endpoint_must_be_https() {
     assert!(m.check(AUTHORITY, false).is_err());
     m.userinfo_endpoint = Some("https://up.example/userinfo".into());
     m.check(AUTHORITY, false).unwrap();
+}
+
+#[test]
+fn sign_out_flag_signout_correlation_and_end_session_url() {
+    use rustid_core::federation::challenge::{SignoutCorrelation, end_session_url};
+    assert!(!config().sign_out);
+    let mut cfg = config();
+    cfg.sign_out = true;
+    let protector = DataProtector::new([("k", [7u8; 32].as_slice())]).unwrap();
+    let c = SignoutCorrelation::new("up", "/signed-out?id=1", NOW);
+    assert!(c.state.len() >= 43);
+    let sealed = c.seal(&protector);
+    assert_eq!(
+        SignoutCorrelation::open(&protector, &sealed, NOW + 600),
+        Some(c.clone())
+    );
+    assert_eq!(
+        SignoutCorrelation::open(&protector, &sealed, NOW + 601),
+        None
+    );
+    assert_eq!(SignoutCorrelation::open(&protector, "garbage", NOW), None);
+    // A correlation sealed for sign-in doesn't open as a sign-out one.
+    let sign_in = Correlation::new("up", "/r", NOW).seal(&protector);
+    assert_eq!(SignoutCorrelation::open(&protector, &sign_in, NOW), None);
+
+    let mut m = metadata();
+    assert_eq!(
+        end_session_url(&cfg, &m, Some("t.o.k"), "https://rp/so", "st"),
+        None
+    );
+    m.end_session_endpoint = Some("https://up.example/endsession?x=1".into());
+    let url = end_session_url(&cfg, &m, Some("t.o.k"), "https://rp/so", "st").unwrap();
+    assert_eq!(
+        url,
+        "https://up.example/endsession?x=1&id_token_hint=t.o.k&client_id=abc&post_logout_redirect_uri=https%3A%2F%2Frp%2Fso&state=st"
+    );
+    let url = end_session_url(&cfg, &m, None, "https://rp/so", "st").unwrap();
+    assert!(!url.contains("id_token_hint"), "{url}");
+}
+
+#[tokio::test]
+async fn redeemed_tokens_keep_their_compact_form() {
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    let fed = federation(fake.clone());
+    let p = fed.providers.find("up").unwrap();
+    let c = Correlation::new("up", "/return", NOW);
+    let t = token(&k, &baseline(&c.nonce));
+    fake.0.lock().unwrap().token_body = json!({ "id_token": t });
+    assert_eq!(
+        fed.redeem(p, "code", "https://rp/cb", &c, 300, NOW)
+            .await
+            .unwrap()
+            .raw,
+        t
+    );
+}
+
+#[test]
+fn sessions_carry_the_upstream_id_token_only_when_set() {
+    use rustid_core::session::{SignIn, UserSession};
+    let protector = DataProtector::new([("k", [7u8; 32].as_slice())]).unwrap();
+    let now = chrono::Utc::now();
+    let with = UserSession::sign_in(
+        SignIn {
+            subject_id: "s".into(),
+            upstream_id_token: Some("a.b.c".into()),
+            ..Default::default()
+        },
+        None,
+        now,
+        3600,
+    );
+    assert_eq!(with.upstream_id_token.as_deref(), Some("a.b.c"));
+    let opened = UserSession::open(&protector, &with.seal(&protector), now).unwrap();
+    assert_eq!(opened.upstream_id_token.as_deref(), Some("a.b.c"));
+    let without = UserSession::sign_in(
+        SignIn {
+            subject_id: "s".into(),
+            ..Default::default()
+        },
+        None,
+        now,
+        3600,
+    );
+    let json = serde_json::to_value(&without).unwrap();
+    assert!(json.get("upstream_id_token").is_none(), "{json}");
 }

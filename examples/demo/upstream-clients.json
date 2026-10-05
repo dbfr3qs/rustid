@@ -1,0 +1,13 @@
+[
+  {
+    "clientId": "rustid-demo-federation",
+    "clientName": "rustid demo server",
+    "clientSecrets": [{ "value": "R0h91c4J7dBYtjKTidy0elPWzyIaZilutC+Iu+EmhrU=" }],
+    "allowedGrantTypes": ["authorization_code"],
+    "requirePkce": true,
+    "redirectUris": ["https://localhost:5443/federation/upstream/callback"],
+    "allowedScopes": ["openid", "profile", "email"],
+    "requireConsent": false,
+    "alwaysIncludeUserClaimsInIdToken": true
+  }
+]

@@ -1794,8 +1794,10 @@ mod signed_out_tests {
     }
 }
 
-/// The users file's claims of the requested
-/// types; a user is active when the file has them.
+/// The users file's claims of the requested types for the file's users.
+/// Subjects the file doesn't have (users signed in through an upstream
+/// provider, or by another UI) are answered as the default profile service
+/// answers them: their session's claims, and active.
 #[derive(Debug, Clone)]
 pub struct UsersProfileService {
     users: Vec<User>,
@@ -1818,7 +1820,9 @@ impl rustid_core::profile::ProfileService for UsersProfileService {
         request: &rustid_core::profile::ProfileRequest<'_>,
     ) -> Result<Vec<rustid_core::tokens::Claim>, rustid_core::profile::ProfileError> {
         let Some(user) = self.user(request.subject_id) else {
-            return Ok(Vec::new());
+            return rustid_core::profile::DefaultProfileService
+                .profile_claims(request)
+                .await;
         };
         let claims: Vec<rustid_core::tokens::Claim> =
             user.claims
@@ -1841,7 +1845,14 @@ impl rustid_core::profile::ProfileService for UsersProfileService {
         &self,
         request: &rustid_core::profile::ActiveRequest<'_>,
     ) -> Result<bool, rustid_core::profile::ProfileError> {
-        Ok(self.user(request.subject_id).is_some())
+        match self.user(request.subject_id) {
+            Some(_) => Ok(true),
+            None => {
+                rustid_core::profile::DefaultProfileService
+                    .is_active(request)
+                    .await
+            }
+        }
     }
 }
 
@@ -1884,5 +1895,58 @@ async fn test_idp_initiated(
         },
         Ok((status, answer)) => json_response(status, answer),
         Err(e) => api_failure("idp-initiated", &e),
+    }
+}
+
+#[cfg(test)]
+mod users_profile_tests {
+    use rustid_core::profile::{ActiveRequest, ProfileRequest, ProfileService};
+    use rustid_core::tokens::Claim;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn subjects_outside_the_file_are_answered_from_their_session() {
+        let service = UsersProfileService::new(vec![User {
+            subject_id: "1".into(),
+            username: "alice".into(),
+            password: None,
+            claims: Vec::new(),
+        }]);
+        let client: rustid_core::clients::Client =
+            serde_json::from_value(json!({ "clientId": "c" })).unwrap();
+        let session = [
+            Claim::string("name", "Carol"),
+            Claim::string("email", "c@x"),
+        ];
+        // A federated user isn't in the file: active, with the session's claims.
+        let active = ActiveRequest {
+            caller: "test",
+            client: &client,
+            subject_id: "federated",
+            subject_claims: &session,
+        };
+        assert!(service.is_active(&active).await.unwrap());
+        let claims = service
+            .profile_claims(&ProfileRequest {
+                caller: "test",
+                client: &client,
+                subject_id: "federated",
+                subject_claims: &session,
+                requested_claim_types: &["name".to_owned()],
+            })
+            .await
+            .unwrap();
+        assert_eq!(claims, [Claim::string("name", "Carol")]);
+        // A user in the file is answered from the file.
+        assert!(
+            service
+                .is_active(&ActiveRequest {
+                    subject_id: "1",
+                    ..active
+                })
+                .await
+                .unwrap()
+        );
     }
 }

@@ -25,6 +25,18 @@ fn example_config_file_is_valid_and_builds() {
 }
 
 #[test]
+fn demo_upstream_config_is_valid_and_builds() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/demo/upstream.toml");
+    let cfg = ServerConfig::load(Some(&path)).unwrap();
+    assert_eq!(cfg.listen.port(), 5444);
+    assert_eq!(
+        cfg.protocol.issuer_uri.as_deref(),
+        Some("https://127.0.0.1:5444")
+    );
+    build(&cfg).unwrap();
+}
+
+#[test]
 fn demo_config_is_valid_and_builds() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/demo/rustid.toml");
     let cfg = ServerConfig::load(Some(&path)).unwrap();
@@ -33,5 +45,6 @@ fn demo_config_is_valid_and_builds() {
     let tls = cfg.tls.as_ref().unwrap();
     assert!(tls.cert_file.ends_with("target/demo/cert.pem"));
     assert!(tls.cert_file.is_absolute());
+    assert!(cfg.identity_providers_file.is_some());
     build(&cfg).unwrap();
 }

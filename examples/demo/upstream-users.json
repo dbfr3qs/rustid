@@ -1,0 +1,21 @@
+[
+  {
+    "subjectId": "carol",
+    "username": "carol",
+    "password": "carol",
+    "claims": [
+      { "type": "name", "value": "Carol Upstream" },
+      { "type": "email", "value": "carol@upstream.example" },
+      { "type": "email_verified", "value": "true" }
+    ]
+  },
+  {
+    "subjectId": "dave",
+    "username": "dave",
+    "password": "dave",
+    "claims": [
+      { "type": "name", "value": "Dave Upstream" },
+      { "type": "email", "value": "dave@upstream.example" }
+    ]
+  }
+]

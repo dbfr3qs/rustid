@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Runs rustid over HTTPS with the interactive reference UI, and the demo
-# client that signs in there, until ctrl-c. Needs bash and curl.
+# Runs rustid over HTTPS with the interactive reference UI, a second rustid
+# as an upstream identity provider, and the demo client that signs in
+# there, until ctrl-c. Needs bash and curl.
 #
 #   scripts/demo.sh
 #   open http://localhost:5002 and sign in as alice/alice or bob/bob
@@ -24,7 +25,12 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-"$bin/rustid-server" --config examples/demo/rustid.toml &
+# The upstream identity provider first: the demo server signs users in
+# through it.
+"$bin/rustid-server" --config examples/demo/upstream.toml &
+pids+=($!)
+RUSTID_FEDERATION__CA_FILE="$PWD/target/demo/ca.pem" \
+  "$bin/rustid-server" --config examples/demo/rustid.toml &
 pids+=($!)
 "$bin/rustid-demo" client --ca-file target/demo/ca.pem --users-file fixtures/users.json \
   --saml-key fixtures/saml/sp/sp-signing.key.pem &
@@ -38,12 +44,14 @@ alive() {
 answers() {
   curl -fsS --max-time 2 --cacert target/demo/ca.pem -o /dev/null \
     https://localhost:5443/.well-known/openid-configuration 2> /dev/null \
+    && curl -fsS --max-time 2 --cacert target/demo/ca.pem -o /dev/null \
+      https://127.0.0.1:5444/.well-known/openid-configuration 2> /dev/null \
     && curl -fsS --max-time 2 -o /dev/null http://localhost:5002/ 2> /dev/null
 }
 ready=false
 for _ in $(seq 1 50); do
   if ! alive; then
-    echo "demo: the server or the client stopped; see the error above (is port 5443 or 5002 in use?)" >&2
+    echo "demo: the server or the client stopped; see the error above (is port 5443, 5444 or 5002 in use?)" >&2
     exit 1
   fi
   if answers; then
@@ -53,7 +61,7 @@ for _ in $(seq 1 50); do
   sleep 0.2
 done
 if [ "$ready" != true ]; then
-  echo "demo: https://localhost:5443 or http://localhost:5002 isn't answering" >&2
+  echo "demo: https://localhost:5443, https://127.0.0.1:5444 or http://localhost:5002 isn't answering" >&2
   exit 1
 fi
 
@@ -64,6 +72,10 @@ cat << 'EOF'
   Client:  http://localhost:5002          <- open this and click "Sign in"
   Server:  https://localhost:5443         (discovery: /.well-known/openid-configuration)
   Users:   alice / alice, bob / bob
+  Federation: on the sign-in page, "Sign in with Upstream IdP" signs in
+           through a second rustid (https://127.0.0.1:5444) as carol / carol
+           or dave / dave; the client then shows a subject derived from the
+           upstream's issuer and subject, and idp "upstream".
   Logout:  "Sign out" in the client ends both sessions; signing out at
            https://localhost:5443/connect/endsession signs the client out
            over the front channel.

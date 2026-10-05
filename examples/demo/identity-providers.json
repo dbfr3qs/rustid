@@ -1,0 +1,10 @@
+[
+  {
+    "scheme": "upstream",
+    "displayName": "Upstream IdP",
+    "authority": "https://127.0.0.1:5444",
+    "clientId": "rustid-demo-federation",
+    "clientAuthentication": { "secret": "federation-secret" },
+    "scopes": ["openid", "profile", "email"]
+  }
+]

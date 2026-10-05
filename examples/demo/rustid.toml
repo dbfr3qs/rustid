@@ -10,6 +10,10 @@
 listen = "127.0.0.1:5443"
 clients_file = "clients.json"
 resources_file = "resources.json"
+# Upstream federation: "Sign in with Upstream IdP" on the login page signs in
+# through a second rustid (upstream.toml). scripts/demo.sh sets
+# RUSTID_FEDERATION__CA_FILE so this server trusts the demo CA.
+identity_providers_file = "identity-providers.json"
 
 [log]
 format = "pretty"

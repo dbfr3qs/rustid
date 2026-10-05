@@ -1,0 +1,36 @@
+# The demo's upstream identity provider (scripts/demo.sh): a second rustid on
+# https://127.0.0.1:5444 with its own users (carol/carol, dave/dave). The
+# demo server signs users in through it ("Sign in with Upstream IdP" on its
+# login page). It answers on 127.0.0.1 rather than localhost so its cookies
+# stay apart from the demo server's. Not for real use.
+# Relative paths are resolved against this file's directory.
+listen = "127.0.0.1:5444"
+clients_file = "upstream-clients.json"
+resources_file = "resources.json"
+
+[log]
+format = "pretty"
+level = "info"
+
+[protocol]
+issuer_uri = "https://127.0.0.1:5444"
+
+[protocol.key_management]
+enabled = false
+
+[[signing_keys]]
+kid = "demo-upstream-rsa"
+alg = "RS256"
+key_file = "../../fixtures/signing-key.pem"
+
+[reference_ui]
+enabled = true
+interactive = true
+users_profile_service = true
+users_file = "upstream-users.json"
+
+# Written by `rustid-demo certs --out target/demo` (for localhost and
+# 127.0.0.1).
+[tls]
+cert_file = "../../target/demo/cert.pem"
+key_file = "../../target/demo/key.pem"

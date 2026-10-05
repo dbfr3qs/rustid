@@ -142,3 +142,37 @@ fn obfuscation_keeps_the_last_four_characters() {
     assert_eq!(obfuscate(""), "********");
     assert_eq!(obfuscate("ééééé"), "****éééé");
 }
+
+#[test]
+fn user_login_events_carry_the_provider() {
+    use rustid_core::events::EventDetails;
+    let success = serde_json::to_value(Event::user_login_success(EventDetails::UserLoginSuccess {
+        provider: "up".into(),
+        provider_user_id: "u1".into(),
+        subject_id: "s1".into(),
+        client_id: Some("c".into()),
+    }))
+    .unwrap();
+    assert_eq!(success["Name"], "User Login Success");
+    assert_eq!(success["Id"], 1000);
+    assert_eq!(success["Category"], "Authentication");
+    assert_eq!(success["EventType"], "Success");
+    assert_eq!(success["Provider"], "up");
+    assert_eq!(success["ProviderUserId"], "u1");
+    assert_eq!(success["SubjectId"], "s1");
+    assert_eq!(success["ClientId"], "c");
+
+    let failure = serde_json::to_value(Event::user_login_failure(EventDetails::UserLoginFailure {
+        provider: "up".into(),
+        reason: "state_mismatch".into(),
+        detail: None,
+        client_id: None,
+    }))
+    .unwrap();
+    assert_eq!(failure["Name"], "User Login Failure");
+    assert_eq!(failure["Id"], 1001);
+    assert_eq!(failure["EventType"], "Failure");
+    assert_eq!(failure["Reason"], "state_mismatch");
+    assert!(failure.get("Detail").is_none());
+    assert!(failure.get("ClientId").is_none());
+}

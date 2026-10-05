@@ -467,22 +467,6 @@ async fn answer_consent(
         None if deny => Some(InteractionError::AccessDenied),
         None => None,
     };
-    // A SAML login: a denial is recorded in its state (there's no consent
-    // to grant).
-    if is_saml_return_url(state, &body.return_url) {
-        let Some(error) = error else {
-            return bad_request("invalid_return_url");
-        };
-        if let Err(e) =
-            record_saml_denial(state, &body.return_url, error, body.error_description).await
-        {
-            return internal_error(state, info, "DenyAuthentication", &e.to_string());
-        }
-        return no_cache_json(
-            StatusCode::OK,
-            &json!({ "redirectUrl": format!("{}{}", route.origin.origin(), body.return_url) }),
-        );
-    }
     // The body's subject, else the session in the cookies the UI
     // forwarded, as grant consent falls back to the current user.
     let subject = body
@@ -490,15 +474,84 @@ async fn answer_consent(
         .as_deref()
         .filter(|s| !s.trim().is_empty())
         .or(session.map(|s| s.subject_id.as_str()));
-    if error.is_none() && subject.is_none() {
-        return bad_request("invalid_subject");
+    let response = ConsentResponse {
+        error,
+        error_description: body.error_description,
+        remember_consent: body.remember_consent,
+        scopes_values_consented: body.scopes,
+        description: body.description,
+    };
+    match record_answer(state, route, info, &body.return_url, subject, response).await {
+        Ok(redirect_url) => no_cache_json(StatusCode::OK, &json!({ "redirectUrl": redirect_url })),
+        Err(response) => *response,
+    }
+}
+
+/// Records a refusal of the request behind `return_url`, as the deny call
+/// does, and returns where to send the browser: the return URL, which then
+/// answers the client with the error.
+pub(crate) async fn record_denial(
+    state: &ProtocolState,
+    route: &Route,
+    info: &RequestInfo,
+    return_url: &str,
+    error: InteractionError,
+    description: Option<String>,
+) -> Result<String, Box<Response>> {
+    let response = ConsentResponse {
+        error: Some(error),
+        error_description: description,
+        remember_consent: false,
+        scopes_values_consented: Vec::new(),
+        description: None,
+    };
+    record_answer(state, route, info, return_url, None, response).await
+}
+
+/// Records the consent page's answer (or a refusal) for `return_url` and
+/// returns the absolute URL to send the browser to. A SAML login records a
+/// refusal in its state (there's no consent to grant).
+async fn record_answer(
+    state: &ProtocolState,
+    route: &Route,
+    info: &RequestInfo,
+    return_url: &str,
+    subject: Option<&str>,
+    response: ConsentResponse,
+) -> Result<String, Box<Response>> {
+    let redirect_url = format!("{}{}", route.origin.origin(), return_url);
+    if is_saml_return_url(state, return_url) {
+        let Some(error) = response.error else {
+            return Err(Box::new(bad_request("invalid_return_url")));
+        };
+        if let Err(e) =
+            record_saml_denial(state, return_url, error, response.error_description).await
+        {
+            return Err(Box::new(internal_error(
+                state,
+                info,
+                "DenyAuthentication",
+                &e.to_string(),
+            )));
+        }
+        return Ok(redirect_url);
+    }
+    if response.error.is_none() && subject.is_none() {
+        return Err(Box::new(bad_request("invalid_subject")));
     }
     let issuer = current_issuer(&state.options, &route.origin);
     let ctx = authorize_ctx(state, info, &issuer);
-    let request = match validated_return_url(&ctx, &body.return_url, None).await {
+    let request = match validated_return_url(&ctx, return_url, None).await {
         Ok(Some(request)) => request,
-        Ok(None) => return bad_request("invalid_return_url"),
-        Err(e) => return internal_error(state, info, "GrantConsent", &e.to_string()),
+        Ok(None) => return Err(Box::new(bad_request("invalid_return_url"))),
+        Err(e) => {
+            return Err(Box::new(internal_error(
+                state,
+                info,
+                "GrantConsent",
+                &e.to_string(),
+            )));
+        }
     };
     let client_id = request.raw.get("client_id").unwrap_or_default();
     let id = consent::consent_request_id(
@@ -507,13 +560,6 @@ async fn answer_consent(
         request.raw.get("nonce").as_deref(),
         request.raw.get("scope").as_deref(),
     );
-    let response = ConsentResponse {
-        error,
-        error_description: body.error_description,
-        remember_consent: body.remember_consent,
-        scopes_values_consented: body.scopes,
-        description: body.description,
-    };
     match consent::store_response(
         state.stores.grants.as_ref(),
         &id,
@@ -524,11 +570,13 @@ async fn answer_consent(
     )
     .await
     {
-        Ok(()) => no_cache_json(
-            StatusCode::OK,
-            &json!({ "redirectUrl": format!("{}{}", route.origin.origin(), body.return_url) }),
-        ),
-        Err(e) => internal_error(state, info, "GrantConsent", &e.to_string()),
+        Ok(()) => Ok(redirect_url),
+        Err(e) => Err(Box::new(internal_error(
+            state,
+            info,
+            "GrantConsent",
+            &e.to_string(),
+        ))),
     }
 }
 

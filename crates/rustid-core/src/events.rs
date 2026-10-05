@@ -19,6 +19,8 @@ pub enum EventType {
 
 /// Event ids.
 pub mod ids {
+    pub const USER_LOGIN_SUCCESS: i32 = 1000;
+    pub const USER_LOGIN_FAILURE: i32 = 1001;
     pub const CLIENT_AUTHENTICATION_SUCCESS: i32 = 1010;
     pub const CLIENT_AUTHENTICATION_FAILURE: i32 = 1011;
     pub const API_AUTHENTICATION_SUCCESS: i32 = 1020;
@@ -76,6 +78,21 @@ pub struct IssuedToken {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged, rename_all_fields = "PascalCase")]
 pub enum EventDetails {
+    UserLoginSuccess {
+        provider: String,
+        provider_user_id: String,
+        subject_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        client_id: Option<String>,
+    },
+    UserLoginFailure {
+        provider: String,
+        reason: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        detail: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        client_id: Option<String>,
+    },
     ClientAuthenticationSuccess {
         client_id: String,
         authentication_method: String,
@@ -305,6 +322,30 @@ impl Event {
             EventDetails::ApiAuthenticationFailure {
                 api_name: api_name.to_owned(),
             },
+        )
+    }
+
+    /// A user signed in through an upstream provider.
+    pub fn user_login_success(details: EventDetails) -> Self {
+        Event::new(
+            "Authentication",
+            "User Login Success",
+            EventType::Success,
+            ids::USER_LOGIN_SUCCESS,
+            None,
+            details,
+        )
+    }
+
+    /// An upstream sign-in failed.
+    pub fn user_login_failure(details: EventDetails) -> Self {
+        Event::new(
+            "Authentication",
+            "User Login Failure",
+            EventType::Failure,
+            ids::USER_LOGIN_FAILURE,
+            None,
+            details,
         )
     }
 

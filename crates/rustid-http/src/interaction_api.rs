@@ -766,10 +766,24 @@ async fn continue_logout(
             return internal_error(state, info, "InteractionLogout", &e.to_string());
         }
     }
-    let Ok(location) = HeaderValue::from_str(&continuation.return_url) else {
-        return bad_request("invalid_continuation");
+    // A session from an upstream provider may sign out there too, then
+    // come back to the return URL.
+    let upstream = match session {
+        Some(session) => {
+            crate::federation::upstream_sign_out(state, route, session, &continuation.return_url)
+                .await
+        }
+        None => None,
     };
-    let mut response = (StatusCode::FOUND, [(LOCATION, location)]).into_response();
+    let mut response = match upstream {
+        Some(response) => response,
+        None => {
+            let Ok(location) = HeaderValue::from_str(&continuation.return_url) else {
+                return bad_request("invalid_continuation");
+            };
+            (StatusCode::FOUND, [(LOCATION, location)]).into_response()
+        }
+    };
     // As the cookie handler signs out: never cached.
     let headers = response.headers_mut();
     headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-cache,no-store"));

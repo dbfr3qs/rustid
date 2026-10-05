@@ -632,3 +632,179 @@ async fn stale_upstream_authentication_is_refused() {
         .collect();
     assert_eq!(reasons, ["stale_authentication", "stale_authentication"]);
 }
+
+/// Signs in through `up` and returns the signed-in browser's state.
+async fn signed_in_upstream(f: &Federated, b: &mut Browser) {
+    let (_, upstream) = start(b).await;
+    let reply = callback(f, b, &upstream).await;
+    let signed_in = b
+        .get(reply.location().strip_prefix("http://server").unwrap())
+        .await;
+    assert_eq!(signed_in.status, StatusCode::FOUND, "{}", signed_in.body);
+}
+
+/// The UI's logout call and its continuation, returning the continuation's
+/// answer.
+async fn sign_out(b: &mut Browser) -> Reply {
+    let bearer = format!("Bearer {API_KEY}");
+    let cookie: Vec<String> = b.cookies.iter().map(|(k, v)| format!("{k}={v}")).collect();
+    let mut ui = Browser::new(&b.app);
+    let reply = ui
+        .send(
+            Method::POST,
+            "/interaction/logout",
+            &[
+                ("authorization", &bearer),
+                ("content-type", "application/json"),
+                ("cookie", &cookie.join("; ")),
+            ],
+            &serde_json::json!({ "returnUrl": "/signed-out?x=1" }).to_string(),
+        )
+        .await;
+    assert_eq!(reply.status, StatusCode::OK, "{}", reply.body);
+    let body: serde_json::Value = serde_json::from_str(&reply.body).unwrap();
+    let path = body["continueUrl"]
+        .as_str()
+        .unwrap()
+        .strip_prefix("http://server")
+        .unwrap()
+        .to_owned();
+    b.get(&path).await
+}
+
+fn sign_out_on(p: &mut rustid_core::federation::provider::IdentityProvider) {
+    p.sign_out = true;
+}
+
+#[tokio::test]
+async fn sign_out_goes_upstream_and_returns() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let reply = sign_out(&mut b).await;
+    assert_eq!(reply.status, StatusCode::FOUND, "{}", reply.body);
+    let upstream = reply.location();
+    assert!(
+        upstream.starts_with("https://up.example/endsession?"),
+        "{upstream}"
+    );
+    let hint = query(&upstream, "id_token_hint").expect("the upstream token is the hint");
+    assert_eq!(
+        rustid_core::jwt::Jws::decode(&hint)
+            .unwrap()
+            .claim_str("sub"),
+        Some("upstream-user")
+    );
+    assert_eq!(query(&upstream, "client_id").as_deref(), Some("rustid"));
+    assert_eq!(
+        query(&upstream, "post_logout_redirect_uri").as_deref(),
+        Some("https://idsrv.test/federation/up/signout-callback")
+    );
+    let state = query(&upstream, "state").unwrap();
+    let cookies = reply.set_cookies();
+    assert!(
+        cookies
+            .iter()
+            .any(|c| c.starts_with("idsrv.federation.signout=")),
+        "{cookies:?}"
+    );
+    assert!(
+        cookies.iter().any(|c| c.starts_with("idsrv=;")),
+        "the session cookie goes: {cookies:?}"
+    );
+    // Back from the provider: on to the UI's return URL.
+    let back = b
+        .get(&format!(
+            "/federation/up/signout-callback?state={}",
+            encode(&state)
+        ))
+        .await;
+    assert_eq!(back.status, StatusCode::FOUND, "{}", back.body);
+    assert_eq!(back.location(), "/signed-out?x=1");
+    assert!(
+        back.set_cookies()
+            .iter()
+            .any(|c| c.starts_with("idsrv.federation.signout=;"))
+    );
+    assert_eq!(session(&mut b).await["error"], "no_session");
+}
+
+#[tokio::test]
+async fn signout_callback_state_is_checked() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let upstream = sign_out(&mut b).await.location();
+    let state = query(&upstream, "state").unwrap();
+    for (label, path) in [
+        (
+            "wrong state",
+            "/federation/up/signout-callback?state=wrong".to_owned(),
+        ),
+        ("no state", "/federation/up/signout-callback".to_owned()),
+    ] {
+        let reply = b.get(&path).await;
+        assert_eq!(reply.status, StatusCode::OK, "{label}");
+        assert!(reply.body.contains("signed out"), "{label}: {}", reply.body);
+    }
+    // The cookie went with the first visit: the real state no longer works.
+    let replay = b
+        .get(&format!(
+            "/federation/up/signout-callback?state={}",
+            encode(&state)
+        ))
+        .await;
+    assert_eq!(replay.status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn without_server_side_sessions_only_client_id_is_sent() {
+    let f = federated_custom(Default::default(), sign_out_on, false);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let upstream = sign_out(&mut b).await.location();
+    assert!(
+        upstream.starts_with("https://up.example/endsession?"),
+        "{upstream}"
+    );
+    assert_eq!(query(&upstream, "id_token_hint"), None);
+    assert_eq!(query(&upstream, "client_id").as_deref(), Some("rustid"));
+}
+
+#[tokio::test]
+async fn provider_without_end_session_endpoint_signs_out_locally() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    f.fake.edit(|s| {
+        s.discovery
+            .as_object_mut()
+            .unwrap()
+            .remove("end_session_endpoint");
+    });
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let reply = sign_out(&mut b).await;
+    assert_eq!(reply.status, StatusCode::FOUND);
+    assert_eq!(reply.location(), "/signed-out?x=1");
+    assert_eq!(session(&mut b).await["error"], "no_session");
+}
+
+#[tokio::test]
+async fn provider_without_sign_out_signs_out_locally() {
+    let f = federated_custom(Default::default(), |_| {}, true);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let reply = sign_out(&mut b).await;
+    assert_eq!(reply.status, StatusCode::FOUND);
+    assert_eq!(reply.location(), "/signed-out?x=1");
+    assert_eq!(session(&mut b).await["error"], "no_session");
+}
+
+#[tokio::test]
+async fn local_session_sign_out_is_unchanged() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    let mut b = Browser::new(&f.app);
+    sign_in(&mut b, "alice").await;
+    let reply = sign_out(&mut b).await;
+    assert_eq!(reply.status, StatusCode::FOUND);
+    assert_eq!(reply.location(), "/signed-out?x=1");
+}

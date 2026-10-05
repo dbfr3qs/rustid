@@ -48,6 +48,7 @@ impl FakeUpstream {
                     "authorization_endpoint": "https://up.example/authorize",
                     "token_endpoint": "https://up.example/token",
                     "jwks_uri": "https://up.example/jwks",
+                    "end_session_endpoint": "https://up.example/endsession",
                 }),
                 token_status: 200,
                 claims: json!({ "sub": "upstream-user", "name": "Ada", "email": "ada@example.com" }),
@@ -163,13 +164,25 @@ pub struct Federated {
 /// (only `up`, no local login), `fed.other` (only `other`) and
 /// `fed.missing` (only an unknown scheme, no local login).
 pub fn federated_with(options: ProtocolOptions) -> Federated {
+    federated_custom(options, |_| {}, false)
+}
+
+/// As [`federated_with`], with provider `up` edited, and server-side
+/// sessions when `sessions` is set.
+pub fn federated_custom(
+    options: ProtocolOptions,
+    edit: impl FnOnce(&mut IdentityProvider),
+    sessions: bool,
+) -> Federated {
     let fake = FakeUpstream::new();
     let events = Arc::new(Recording::default());
     let mut off = provider_config("off");
     off.enabled = false;
+    let mut up = provider_config("up");
+    edit(&mut up);
     let providers = Providers::new(vec![
         Provider {
-            config: provider_config("up"),
+            config: up,
             credential: Credential::Basic("secret".into()),
         },
         Provider {
@@ -199,6 +212,16 @@ pub fn federated_with(options: ProtocolOptions) -> Federated {
         Resources::load(&fixture("resources.json")).unwrap(),
     );
     state.stores.federation = Arc::new(Federation::new(providers, fake.clone(), false));
+    if sessions {
+        let store = Arc::new(rustid_store_memory::InMemoryServerSideSessionStore::default());
+        state.stores.sessions = Some(Arc::new(
+            rustid_core::server_side_sessions::ServerSideSessions {
+                store: store.clone(),
+                outbox: store.outbox(),
+                protector: state.interaction.protector.clone(),
+            },
+        ));
+    }
     state.events = EventService::new(
         EventsOptions {
             raise_success_events: true,

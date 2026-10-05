@@ -13,7 +13,8 @@ use rustid_core::authorize::validation::AuthorizeContext;
 use rustid_core::consent::InteractionError;
 use rustid_core::events::{Event, EventDetails, RequestInfo};
 use rustid_core::federation::challenge::{
-    CORRELATION_COOKIE, CORRELATION_LIFETIME_SECONDS, Correlation, authorization_url,
+    CORRELATION_COOKIE, CORRELATION_LIFETIME_SECONDS, Correlation, SIGNOUT_COOKIE,
+    SignoutCorrelation, authorization_url, end_session_url,
 };
 use rustid_core::federation::flow::Failure;
 use rustid_core::federation::provider::Provider;
@@ -30,6 +31,7 @@ use crate::request::{Incoming, Route};
 pub(crate) enum Leg {
     Challenge,
     Callback,
+    SignoutCallback,
 }
 
 /// `/federation/{scheme}/challenge` or `/federation/{scheme}/callback`.
@@ -39,6 +41,7 @@ pub(crate) fn find(lower_path: &str) -> Option<(String, Leg)> {
     let leg = match leg {
         "challenge" => Leg::Challenge,
         "callback" => Leg::Callback,
+        "signout-callback" => Leg::SignoutCallback,
         _ => return None,
     };
     (!scheme.is_empty()).then(|| (scheme.to_owned(), leg))
@@ -63,12 +66,16 @@ pub(crate) async fn handle(
     if incoming.method != Method::GET {
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
+    if let Leg::SignoutCallback = leg {
+        return signout_callback(state, incoming, scheme);
+    }
     let Some(provider) = state.stores.federation.providers.find(scheme) else {
         return page(StatusCode::NOT_FOUND, "There is no such sign-in provider.");
     };
     match leg {
         Leg::Challenge => challenge(state, incoming, provider).await,
         Leg::Callback => callback(state, incoming, provider).await,
+        Leg::SignoutCallback => unreachable!("answered above"),
     }
 }
 
@@ -426,7 +433,12 @@ async fn callback_answer(
             );
         }
     }
-    let sign_in = sign_in(&provider.config, &token, now);
+    let mut sign_in = sign_in(&provider.config, &token, now);
+    // The id token is the hint for signing out there; it is kept only in
+    // server-side sessions, since it would outgrow a session cookie.
+    if provider.config.sign_out && state.stores.sessions.is_some() {
+        sign_in.upstream_id_token = Some(token.raw.clone());
+    }
     let subject_id = sign_in.subject_id.clone();
     let continuation = Continuation::new(&correlation.return_url, sign_in);
     let handle = match continuation
@@ -458,4 +470,92 @@ async fn callback_answer(
         route.origin.base_url(),
         url_encode(&handle)
     ))
+}
+
+fn signout_cookie(route: &Route, scheme: &str, value: Option<&str>) -> String {
+    let mut cookie = match value {
+        Some(value) => format!(
+            "{SIGNOUT_COOKIE}={value}; path={}; max-age={CORRELATION_LIFETIME_SECONDS}",
+            cookie_path(route, scheme)
+        ),
+        None => format!(
+            "{SIGNOUT_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path={}; max-age=0",
+            cookie_path(route, scheme)
+        ),
+    };
+    if route.is_https() {
+        cookie.push_str("; secure");
+    }
+    cookie.push_str("; samesite=lax; httponly");
+    cookie
+}
+
+/// After rustid has signed `session` out: when it came from a provider
+/// with sign-out enabled, the redirect that signs the browser out there
+/// too (RP-Initiated Logout), coming back to `return_url` afterwards.
+/// `None` when there is nothing to do upstream, or the provider can't be
+/// reached; local sign-out stands either way.
+pub(crate) async fn upstream_sign_out(
+    state: &ProtocolState,
+    route: &Route,
+    session: &rustid_core::session::UserSession,
+    return_url: &str,
+) -> Option<Response> {
+    let federation = &state.stores.federation;
+    let provider = federation
+        .providers
+        .find(&session.idp)
+        .filter(|p| p.config.sign_out)?;
+    let scheme = &provider.config.scheme;
+    let now = chrono::Utc::now().timestamp();
+    let metadata = match federation.metadata(provider, now).await {
+        Ok(metadata) => metadata,
+        Err(failure) => {
+            tracing::warn!(%scheme, detail = %failure.detail(), "signing out upstream skipped: the provider can't be reached");
+            return None;
+        }
+    };
+    let correlation = SignoutCorrelation::new(scheme, return_url, now);
+    let issuer = current_issuer(&state.options, &route.origin);
+    let location = end_session_url(
+        &provider.config,
+        &metadata,
+        session.upstream_id_token.as_deref(),
+        &format!("{issuer}/federation/{scheme}/signout-callback"),
+        &correlation.state,
+    )?;
+    let mut response = found(&location);
+    crate::cookies::append(
+        &mut response,
+        &signout_cookie(
+            route,
+            scheme,
+            Some(&correlation.seal(&state.interaction.protector)),
+        ),
+    );
+    Some(response)
+}
+
+/// `GET /federation/{scheme}/signout-callback?state=…`: back from signing
+/// out upstream, on to where the sign-out was going. A missing or wrong
+/// state shows the signed-out page; it never redirects to a URL from the
+/// query.
+fn signout_callback(state: &ProtocolState, incoming: &Incoming<'_>, scheme: &str) -> Response {
+    let Incoming { route, headers, .. } = *incoming;
+    let now = chrono::Utc::now().timestamp();
+    let params = Params::parse_query(&route.query);
+    let correlation = crate::cookies::get(headers, SIGNOUT_COOKIE)
+        .and_then(|cookie| SignoutCorrelation::open(&state.interaction.protector, cookie, now))
+        .filter(|c| c.scheme == scheme)
+        .filter(|c| {
+            params
+                .get("state")
+                .is_some_and(|s| constant_time_eq(s.as_bytes(), c.state.as_bytes()))
+        });
+    let mut response = match correlation {
+        Some(c) => found(&c.return_url),
+        None => page(StatusCode::OK, "You are signed out."),
+    };
+    crate::cookies::append(&mut response, &signout_cookie(route, scheme, None));
+    response
 }

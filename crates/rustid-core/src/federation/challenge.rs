@@ -36,6 +36,9 @@ pub struct Correlation {
     pub return_url: String,
     /// Seconds since the epoch.
     pub created: i64,
+    /// The client the sign-in is for, when known, for events.
+    #[serde(default)]
+    pub client_id: Option<String>,
 }
 
 impl Correlation {
@@ -47,6 +50,7 @@ impl Correlation {
             code_verifier: random_value(),
             return_url: return_url.to_owned(),
             created: now,
+            client_id: None,
         }
     }
 

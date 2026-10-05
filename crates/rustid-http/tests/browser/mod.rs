@@ -13,6 +13,8 @@ use rustid_core::resources::Resources;
 use rustid_http::{AppState, InteractionState, ProtocolState};
 use tower::ServiceExt;
 
+pub mod upstream;
+
 pub const API_KEY: &str = "test-interaction-api-key";
 pub const CHALLENGE: &str = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 

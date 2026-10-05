@@ -1076,12 +1076,12 @@ async fn continue_saml_idp_initiated(
 
 /// A SAML SSO callback is a return URL a login may continue to.
 #[cfg(feature = "saml")]
-fn is_saml_return_url(state: &ProtocolState, return_url: &str) -> bool {
+pub(crate) fn is_saml_return_url(state: &ProtocolState, return_url: &str) -> bool {
     crate::saml::is_saml_return_url(state, return_url)
 }
 
 #[cfg(not(feature = "saml"))]
-fn is_saml_return_url(_: &ProtocolState, _: &str) -> bool {
+pub(crate) fn is_saml_return_url(_: &ProtocolState, _: &str) -> bool {
     false
 }
 

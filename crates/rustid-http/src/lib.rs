@@ -12,6 +12,7 @@ mod device_authorization;
 mod discovery;
 mod end_session;
 mod endpoint;
+mod federation;
 mod interaction_api;
 mod introspection;
 mod mtls;
@@ -161,6 +162,7 @@ pub fn shadows_route(state: &ProtocolState, path: &str) -> bool {
     let lower = path.to_ascii_lowercase();
     Endpoint::find(state, &route).is_some()
         || interaction_api::Call::find(&lower).is_some()
+        || federation::find(&lower).is_some()
         || state
             .protected_resource
             .as_deref()
@@ -346,6 +348,16 @@ async fn protocol(State(state): State<AppState>, request: Request<Body>) -> Resp
             }
             Some(dcr::Target::Client(_)) | None => {}
         }
+    }
+    if let Some((scheme, leg)) = federation::find(&route.path.to_ascii_lowercase()) {
+        let incoming = request::Incoming {
+            route: &route,
+            method: &method,
+            headers,
+            info: &info,
+            session: session.as_ref(),
+        };
+        return federation::handle(state, &incoming, &scheme, leg).await;
     }
     if let Some(call) = interaction_api::Call::find(&route.path.to_ascii_lowercase()) {
         let incoming = request::Incoming {

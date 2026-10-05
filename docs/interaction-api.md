@@ -18,7 +18,9 @@ Errors are JSON, `{"error": "<code>"}`, with 400 for a bad request and 404 when 
 ## Login
 
 1. The authorize endpoint sends the browser to `protocol.user_interaction.login_url` with `ReturnUrl=…` (the parameter name is `login_return_url_parameter`).
-2. `GET /interaction/login?returnUrl=…`: the authorization context, or 404 when the return URL isn't a valid pending request. Use it to show who is asking.
+2. `GET /interaction/login?returnUrl=…`: the authorization context, or 404 when the return URL isn't a valid pending request. Use it to show who is asking. It also has:
+   - `identityProviders`: the upstream providers this client may sign in through, each `{scheme, displayName, challengeUrl}`. Render each `challengeUrl` as a link: it starts the sign-in at that provider ([federation.md](federation.md)).
+   - `enableLocalLogin`: whether the client allows your own login form. When it is `false`, show only the providers.
 3. The UI authenticates the user however it likes.
 4. `POST /interaction/login`:
 

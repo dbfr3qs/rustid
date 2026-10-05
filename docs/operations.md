@@ -90,6 +90,7 @@ Each job's first run comes after a random part of its interval (`fuzz_*`), so in
 - **Admin API** (`[admin]`): every key is at least 32 characters. Serve it over TLS, and give each caller its own key. See [admin-api.md](admin-api.md).
 - **Dynamic client registration** (`[dynamic_client_registration]`): callers need one of `initial_access_tokens` (each at least 32 characters). `open = true` lets anyone who reaches the endpoint create clients, so keep it to test environments. See [dynamic-client-registration.md](dynamic-client-registration.md).
 - **Interaction API** (`[interaction] api_keys`): every key is at least 16 characters. Only the UI app's back end calls it. See [interaction-api.md](interaction-api.md).
+- **Upstream federation** (`identity_providers_file`): give client secrets as `secretEnv`, so the providers file holds no secrets. Providers must be `https`; `[federation] allow_insecure_loopback` is for tests and demos. `[federation] ca_file` adds CA certificates for providers behind a private PKI. See [federation.md](federation.md).
 - **Hooks:** HTTPS, or HTTP to loopback only. Each call carries a JWT the server signs, so a hook can tell the server's calls from anyone else's. See [hooks.md](hooks.md).
 - **The reference UI** (`[reference_ui]`) signs people in without real credentials. It is for tests and the demo, never production.
 - **A migration bundle** holds private keys in the clear. Keep it owner-only, and delete it after the import ([migration.md](migration.md)).

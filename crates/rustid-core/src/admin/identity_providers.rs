@@ -343,3 +343,56 @@ impl IdentityProviderAdmin {
         Ok(paginate(items, range))
     }
 }
+
+/// Imports providers from the configuration file: each is created, or
+/// updated when it differs from the stored one (compared opened, since a
+/// secret is sealed afresh each time), so an unchanged file keeps versions.
+/// Providers the file doesn't name are kept.
+pub async fn import(
+    store: &dyn ConfigurationStore,
+    protector: &DataProtector,
+    providers: &[IdentityProvider],
+) -> Result<(), StoreError> {
+    for config in providers {
+        match store.read_by_key(KIND, &config.scheme).await? {
+            Some(existing) => {
+                if opened(&existing, protector)
+                    .map(|o| o.config == *config)
+                    .unwrap_or(false)
+                {
+                    continue;
+                }
+                let entity = StoredEntity {
+                    id: existing.id,
+                    key: config.scheme.clone(),
+                    version: existing.version,
+                    data: sealed(config, protector),
+                };
+                match store.update(KIND, &entity).await? {
+                    UpdateOutcome::Updated => {}
+                    other => {
+                        return Err(backend(format!(
+                            "importing identity provider {}: {other:?}",
+                            config.scheme
+                        )));
+                    }
+                }
+            }
+            None => {
+                let entity = StoredEntity {
+                    id: EntityId::new_v7(),
+                    key: config.scheme.clone(),
+                    version: 1,
+                    data: sealed(config, protector),
+                };
+                if store.create(KIND, &entity).await? == CreateOutcome::KeyExists {
+                    return Err(backend(format!(
+                        "importing identity provider {}: it was created meanwhile",
+                        config.scheme
+                    )));
+                }
+            }
+        }
+    }
+    Ok(())
+}

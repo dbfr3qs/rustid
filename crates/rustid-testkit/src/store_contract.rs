@@ -4180,3 +4180,103 @@ pub async fn connected_application_store(store: Arc<dyn rustid_core::stores::Con
     let oldest_sp = at(&entity_id, "Connected App Test SP");
     assert!(newest_client < oldest_sp, "clients come first");
 }
+
+/// Identity providers through the admin service, and the configuration
+/// file's import: secrets stored encrypted, unchanged providers keep their
+/// version on re-import, changed ones bump it, admin-created ones stay.
+pub async fn identity_provider_admin(store: Arc<dyn rustid_core::stores::ConfigurationStore>) {
+    use rustid_core::admin::identity_providers::{
+        IdentityProviderAdmin, IdentityProviderInput, import,
+    };
+    use rustid_core::federation::provider::IdentityProvider;
+    use rustid_core::stores::EntityKind;
+    let protector = Arc::new(
+        rustid_core::data_protection::DataProtector::new([("k", [9u8; 32].as_slice())]).unwrap(),
+    );
+    let admin = IdentityProviderAdmin::new(protector.clone());
+    let p = format!("idp{}-", Utc::now().timestamp_nanos_opt().unwrap());
+    let provider = |scheme: &str, name: &str| -> serde_json::Value {
+        serde_json::json!({ "scheme": scheme, "displayName": name, "authority": "https://up.example",
+                "clientId": "rustid", "clientAuthentication": { "secret": "s3cret" } })
+    };
+    let admin_made = format!("{p}admin");
+    let saved = admin
+        .create(
+            store.as_ref(),
+            IdentityProviderInput::from_json(provider(&admin_made, "Admin")).unwrap(),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    let raw = store
+        .read(EntityKind::IdentityProvider, &saved.id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(!raw.data.to_string().contains("s3cret"), "stored encrypted");
+    assert_eq!(raw.key, admin_made);
+
+    let from_file = format!("{p}file");
+    let file = |name: &str| -> Vec<IdentityProvider> {
+        vec![serde_json::from_value(provider(&from_file, name)).unwrap()]
+    };
+    import(store.as_ref(), &protector, &file("File"))
+        .await
+        .unwrap();
+    let first = store
+        .read_by_key(EntityKind::IdentityProvider, &from_file)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(first.version, 1);
+    // The same file again: unchanged, though its secret is sealed afresh.
+    import(store.as_ref(), &protector, &file("File"))
+        .await
+        .unwrap();
+    let again = store
+        .read_by_key(EntityKind::IdentityProvider, &from_file)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!((again.id, again.version), (first.id, 1));
+    // A changed entry: the same id, the next version.
+    import(store.as_ref(), &protector, &file("File, renamed"))
+        .await
+        .unwrap();
+    let changed = store
+        .read_by_key(EntityKind::IdentityProvider, &from_file)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!((changed.id, changed.version), (first.id, 2));
+    assert_eq!(changed.data["displayName"], "File, renamed");
+    // The admin-made provider is untouched.
+    let kept = store
+        .read_by_key(EntityKind::IdentityProvider, &admin_made)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(kept.version, 1);
+    // Listed in creation order, both present.
+    let listed: Vec<String> = store
+        .list(EntityKind::IdentityProvider)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|e| e.key)
+        .filter(|k| k.starts_with(&p))
+        .collect();
+    assert_eq!(listed, [admin_made.clone(), from_file.clone()]);
+    admin
+        .delete(store.as_ref(), &saved.id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        store
+            .read_by_key(EntityKind::IdentityProvider, &admin_made)
+            .await
+            .unwrap()
+            .is_none()
+    );
+}

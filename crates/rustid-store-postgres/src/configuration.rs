@@ -219,6 +219,7 @@ impl ConfigurationStore for PgStore {
         let order = match kind {
             EntityKind::Client => "client_id",
             EntityKind::SamlServiceProvider => "ordinal, entity_id",
+            EntityKind::IdentityProvider => "ordinal, scheme",
             _ => "ordinal, name",
         };
         sqlx::query(sqlx::AssertSqlSafe(format!(

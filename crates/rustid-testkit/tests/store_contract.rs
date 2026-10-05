@@ -93,6 +93,7 @@ async fn memory_stores_meet_the_contract() {
     )
     .await;
     store_contract::connected_application_store(saml_configuration.clone()).await;
+    store_contract::identity_provider_admin(configuration.clone()).await;
     store_contract::resource_store_lookups(configuration.as_ref()).await;
     store_contract::client_store(configuration.as_ref()).await;
     store_contract::client_configuration(configuration.clone(), configuration.clone()).await;
@@ -166,6 +167,7 @@ async fn postgres_stores_meet_the_contract() {
     store_contract::saml_configuration_reaches_runtime(Arc::new(store.clone()), &store).await;
     store_contract::saml_service_provider_admin(Arc::new(store.clone()), &store).await;
     store_contract::connected_application_store(Arc::new(store.clone())).await;
+    store_contract::identity_provider_admin(Arc::new(store.clone())).await;
     {
         // Imports give ids at version 1; a changed provider's version bumps.
         use rustid_core::stores::{ConfigurationStore, EntityKind};

@@ -7,6 +7,17 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-06
+
+### Added
+
+- Identity providers through the admin API (`/admin/identity-providers`), on the memory and Postgres stores. Inline secrets and private keys are stored encrypted with the data protection key ring and never read back. A provider created, changed, disabled or deleted through admin takes effect at the next sign-in.
+- Providers can carry their `private_key_jwt` key and certificate inline (`key`, `certificate`).
+
+### Changed
+
+- `identity_providers_file` is imported into the configuration store at start, like the other configuration files: on Postgres, re-imported on every start, overwriting the providers it defines. A provider removed from the file is no longer removed on Postgres: delete or disable it through the admin API as well.
+
 ## [0.4.0] - 2026-10-05
 
 ### Added
@@ -64,7 +75,8 @@ The first release.
 - Static Linux binaries (x86_64 and aarch64, musl) and a multi-arch container image on `ghcr.io/dbfr3qs/rustid`.
 - The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Signing and JARM) and FAPI-CIBA included.
 
-[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/dbfr3qs/rustid/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/dbfr3qs/rustid/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/dbfr3qs/rustid/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/dbfr3qs/rustid/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/dbfr3qs/rustid/compare/v0.1.2...v0.2.0

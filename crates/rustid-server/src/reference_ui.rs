@@ -566,11 +566,37 @@ async fn login_form(
     let error = error
         .map(|e| format!("<p class=\"error\">{}</p>", html::escape(e)))
         .unwrap_or_default();
+    // A button per upstream provider the client may sign in through.
+    let providers: String = context["identityProviders"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .map(|p| {
+                    format!(
+                        "<p><a class=\"button\" href=\"{}\">Sign in with {}</a></p>",
+                        html::escape(p["challengeUrl"].as_str().unwrap_or_default()),
+                        html::escape(p["displayName"].as_str().unwrap_or_default()),
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    if context["enableLocalLogin"] == Value::Bool(false) {
+        return html::page(
+            StatusCode::OK,
+            "Sign in",
+            &format!(
+                "<h1>Sign in</h1><p><strong>{client}</strong> asks for <code>{scopes}</code>.</p>{error}{providers}",
+                client = html::escape(client),
+                scopes = html::escape(&scopes.join(" ")),
+            ),
+        );
+    }
     html::page(
         StatusCode::OK,
         "Sign in",
         &format!(
-            "<h1>Sign in</h1><p><strong>{client}</strong> asks for <code>{scopes}</code>.</p>{error}\
+            "<h1>Sign in</h1><p><strong>{client}</strong> asks for <code>{scopes}</code>.</p>{error}{providers}\
              <form method=\"post\" autocomplete=\"off\">\
              <input type=\"hidden\" name=\"returnUrl\" value=\"{return_url}\">\
              <label for=\"username\">Username</label>\

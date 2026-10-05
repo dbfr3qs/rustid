@@ -76,6 +76,13 @@ pub struct ServerConfig {
     /// Clients in the fixture format. Loaded from Phase 1b onward.
     #[serde(default)]
     pub clients_file: Option<PathBuf>,
+    /// Upstream identity providers (a JSON array): signing in through
+    /// other OpenID Connect providers (`docs/federation.md`).
+    #[serde(default)]
+    pub identity_providers_file: Option<PathBuf>,
+    /// How upstream providers are reached.
+    #[serde(default)]
+    pub federation: FederationConfig,
     #[serde(default)]
     pub client_authentication: ClientAuthenticationConfig,
     #[serde(default)]
@@ -356,6 +363,17 @@ pub struct BackChannelLogoutConfig {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
+pub struct FederationConfig {
+    /// Accept `http://localhost` and `http://127.0.0.1` authorities, for
+    /// tests and local demos only.
+    pub allow_insecure_loopback: bool,
+    /// CA certificates (PEM) to trust, besides the system's, when reaching
+    /// upstream providers.
+    pub ca_file: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct RequestUriConfig {
     /// CA certificates (PEM) to trust, besides the system's, when fetching
     /// request objects by reference.
@@ -567,6 +585,8 @@ impl ServerConfig {
         for file in [
             self.resources_file.as_mut(),
             self.clients_file.as_mut(),
+            self.identity_providers_file.as_mut(),
+            self.federation.ca_file.as_mut(),
             self.reference_ui.users_file.as_mut(),
             self.back_channel_logout.ca_file.as_mut(),
             self.request_uri.ca_file.as_mut(),

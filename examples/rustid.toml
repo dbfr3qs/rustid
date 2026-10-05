@@ -7,12 +7,14 @@ listen = "127.0.0.1:8080"
 resources_file = "../fixtures/resources.json"
 # Clients in the fixture format (fixtures/clients.json).
 # clients_file = "clients.json"
+# Upstream OpenID Connect providers users can sign in through, a JSON array
+# (docs/federation.md).
+# identity_providers_file = "identity-providers.json"
 # A path prefix, as a path base: requests may arrive with or
 # without it. Starts with "/", doesn't end with one.
 # path_base = "/identity"
 
-# Accept and advertise private_key_jwt client authentication
-# AddJwtBearerClientAuthentication).
+# Accept and advertise private_key_jwt client authentication.
 # [client_authentication]
 # private_key_jwt = false
 
@@ -34,6 +36,13 @@ resources_file = "../fixtures/resources.json"
 # system's, when posting logout tokens to clients.
 # [back_channel_logout]
 # ca_file = "client-ca.pem"
+
+# Reaching upstream identity providers: CA certificates to trust besides the
+# system's, and http://localhost or http://127.0.0.1 authorities allowed (for
+# tests and local demos only).
+# [federation]
+# ca_file = "upstream-ca.pem"
+# allow_insecure_loopback = false
 
 # Fetching request objects by reference (protocol.endpoints.enable_jwt_request_uri):
 # CA certificates to trust besides the system's.
@@ -280,7 +289,7 @@ enabled = false
 # users_file = "../fixtures/users.json"
 # default_user = "alice"
 # interactive = false
-# users_profile_service = false   # the users file answers profile claims (AddTestUsers)
+# users_profile_service = false   # the users file answers profile claims
 
 # The admin HTTP API under /admin:
 # create, read, update (If-Match: "<version>"), delete and query clients, API

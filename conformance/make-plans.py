@@ -258,7 +258,7 @@ def fapi2_browser(base: str, prefix: str) -> tuple:
         ],
     }
     overrides = {
-        # AuthorizeErrorPage: rustid's error page.
+        # rustid's error page.
         prefix + "ensure-unsigned-authorization-request-without-using-par-fails": [error],
         prefix + "par-attempt-to-use-request_uri-for-different-client": [error],
         prefix + "par-attempt-to-use-expired-request_uri": [error],

@@ -3,6 +3,7 @@
 pub mod back_channel;
 pub mod config;
 mod configuration;
+pub mod federation;
 pub mod forwarded;
 mod html;
 pub mod import;
@@ -404,6 +405,33 @@ async fn build_saml(
     }))
 }
 
+/// The upstream identity providers, and the client that reaches them.
+fn build_federation(config: &ServerConfig) -> anyhow::Result<rustid_core::federation::Federation> {
+    let Some(path) = &config.identity_providers_file else {
+        return Ok(Default::default());
+    };
+    let insecure = config.federation.allow_insecure_loopback;
+    let providers = federation::load_providers(path, insecure, &|name| std::env::var(name).ok())
+        .with_context(|| format!("loading {}", path.display()))?;
+    if let Some(clients) = &config.clients_file {
+        let clients = rustid_core::clients::Clients::load(clients)?;
+        for (client, scheme) in federation::unknown_restrictions(&clients.clients, &providers) {
+            tracing::warn!(%client, %scheme, "a client's identityProviderRestrictions names an identity provider that isn't configured");
+        }
+    }
+    let upstream =
+        federation::HttpUpstreamClient::with_ca_file(config.federation.ca_file.as_deref())?;
+    tracing::info!(
+        providers = providers.iter().count(),
+        "upstream federation is configured"
+    );
+    Ok(rustid_core::federation::Federation::new(
+        providers,
+        std::sync::Arc::new(upstream),
+        insecure,
+    ))
+}
+
 async fn build_state_and_saml(
     config: &ServerConfig,
 ) -> anyhow::Result<(AppState, Option<rustid_saml::Saml>)> {
@@ -450,6 +478,7 @@ async fn build_state_and_saml(
         });
     let manager = key_manager(config, pg).await?;
     let keys = KeyService::new(material, manager);
+    stores.federation = std::sync::Arc::new(build_federation(config)?);
     stores.request_uri = std::sync::Arc::new(request_uri::HttpRequestUriFetcher::with_ca_file(
         config.request_uri.ca_file.as_deref(),
     )?);

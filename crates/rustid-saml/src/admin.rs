@@ -525,7 +525,7 @@ fn subject(certificate: &x509_parser::certificate::X509Certificate<'_>) -> Strin
                     let value = attribute
                         .as_str()
                         .map(str::to_owned)
-                        .unwrap_or_else(|_| format!("{:?}", attribute.attr_value().data));
+                        .unwrap_or_else(|_| other_value(attribute.attr_value()));
                     format!("{name}={value}")
                 })
                 .collect::<Vec<_>>()
@@ -533,6 +533,24 @@ fn subject(certificate: &x509_parser::certificate::X509Certificate<'_>) -> Strin
         })
         .collect();
     rdns.into_iter().rev().collect::<Vec<_>>().join(", ")
+}
+
+/// A value that isn't a UTF-8 or printable string: a BMPString decoded,
+/// otherwise its bytes as RFC 4514's `#` hex.
+fn other_value(value: &x509_parser::der_parser::asn1_rs::Any<'_>) -> String {
+    use x509_parser::der_parser::asn1_rs::Tag;
+    if value.tag() == Tag::BmpString && value.data.len() % 2 == 0 {
+        let units: Vec<u16> = value
+            .data
+            .chunks_exact(2)
+            .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
+            .collect();
+        if let Ok(text) = String::from_utf16(&units) {
+            return text;
+        }
+    }
+    let hex: String = value.data.iter().map(|b| format!("{b:02x}")).collect();
+    format!("#{hex}")
 }
 
 fn certificate_configuration(
@@ -807,5 +825,24 @@ impl SamlServiceProviderAdmin {
             order.then_with(|| a.id.cmp(&b.id))
         });
         Ok(paginate(items, range))
+    }
+}
+
+#[cfg(test)]
+mod subject_tests {
+    #[test]
+    fn non_utf8_string_values_are_written_as_text_or_hex() {
+        let mut params = rcgen::CertificateParams::default();
+        let mut name = rcgen::DistinguishedName::new();
+        name.push(
+            rcgen::DnType::CommonName,
+            rcgen::DnValue::BmpString(rcgen::string::BmpString::try_from("Zoë").unwrap()),
+        );
+        name.push(rcgen::DnType::OrganizationName, "Example");
+        params.distinguished_name = name;
+        let key = rcgen::KeyPair::generate().unwrap();
+        let der = params.self_signed(&key).unwrap().der().to_vec();
+        let (_, parsed) = x509_parser::parse_x509_certificate(&der).unwrap();
+        assert_eq!(super::subject(&parsed), "O=Example, CN=Zoë");
     }
 }

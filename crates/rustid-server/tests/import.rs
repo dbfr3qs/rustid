@@ -257,6 +257,28 @@ async fn an_unconfigured_algorithm_warns() {
     );
 }
 
+#[tokio::test]
+async fn a_key_without_the_certificate_its_algorithm_needs_warns() {
+    let dir = tempfile::tempdir().unwrap();
+    let (path, kid) = bundle(dir.path(), "RS256");
+    let config = config(
+        dir.path(),
+        serde_json::json!({ "protocol": { "key_management": {
+            "signing_algorithms": [{ "name": "RS256", "use_x509_certificate": true }] } } }),
+    );
+    let report = import::run(&config, &path, Some(&dir.path().join("out")))
+        .await
+        .unwrap();
+    assert!(
+        report
+            .warnings
+            .iter()
+            .any(|w| w.contains(&kid) && w.contains("use_x509_certificate")),
+        "{:?}",
+        report.warnings
+    );
+}
+
 /// A fresh database on the TEST_POSTGRES_URL server.
 async fn scratch_database(name: &str) -> Option<String> {
     let base = std::env::var("TEST_POSTGRES_URL").ok()?;

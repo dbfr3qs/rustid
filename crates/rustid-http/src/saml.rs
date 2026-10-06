@@ -115,7 +115,9 @@ pub(crate) async fn single_sign_on(
     };
     const OPERATION: &str = "SingleSignOnServiceEndpoint";
     let options = &saml.options;
-    let unhandled = |detail: &str| crate::response::internal_error(state, info, OPERATION, detail);
+    let unhandled = |detail: &str| {
+        crate::response::internal_error_of(state, info, "SamlError", OPERATION, detail)
+    };
 
     // Reading a POST's form throws unless it is a form.
     let mut form: Vec<(String, String)> = Vec::new();
@@ -468,7 +470,13 @@ async fn post_response(
         AUTO_POST_SCRIPT_HASH, auto_post_html, sign_response as sign, write_response,
     };
     let fail = |detail: &str| {
-        crate::response::internal_error(state, info, "Saml2SsoResponseGenerator", detail)
+        crate::response::internal_error_of(
+            state,
+            info,
+            "SamlError",
+            "Saml2SsoResponseGenerator",
+            detail,
+        )
     };
     // Only HTTP-POST delivers responses.
     if request.acs.binding != rustid_saml::model::Binding::HttpPost {
@@ -1097,7 +1105,13 @@ async fn logout_response(
     use rustid_saml::logout::{LogoutResponseOut, slo_redirect_endpoint, write_logout_response};
     use rustid_saml::response::{STATUS_SUCCESS, Status};
     let fail = |detail: &str| {
-        crate::response::internal_error(state, info, "Saml2SloResponseGenerator", detail)
+        crate::response::internal_error_of(
+            state,
+            info,
+            "SamlError",
+            "Saml2SloResponseGenerator",
+            detail,
+        )
     };
     let issuer = rustid_saml::metadata::saml_issuer(
         &saml.options,
@@ -1205,7 +1219,9 @@ pub(crate) async fn single_logout(
     };
     const OPERATION: &str = "SingleLogoutServiceEndpoint";
     let options = &saml.options;
-    let unhandled = |detail: &str| crate::response::internal_error(state, info, OPERATION, detail);
+    let unhandled = |detail: &str| {
+        crate::response::internal_error_of(state, info, "SamlError", OPERATION, detail)
+    };
     if method != Method::GET && method != Method::POST {
         return front_channel_error(state, "Method not allowed", None);
     }

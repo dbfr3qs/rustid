@@ -31,8 +31,8 @@ pub enum SamlCertificateError {
         "Cannot auto-wrap a manually registered RSA key as an X509 certificate for SAML signing. Use an X509 certificate directly or enable automatic key management."
     )]
     StaticRsaKey,
-    #[error("creating a SAML signing certificate for key {0} failed")]
-    Certificate(String),
+    #[error("creating a SAML signing certificate failed: {0}")]
+    Certificate(#[source] crate::keys::KeyError),
     #[error(transparent)]
     Store(#[from] StoreError),
 }
@@ -160,7 +160,7 @@ impl KeyService {
         ) else {
             return Ok(None);
         };
-        let cert = cert.map_err(|_| SamlCertificateError::Certificate(container.id.clone()))?;
+        let cert = cert.map_err(SamlCertificateError::Certificate)?;
         let mut cache = self
             .saml_certificates
             .lock()

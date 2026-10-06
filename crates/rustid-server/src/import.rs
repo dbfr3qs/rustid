@@ -507,18 +507,27 @@ pub async fn run(
         skipped: bundle.skipped.clone(),
         ..Default::default()
     };
-    let configured: Vec<&str> = key_management
-        .signing_algorithms
-        .iter()
-        .map(|a| a.name.as_str())
-        .collect();
+    let configured = |alg: &str| {
+        key_management
+            .signing_algorithms
+            .iter()
+            .find(|a| a.name == alg)
+    };
     for key in &bundle.signing_keys {
         if !key_management.enabled {
             report.warnings.push(format!(
                 "signing key {} is stored, but key management is off: it isn't published or used",
                 key.id
             ));
-        } else if !configured.contains(&key.algorithm.as_str()) {
+        } else if let Some(alg) = configured(&key.algorithm) {
+            if alg.use_x509_certificate && key.certificate.is_none() {
+                report.warnings.push(format!(
+                    "signing key {} ({}) has no certificate, but use_x509_certificate is on for \
+                     {}: it validates tokens but never signs",
+                    key.id, key.algorithm, key.algorithm
+                ));
+            }
+        } else {
             report.warnings.push(format!(
                 "signing key {} ({}) is stored, but key management isn't configured for {}: \
                  add it to protocol.key_management.signing_algorithms to publish it",

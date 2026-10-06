@@ -214,12 +214,19 @@ async fn a_certificate_bound_token_is_served_with_its_certificate() {
         Ok("mtls".to_owned())
     );
     let other = certificate("someone else");
-    for refused in [
-        served(&f, &bearer, Some(&other)).await,
-        served(&f, &bearer, None).await,
+    for (refused, description) in [
+        (
+            served(&f, &bearer, Some(&other)).await,
+            "The access token is bound to another client certificate",
+        ),
+        (
+            served(&f, &bearer, None).await,
+            "The access token is bound to a client certificate, and none was presented",
+        ),
     ] {
-        let challenge = refused.expect_err("refused");
-        assert_eq!(challenge.bearer_error.unwrap().0, "invalid_token");
+        let (error, said) = refused.expect_err("refused").bearer_error.unwrap();
+        assert_eq!(error, "invalid_token");
+        assert_eq!(said.as_deref(), Some(description));
     }
 }
 

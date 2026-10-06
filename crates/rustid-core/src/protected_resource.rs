@@ -133,11 +133,20 @@ pub async fn authenticate(
     } else if let Some(bound) = cnf.as_ref().and_then(certificate_thumbprint) {
         // RFC 8705: a certificate-bound token is a bearer token over a
         // connection presenting that certificate.
-        if request.client_certificate.map(|c| c.x5t_s256.as_str()) != Some(bound.as_str()) {
+        let refused = match request.client_certificate {
+            None => {
+                Some("The access token is bound to a client certificate, and none was presented")
+            }
+            Some(c) if c.x5t_s256 != bound => {
+                Some("The access token is bound to another client certificate")
+            }
+            Some(_) => None,
+        };
+        if let Some(description) = refused {
             return Ok(Err(Challenge {
                 bearer_error: Some((
                     crate::access_tokens::INVALID_TOKEN.to_owned(),
-                    Some("The access token is bound to another client certificate".to_owned()),
+                    Some(description.to_owned()),
                 )),
                 ..Challenge::default()
             }));

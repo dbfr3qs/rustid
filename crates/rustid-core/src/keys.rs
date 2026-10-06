@@ -116,6 +116,8 @@ pub enum KeyError {
     CertificateMismatch { kid: String, path: String },
     #[error("key id {kid} is configured more than once")]
     DuplicateKid { kid: String },
+    #[error("key {kid}: making its certificate failed: {reason}")]
+    Certificate { kid: String, reason: String },
 }
 
 enum Family {
@@ -314,12 +316,13 @@ impl LoadedKey {
         let Signer::Rsa(pair) = &self.signer else {
             return None;
         };
-        let failed = || KeyError::UnsupportedAlgorithm {
+        let failed = |reason: String| KeyError::Certificate {
             kid: self.kid.clone(),
-            alg: self.alg.clone(),
+            reason,
         };
-        let to_offset = |t: chrono::DateTime<chrono::Utc>| {
-            time::OffsetDateTime::from_unix_timestamp(t.timestamp()).map_err(|_| failed())
+        let to_offset = |t: chrono::DateTime<chrono::Utc>, which: &str| {
+            time::OffsetDateTime::from_unix_timestamp(t.timestamp())
+                .map_err(|e| failed(format!("its {which} time {t}: {e}")))
         };
         let build = || -> Result<Vec<u8>, KeyError> {
             let mut params = rcgen::CertificateParams::default();
@@ -330,11 +333,11 @@ impl LoadedKey {
             );
             params.key_usages = vec![rcgen::KeyUsagePurpose::DigitalSignature];
             params.serial_number = Some(rcgen::SerialNumber::from_slice(serial));
-            params.not_before = to_offset(not_before)?;
-            params.not_after = to_offset(not_after)?;
+            params.not_before = to_offset(not_before, "not before")?;
+            params.not_after = to_offset(not_after, "not after")?;
             let cert = params
                 .self_signed(&RsaCertificateSigner(pair))
-                .map_err(|_| failed())?;
+                .map_err(|e| failed(e.to_string()))?;
             Ok(cert.der().to_vec())
         };
         Some(build())
@@ -633,4 +636,23 @@ fn der_element(input: &[u8], tag: u8) -> Option<(&[u8], &[u8])> {
         (len, &rest[count..])
     };
     (rest.len() >= len).then(|| (&rest[..len], &rest[len..]))
+}
+
+#[cfg(test)]
+mod certificate_tests {
+    use super::*;
+
+    #[test]
+    fn a_certificate_that_cant_be_made_says_why() {
+        let der = generate_pkcs8("RS256", 2048).unwrap();
+        let key = LoadedKey::from_der("k1", "RS256", &der, None, &KeyOrigin::default()).unwrap();
+        let now = chrono::Utc::now();
+        let far = chrono::DateTime::<chrono::Utc>::MAX_UTC;
+        let error = key
+            .rsa_certificate("idp", &[1], now, far)
+            .unwrap()
+            .unwrap_err();
+        assert!(matches!(error, KeyError::Certificate { .. }), "{error:?}");
+        assert!(error.to_string().contains("not after"), "{error}");
+    }
 }

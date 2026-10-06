@@ -257,23 +257,20 @@ pub struct ValidatedAuthnRequest {
     pub requested_claim_types: Vec<String>,
 }
 
-/// A status code and description;
-/// the provider when it was resolved.
+/// A status code and description.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationFailure {
     pub status: &'static str,
     pub description: String,
-    pub sp_resolved: bool,
 }
 
 pub type Validation = Result<ValidatedAuthnRequest, ValidationFailure>;
 
 /// The authn request validator, in order.
 pub fn validate_authn_request(input: &ValidationInput<'_>) -> Validation {
-    let fail = |status, description: &str, sp_resolved| ValidationFailure {
+    let fail = |status, description: &str| ValidationFailure {
         status,
         description: description.to_owned(),
-        sp_resolved,
     };
     let request = input.request;
     let options = input.options;
@@ -282,20 +279,17 @@ pub fn validate_authn_request(input: &ValidationInput<'_>) -> Validation {
         return Err(fail(
             STATUS_REQUESTER,
             "Missing SP EntityID in AuthnRequest",
-            false,
         ));
     }
     let Some(sp) = input.sp.filter(|sp| sp.enabled) else {
-        return Err(fail(STATUS_REQUESTER, "Invalid SP EntityId.", false));
+        return Err(fail(STATUS_REQUESTER, "Invalid SP EntityId."));
     };
     if sp.assertion_consumer_service_urls.is_empty() {
         return Err(fail(
             STATUS_RESPONDER,
             "No Assertion Consumer Service URLs found.",
-            false,
         ));
     }
-    let fail = |status, description: &str| fail(status, description, true);
     // Signature trust.
     let require_signed = sp
         .require_signed_authn_requests

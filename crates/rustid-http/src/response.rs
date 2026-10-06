@@ -67,8 +67,19 @@ pub(crate) fn internal_error(
     operation: &str,
     detail: &str,
 ) -> Response {
+    internal_error_of(state, info, "StoreError", operation, detail)
+}
+
+/// As [`internal_error`], with the failure's kind for telemetry.
+pub(crate) fn internal_error_of(
+    state: &crate::ProtocolState,
+    info: &rustid_core::events::RequestInfo,
+    kind: &str,
+    operation: &str,
+    detail: &str,
+) -> Response {
     tracing::error!(operation, detail, "request failed");
-    rustid_core::telemetry::internal_error("StoreError", operation);
+    rustid_core::telemetry::internal_error(kind, operation);
     state.events.raise(
         info,
         chrono::Utc::now(),

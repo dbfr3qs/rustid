@@ -22,5 +22,6 @@ url = { workspace = true }
 x509-parser = { workspace = true }
 
 [dev-dependencies]
+rcgen = { workspace = true }
 proptest = { workspace = true }
 tokio = { workspace = true }

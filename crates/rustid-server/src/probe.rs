@@ -21,12 +21,23 @@ pub fn fallback_allowed(url: &str) -> bool {
         }
 }
 
+/// `url` over https, whatever case its scheme was written in.
+fn https_url(url: &str) -> String {
+    let Ok(mut parsed) = url::Url::parse(url) else {
+        return url.to_owned();
+    };
+    match parsed.set_scheme("https") {
+        Ok(()) => parsed.to_string(),
+        Err(()) => url.to_owned(),
+    }
+}
+
 /// The exit code for one GET of `url`: 0 for a 2xx within 5 seconds.
 pub async fn probe(url: &str) -> i32 {
     match get(url, false).await {
         Ok(code) => code,
         Err(error) if fallback_allowed(url) => {
-            let https = url.replacen("http://", "https://", 1);
+            let https = https_url(url);
             match get(&https, true).await {
                 Ok(code) => code,
                 Err(tls_error) => {
@@ -59,5 +70,20 @@ async fn get(url: &str, accept_any_certificate: bool) -> Result<i32, reqwest::Er
     } else {
         eprintln!("probe: {url} answered {}", response.status());
         Ok(1)
+    }
+}
+
+#[cfg(test)]
+mod https_url_tests {
+    #[test]
+    fn the_scheme_is_swapped_in_any_case() {
+        assert_eq!(
+            super::https_url("HTTP://localhost:8080/ready"),
+            "https://localhost:8080/ready"
+        );
+        assert_eq!(
+            super::https_url("http://127.0.0.1/ready"),
+            "https://127.0.0.1/ready"
+        );
     }
 }

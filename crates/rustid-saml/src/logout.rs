@@ -106,30 +106,26 @@ pub fn validate_logout_request(
     input: &LogoutValidationInput<'_>,
 ) -> Result<bool, crate::sso::ValidationFailure> {
     use crate::sso::{STATUS_REQUESTER, STATUS_VERSION_MISMATCH, ValidationFailure};
-    let fail = |status, description: &str, sp_resolved| ValidationFailure {
+    let fail = |status, description: &str| ValidationFailure {
         status,
         description: description.to_owned(),
-        sp_resolved,
     };
     let request = input.request;
     if request.issuer.is_none() {
         return Err(fail(
             STATUS_REQUESTER,
             "Missing SP EntityID in LogoutRequest",
-            false,
         ));
     }
     let Some(sp) = input.sp.filter(|sp| sp.enabled) else {
-        return Err(fail(STATUS_REQUESTER, "Invalid SP EntityId", false));
+        return Err(fail(STATUS_REQUESTER, "Invalid SP EntityId"));
     };
     if sp.single_logout_service_urls.is_empty() {
         return Err(fail(
             STATUS_REQUESTER,
             "SP does not have any SingleLogoutServiceUrls configured",
-            false,
         ));
     }
-    let fail = |status, description: &str| fail(status, description, true);
     if !request.has_trusted_signature() {
         return Err(fail(
             STATUS_REQUESTER,

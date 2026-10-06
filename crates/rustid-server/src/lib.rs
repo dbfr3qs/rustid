@@ -82,7 +82,8 @@ pub fn config_warnings(config: &ServerConfig) -> Vec<String> {
     {
         warnings.push(
             "protocol.outbox_processor.enable_processor is off: expired server-side \
-             sessions queue logout notifications that nothing delivers"
+             sessions queue logout notifications that nothing delivers, and their \
+             coordinated clients' tokens are never revoked"
                 .to_owned(),
         );
     }

@@ -222,6 +222,14 @@ impl IdentityProvider {
             if !multi.tenants.iter().all(|t| is_guid(t)) {
                 return invalid("`multiTenant.tenants` entries must be tenant ids (GUIDs)");
             }
+            let mut seen = std::collections::HashSet::new();
+            if !multi
+                .tenants
+                .iter()
+                .all(|t| seen.insert(t.to_ascii_lowercase()))
+            {
+                return invalid("`multiTenant.tenants` lists a tenant twice");
+            }
         }
         if let Some(alg) = &self.id_token_signed_response_alg
             && !ASYMMETRIC_ALGORITHMS.contains(&alg.as_str())

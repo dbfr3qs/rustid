@@ -1407,3 +1407,25 @@ async fn a_failed_sid_record_keeps_the_sign_in() {
     signed_in_upstream(&f, &mut b).await;
     assert_eq!(session(&mut b).await["idp"], "up");
 }
+
+#[tokio::test]
+async fn multi_tenant_sign_out_goes_upstream() {
+    let f = federated_custom(
+        Default::default(),
+        |p| {
+            entra(p);
+            sign_out_on(p);
+        },
+        true,
+    );
+    tenant(&f, TENANT);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let reply = sign_out(&mut b).await;
+    assert_eq!(reply.status, StatusCode::FOUND, "{}", reply.body);
+    assert!(
+        reply.location().starts_with("https://up.example/endsession?"),
+        "{}",
+        reply.location()
+    );
+}

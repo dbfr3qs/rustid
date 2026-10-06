@@ -1277,3 +1277,108 @@ async fn a_failing_replay_cache_is_its_own_failure() {
     assert_eq!(failure.reason(), "replay_unavailable");
     assert_eq!(failure.check(), None);
 }
+
+#[test]
+fn the_tenant_placeholder_must_be_a_path_segment() {
+    let mut m = metadata();
+    // Entra's shared endpoint, as published.
+    m.issuer = "https://login.microsoftonline.com/{tenantid}/v2.0".into();
+    m.check(
+        "https://login.microsoftonline.com/organizations/v2.0",
+        false,
+        true,
+    )
+    .unwrap();
+    // The host or the scheme is never the tenant.
+    m.issuer = "https://{tenantid}/v2.0".into();
+    assert!(m.check("https://up.example/v2.0", false, true).is_err());
+    m.issuer = "{tenantid}//up.example/v2.0".into();
+    assert!(m.check("https://up.example/v2.0", false, true).is_err());
+    // A trailing slash is kept on both sides, as for single-tenant issuers.
+    m.issuer = "https://up.example/{tenantid}/v2.0/".into();
+    m.check("https://up.example/organizations/v2.0/", false, true)
+        .unwrap();
+}
+
+#[test]
+fn only_the_tenant_segment_is_filled_in() {
+    use rustid_core::federation::upstream::fill_tenant;
+    assert_eq!(
+        fill_tenant(
+            "https://up.example/{tenantid}/v2.0/{tenantid}",
+            "https://up.example/organizations/v2.0/{tenantid}",
+            TENANT_A
+        ),
+        format!("https://up.example/{TENANT_A}/v2.0/{{tenantid}}")
+    );
+}
+
+#[test]
+fn duplicate_tenants_are_refused() {
+    let config: IdentityProvider = serde_json::from_value(json!({
+        "scheme": "entra", "displayName": "Entra", "authority": "https://up.example/organizations/v2.0",
+        "clientId": "abc", "clientAuthentication": { "secret": "s" },
+        "multiTenant": { "tenants": [TENANT_A, TENANT_A.to_uppercase()] },
+    }))
+    .unwrap();
+    assert!(config.validate(false).is_err());
+}
+
+#[tokio::test]
+async fn an_unlisted_tenant_id_is_cut_short_in_the_detail() {
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    let fed = multi_tenant_federation(fake.clone(), &[TENANT_A]);
+    let p = fed.find("up").await.unwrap().unwrap();
+    let c = Correlation::new("up", "/return", NOW);
+    let long = "x".repeat(5000);
+    fake.0.lock().unwrap().token_body =
+        json!({ "id_token": tenant_token(&k, &c.nonce, Some(&long), TENANT_A) });
+    let failure = fed
+        .redeem(&p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap_err();
+    assert_eq!(failure.reason(), "tenant_not_allowed");
+    assert!(failure.detail().len() < 200, "{}", failure.detail().len());
+}
+
+#[tokio::test]
+async fn multi_tenant_discovery_and_userinfo() {
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    let mut config: IdentityProvider = serde_json::from_value(json!({
+        "scheme": "up", "displayName": "Entra", "authority": "https://up.example/organizations/v2.0",
+        "clientId": "abc", "clientAuthentication": { "secret": "s" },
+        "multiTenant": { "tenants": [TENANT_A] }, "userinfo": true, "signOut": true,
+    }))
+    .unwrap();
+    config.validate(false).unwrap();
+    config.scheme = "up".into();
+    fake.0.lock().unwrap().discovery["issuer"] = "https://up.example/{tenantid}/v2.0".into();
+    fake.0.lock().unwrap().discovery["userinfo_endpoint"] = "https://up.example/userinfo".into();
+    let fed = Federation::new(
+        Providers::new(vec![Provider {
+            config,
+            credential: Credential::Basic("s".into()),
+        }])
+        .unwrap(),
+        fake.clone(),
+        false,
+    );
+    let p = fed.find("up").await.unwrap().unwrap();
+    let c = Correlation::new("up", "/return", NOW);
+    fake.0.lock().unwrap().token_body = json!({
+        "id_token": tenant_token(&k, &c.nonce, Some(TENANT_A), TENANT_A),
+        "access_token": "at",
+    });
+    let t = fed
+        .redeem(&p, "code", "https://rp/cb", &c, 300, NOW)
+        .await
+        .unwrap();
+    assert_eq!(t.issuer, format!("https://up.example/{TENANT_A}/v2.0"));
+    assert_eq!(
+        fake.gets("https://up.example/organizations/v2.0/.well-known/openid-configuration"),
+        1
+    );
+    assert_eq!(fake.0.lock().unwrap().bearer, ["at"]);
+}

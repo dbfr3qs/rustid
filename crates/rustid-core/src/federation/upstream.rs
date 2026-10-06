@@ -70,16 +70,41 @@ pub struct Metadata {
 /// The placeholder a multi-tenant provider's issuer has for the tenant.
 pub const TENANT_PLACEHOLDER: &str = "{tenantid}";
 
-/// Whether `issuer` is `authority` with exactly one path segment replaced
-/// by `{tenantid}`, as Entra ID publishes for its shared endpoints.
-pub fn is_tenant_template(issuer: &str, authority: &str) -> bool {
+/// The index of the one `/`-separated part where `issuer` differs from
+/// `authority`, when that part is `{tenantid}` and in the path (after
+/// `scheme://host`).
+fn tenant_segment(issuer: &str, authority: &str) -> Option<usize> {
     let (a, b): (Vec<&str>, Vec<&str>) =
         (issuer.split('/').collect(), authority.split('/').collect());
     if a.len() != b.len() {
-        return false;
+        return None;
     }
-    let differing: Vec<(&&str, &&str)> = a.iter().zip(b.iter()).filter(|(x, y)| x != y).collect();
-    matches!(differing.as_slice(), [(x, _)] if **x == TENANT_PLACEHOLDER)
+    let differing: Vec<usize> = (0..a.len()).filter(|&i| a[i] != b[i]).collect();
+    match differing.as_slice() {
+        [i] if *i >= 3 && a[*i] == TENANT_PLACEHOLDER => Some(*i),
+        _ => None,
+    }
+}
+
+/// Whether `issuer` is `authority` with exactly one path segment replaced
+/// by `{tenantid}`, as Entra ID publishes for its shared endpoints.
+pub fn is_tenant_template(issuer: &str, authority: &str) -> bool {
+    tenant_segment(issuer, authority).is_some()
+}
+
+/// A tenant's issuer: the template with its tenant segment (only that one)
+/// replaced by `tid`. A template that isn't one (see
+/// [`is_tenant_template`]) is returned as it is.
+pub fn fill_tenant(template: &str, authority: &str, tid: &str) -> String {
+    let Some(index) = tenant_segment(template, authority) else {
+        return template.to_owned();
+    };
+    template
+        .split('/')
+        .enumerate()
+        .map(|(i, part)| if i == index { tid } else { part })
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// The algorithms an id token may be signed with.

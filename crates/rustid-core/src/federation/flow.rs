@@ -113,6 +113,7 @@ impl Failure {
 /// The id token checks that follow verify the signature over both.
 fn tenant_issuer(
     multi: &super::provider::MultiTenant,
+    authority: &str,
     metadata: &Metadata,
     id_token: &str,
 ) -> Result<String, Failure> {
@@ -120,13 +121,17 @@ fn tenant_issuer(
         .and_then(|jws| jws.claim_str("tid").map(str::to_owned))
         .ok_or_else(|| Failure::TenantNotAllowed("the id token has no tid".into()))?;
     if !multi.allows(&tid) {
+        // Unverified until the signature is: never more than a GUID's worth.
+        let shown: String = tid.chars().take(64).collect();
         return Err(Failure::TenantNotAllowed(format!(
-            "tenant {tid} isn't one of the provider's tenants"
+            "tenant {shown} isn't one of the provider's tenants"
         )));
     }
-    Ok(metadata
-        .issuer
-        .replace(super::upstream::TENANT_PLACEHOLDER, &tid))
+    Ok(super::upstream::fill_tenant(
+        &metadata.issuer,
+        authority,
+        &tid,
+    ))
 }
 
 fn cache_key(provider: &Provider) -> String {
@@ -421,7 +426,7 @@ impl Federation {
         let algorithms = provider.config.id_token_algorithms(&metadata);
         let issuer = match &provider.config.multi_tenant {
             None => provider.config.authority.clone(),
-            Some(multi) => tenant_issuer(multi, &metadata, id_token)?,
+            Some(multi) => tenant_issuer(multi, &provider.config.authority, &metadata, id_token)?,
         };
         let expect = Expectations {
             issuer: &issuer,
@@ -581,7 +586,7 @@ impl Federation {
         let algorithms = provider.config.id_token_algorithms(&metadata);
         let issuer = match &provider.config.multi_tenant {
             None => provider.config.authority.clone(),
-            Some(multi) => tenant_issuer(multi, &metadata, token)
+            Some(multi) => tenant_issuer(multi, &provider.config.authority, &metadata, token)
                 .map_err(|_| invalid(LogoutTokenCheck::Issuer))?,
         };
         let expect = LogoutExpectations {

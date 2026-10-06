@@ -404,10 +404,12 @@ async fn callback_answer(
         let accepted = match (&provider.config.multi_tenant, iss.as_deref()) {
             (None, Some(i)) => i == provider.config.authority,
             (Some(multi), Some(i)) => multi.tenants.iter().any(|t| {
-                metadata
-                    .issuer
-                    .replace(rustid_core::federation::upstream::TENANT_PLACEHOLDER, t)
-                    .eq_ignore_ascii_case(i)
+                rustid_core::federation::upstream::fill_tenant(
+                    &metadata.issuer,
+                    &provider.config.authority,
+                    t,
+                )
+                .eq_ignore_ascii_case(i)
             }),
             (_, None) => false,
         };
@@ -947,10 +949,11 @@ async fn front_channel_logout(
                 .zip(template.as_deref())
                 .is_some_and(|(multi, template)| {
                     multi.tenants.iter().any(|t| {
-                        iss.eq_ignore_ascii_case(
-                            &template
-                                .replace(rustid_core::federation::upstream::TENANT_PLACEHOLDER, t),
-                        )
+                        iss.eq_ignore_ascii_case(&rustid_core::federation::upstream::fill_tenant(
+                            template,
+                            &provider.config.authority,
+                            t,
+                        ))
                     })
                 })
     });

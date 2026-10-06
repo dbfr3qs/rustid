@@ -50,4 +50,13 @@ impl ReplayCache for PgStore {
         .map_err(backend)?;
         Ok(removed.rows_affected())
     }
+
+    async fn remove(&self, purpose: &str, handle: &str) -> Result<(), StoreError> {
+        sqlx::query("DELETE FROM replay_cache WHERE key = $1")
+            .bind(format!("{purpose}{handle}"))
+            .execute(&self.pool)
+            .await
+            .map_err(backend)?;
+        Ok(())
+    }
 }

@@ -474,6 +474,8 @@ impl Federation {
 pub enum LogoutFailure {
     MetadataUnavailable(String),
     Invalid(super::logout::LogoutTokenCheck),
+    /// The replay cache couldn't be read: a server fault, not the token's.
+    ReplayUnavailable(String),
 }
 
 impl LogoutFailure {
@@ -481,7 +483,7 @@ impl LogoutFailure {
     pub fn check(&self) -> Option<super::logout::LogoutTokenCheck> {
         match self {
             LogoutFailure::Invalid(check) => Some(*check),
-            LogoutFailure::MetadataUnavailable(_) => None,
+            LogoutFailure::MetadataUnavailable(_) | LogoutFailure::ReplayUnavailable(_) => None,
         }
     }
 
@@ -489,17 +491,24 @@ impl LogoutFailure {
         match self {
             LogoutFailure::MetadataUnavailable(_) => "metadata_unavailable",
             LogoutFailure::Invalid(_) => "logout_token_invalid",
+            LogoutFailure::ReplayUnavailable(_) => "replay_unavailable",
         }
     }
 
     pub fn detail(&self) -> String {
         match self {
-            LogoutFailure::MetadataUnavailable(d) => d.clone(),
+            LogoutFailure::MetadataUnavailable(d) | LogoutFailure::ReplayUnavailable(d) => {
+                d.clone()
+            }
             LogoutFailure::Invalid(check) => {
                 format!("the logout token failed the {} check", check.as_str())
             }
         }
     }
+}
+
+fn replay_handle(provider: &Provider, token: &super::logout::LogoutToken) -> String {
+    format!("{}\0{}", provider.config.scheme, token.jti)
 }
 
 impl Federation {
@@ -560,15 +569,35 @@ impl Federation {
             }
             other => other.map_err(invalid)?,
         };
-        let handle = format!("{}\0{}", provider.config.scheme, checked.jti);
         let expires = checked.iat.max(now) + LOGOUT_TOKEN_REPLAY_SECONDS + skew;
         match replay
-            .add_if_absent(LOGOUT_TOKEN_REPLAY_PURPOSE, &handle, expires, now)
+            .add_if_absent(
+                LOGOUT_TOKEN_REPLAY_PURPOSE,
+                &replay_handle(provider, &checked),
+                expires,
+                now,
+            )
             .await
         {
             Ok(true) => Ok(checked),
             Ok(false) => Err(invalid(LogoutTokenCheck::Replayed)),
-            Err(e) => Err(LogoutFailure::MetadataUnavailable(e.to_string())),
+            Err(e) => Err(LogoutFailure::ReplayUnavailable(e.to_string())),
         }
+    }
+
+    /// Forgets a verified logout token's `jti`, when the logout it asked
+    /// for failed, so the provider's retry of the same token is accepted.
+    pub async fn release_logout_token(
+        &self,
+        provider: &Provider,
+        token: &super::logout::LogoutToken,
+        replay: &dyn crate::replay::ReplayCache,
+    ) -> Result<(), crate::stores::StoreError> {
+        replay
+            .remove(
+                super::logout::LOGOUT_TOKEN_REPLAY_PURPOSE,
+                &replay_handle(provider, token),
+            )
+            .await
     }
 }

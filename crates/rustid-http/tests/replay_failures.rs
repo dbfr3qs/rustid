@@ -32,6 +32,10 @@ impl ReplayCache for Down {
     async fn remove_expired(&self, _: i64, _: usize) -> Result<u64, StoreError> {
         Err(StoreError::Backend("down".into()))
     }
+
+    async fn remove(&self, _: &str, _: &str) -> Result<(), StoreError> {
+        Err(StoreError::Backend("down".into()))
+    }
 }
 
 fn state(replay: Arc<dyn ReplayCache>) -> AppState {

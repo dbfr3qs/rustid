@@ -79,8 +79,6 @@ fn suits(key: &PublicJwk, alg: &str) -> bool {
         && key.use_.as_deref().is_none_or(|u| u == "sig")
 }
 
-/// The checks, in order: format, algorithm, key, signature, issuer,
-/// audience, authorized party, expiry, issue time, nonce, subject.
 /// The token decoded and its signature checked: an asymmetric algorithm
 /// from `algorithms`, and the key named by `kid` (or the only suitable
 /// key when there is no `kid`).
@@ -120,6 +118,8 @@ pub(crate) fn verified(
     Ok(jws)
 }
 
+/// The checks, in order: format, algorithm, key, signature, issuer,
+/// audience, authorized party, expiry, issue time, nonce, subject.
 pub fn validate(
     token: &str,
     keys: &[PublicJwk],

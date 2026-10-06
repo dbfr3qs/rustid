@@ -667,6 +667,13 @@ pub(crate) async fn record_upstream_session(
     let (Some(sid), Some(_)) = (&session.upstream_sid, &state.stores.sessions) else {
         return Ok(());
     };
+    let back_channel = matches!(
+        state.stores.federation.find(&session.idp).await,
+        Ok(Some(provider)) if provider.config.back_channel_logout
+    );
+    if !back_channel {
+        return Ok(());
+    }
     state
         .stores
         .grants
@@ -684,6 +691,24 @@ pub(crate) async fn record_upstream_session(
             data: String::new(),
         })
         .await
+}
+
+/// Removes the record of the upstream session a rustid session came from,
+/// as that session ends.
+async fn forget_upstream_session(
+    state: &ProtocolState,
+    session: &rustid_core::session::UserSession,
+) -> Result<(), rustid_core::stores::StoreError> {
+    match &session.upstream_sid {
+        Some(sid) => {
+            state
+                .stores
+                .grants
+                .remove(&upstream_session_key(&session.idp, sid))
+                .await
+        }
+        None => Ok(()),
+    }
 }
 
 fn no_store(status: StatusCode, body: &'static str) -> Response {
@@ -749,6 +774,14 @@ async fn back_channel_logout(
         .await
     {
         Ok(checked) => checked,
+        Err(failure @ rustid_core::federation::flow::LogoutFailure::ReplayUnavailable(_)) => {
+            return crate::response::internal_error(
+                state,
+                info,
+                "FederationLogout",
+                &failure.detail(),
+            );
+        }
         Err(failure) => return refuse(failure.reason(), Some(failure.detail())),
     };
     // Whose sessions: the user `sub` names, or, for a token with only a
@@ -806,7 +839,6 @@ async fn back_channel_logout(
     // the coordinated clients' tokens are revoked and rustid's clients
     // told, and the session record goes.
     let issuer = current_issuer(&state.options, &route.origin);
-    let mut ended = 0;
     for record in records {
         let Some(session) =
             rustid_core::server_side_sessions::open_ticket(&sessions.protector, &record)
@@ -828,11 +860,22 @@ async fn back_channel_logout(
             issuer: session.issuer.as_deref().unwrap_or(&issuer),
             now,
         };
-        let result = match rustid_core::logout::process_logout(&ctx, &session).await {
-            Ok(()) => sessions.store.delete_session(&record.key).await,
-            Err(e) => Err(e),
-        };
+        let result = async {
+            rustid_core::logout::process_logout(&ctx, &session).await?;
+            forget_upstream_session(state, &session).await?;
+            sessions.store.delete_session(&record.key).await
+        }
+        .await;
         if let Err(e) = result {
+            // The token isn't spent: the provider may retry it.
+            if let Err(release) = state
+                .stores
+                .federation
+                .release_logout_token(provider, &checked, state.stores.replay.as_ref())
+                .await
+            {
+                tracing::warn!(%scheme, error = %release, "a failed logout's token couldn't be released; a retry will be refused");
+            }
             return crate::response::internal_error(
                 state,
                 info,
@@ -840,21 +883,19 @@ async fn back_channel_logout(
                 &e.to_string(),
             );
         }
-        ended += 1;
+        state.events.raise(
+            info,
+            chrono::Utc::now(),
+            Event::user_logout_success(EventDetails::UserLogoutSuccess {
+                provider: scheme.clone(),
+                subject_id: session.subject_id.clone(),
+                session_id: session.session_id.clone(),
+                sub: checked.sub.clone(),
+                sid: checked.sid.clone(),
+                channel: "back",
+            }),
+        );
     }
-    if ended == 0 {
-        return no_store(StatusCode::OK, "");
-    }
-    state.events.raise(
-        info,
-        chrono::Utc::now(),
-        Event::user_logout_success(EventDetails::UserLogoutSuccess {
-            provider: scheme.clone(),
-            sub: checked.sub.clone(),
-            sid: checked.sid.clone(),
-            channel: "back",
-        }),
-    );
     no_store(StatusCode::OK, "")
 }
 
@@ -932,6 +973,9 @@ async fn front_channel_logout(
     if let Err(e) = rustid_core::logout::process_logout(&ctx, session).await {
         return crate::response::internal_error(state, info, "FederationLogout", &e.to_string());
     }
+    if let Err(e) = forget_upstream_session(state, session).await {
+        return crate::response::internal_error(state, info, "FederationLogout", &e.to_string());
+    }
     if let Err(e) = crate::session_cookie::remove(state, session).await {
         return crate::response::internal_error(state, info, "FederationLogout", &e.to_string());
     }
@@ -969,6 +1013,8 @@ async fn front_channel_logout(
         now,
         Event::user_logout_success(EventDetails::UserLogoutSuccess {
             provider: provider.config.scheme.clone(),
+            subject_id: session.subject_id.clone(),
+            session_id: session.session_id.clone(),
             sub: None,
             sid: session.upstream_sid.clone(),
             channel: "front",

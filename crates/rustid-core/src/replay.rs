@@ -24,6 +24,10 @@ pub trait ReplayCache: Send + Sync {
 
     /// Removes up to `batch` entries expired at `now`; how many.
     async fn remove_expired(&self, now: i64, batch: usize) -> Result<u64, StoreError>;
+
+    /// Forgets `purpose`/`handle`, so it may be used again (a value whose
+    /// use failed after it was recorded). Absent entries are fine.
+    async fn remove(&self, purpose: &str, handle: &str) -> Result<(), StoreError>;
 }
 
 #[derive(Debug, Default)]
@@ -72,5 +76,10 @@ impl ReplayCache for InMemoryReplayCache {
             entries.remove(key);
         }
         Ok(expired.len() as u64)
+    }
+
+    async fn remove(&self, purpose: &str, handle: &str) -> Result<(), StoreError> {
+        self.entries().remove(&format!("{purpose}{handle}"));
+        Ok(())
     }
 }

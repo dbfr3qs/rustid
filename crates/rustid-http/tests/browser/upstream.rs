@@ -174,6 +174,16 @@ pub fn federated_custom(
     edit: impl FnOnce(&mut IdentityProvider),
     sessions: bool,
 ) -> Federated {
+    federated_with_stores(options, edit, sessions, |_| {})
+}
+
+/// As [`federated_custom`], with the stores edited last (to wrap one).
+pub fn federated_with_stores(
+    options: ProtocolOptions,
+    edit: impl FnOnce(&mut IdentityProvider),
+    sessions: bool,
+    stores: impl FnOnce(&mut rustid_core::stores::Stores),
+) -> Federated {
     let fake = FakeUpstream::new();
     let events = Arc::new(Recording::default());
     let mut off = provider_config("off");
@@ -222,6 +232,7 @@ pub fn federated_custom(
             },
         ));
     }
+    stores(&mut state.stores);
     state.events = EventService::new(
         EventsOptions {
             raise_success_events: true,
@@ -282,4 +293,77 @@ pub fn query(url: &str, name: &str) -> Option<String> {
     url.query_pairs()
         .find(|(k, _)| k == name)
         .map(|(_, v)| v.into_owned())
+}
+
+/// A grant store that fails on demand: `store` of one grant type, and
+/// `remove` while `fail_remove` is set.
+pub struct FlakyGrants {
+    pub inner: Arc<dyn rustid_core::stores::PersistedGrantStore>,
+    pub fail_store_type: Mutex<Option<String>>,
+    pub fail_remove: std::sync::atomic::AtomicBool,
+}
+
+impl FlakyGrants {
+    pub fn wrap(inner: Arc<dyn rustid_core::stores::PersistedGrantStore>) -> Arc<FlakyGrants> {
+        Arc::new(FlakyGrants {
+            inner,
+            fail_store_type: Mutex::new(None),
+            fail_remove: Default::default(),
+        })
+    }
+}
+
+fn down() -> rustid_core::stores::StoreError {
+    rustid_core::stores::StoreError::Backend("down".into())
+}
+
+#[async_trait::async_trait]
+impl rustid_core::stores::PersistedGrantStore for FlakyGrants {
+    async fn store(
+        &self,
+        grant: rustid_core::grants::PersistedGrant,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        if self.fail_store_type.lock().unwrap().as_deref() == Some(grant.grant_type.as_str()) {
+            return Err(down());
+        }
+        self.inner.store(grant).await
+    }
+    async fn get(
+        &self,
+        key: &str,
+    ) -> Result<Option<rustid_core::grants::PersistedGrant>, rustid_core::stores::StoreError> {
+        self.inner.get(key).await
+    }
+    async fn get_all(
+        &self,
+        filter: &rustid_core::grants::GrantFilter,
+    ) -> Result<Vec<rustid_core::grants::PersistedGrant>, rustid_core::stores::StoreError> {
+        self.inner.get_all(filter).await
+    }
+    async fn remove(&self, key: &str) -> Result<(), rustid_core::stores::StoreError> {
+        if self.fail_remove.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(down());
+        }
+        self.inner.remove(key).await
+    }
+    async fn take(
+        &self,
+        key: &str,
+    ) -> Result<Option<rustid_core::grants::PersistedGrant>, rustid_core::stores::StoreError> {
+        self.inner.take(key).await
+    }
+    async fn remove_all(
+        &self,
+        filter: &rustid_core::grants::GrantFilter,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        self.inner.remove_all(filter).await
+    }
+    async fn remove_expired(
+        &self,
+        now: chrono::DateTime<chrono::Utc>,
+        batch: usize,
+        consumed_before: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<u64, rustid_core::stores::StoreError> {
+        self.inner.remove_expired(now, batch, consumed_before).await
+    }
 }

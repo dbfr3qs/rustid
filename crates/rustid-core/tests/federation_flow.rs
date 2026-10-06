@@ -1078,16 +1078,22 @@ async fn logout_tokens_are_checked_as_back_channel_logout_requires() {
     // A key rotated in since: refetched once.
     let k2 = key("k2", "RS256");
     fake.0.lock().unwrap().jwks.push(jwk(&k2));
+    let before = fake.gets(JWKS);
     let mut c = logout_claims();
     c["jti"] = "jti-rotated".into();
     verify(&fed, &p, token(&k2, &c), &replay).await.unwrap();
+    assert_eq!(fake.gets(JWKS), before + 1);
+    // Known now: no further fetch.
+    c["jti"] = "jti-rotated-2".into();
+    verify(&fed, &p, token(&k2, &c), &replay).await.unwrap();
+    assert_eq!(fake.gets(JWKS), before + 1);
 }
 
 async fn verify(
     fed: &Federation,
     p: &Provider,
     token: String,
-    replay: &rustid_core::replay::InMemoryReplayCache,
+    replay: &dyn rustid_core::replay::ReplayCache,
 ) -> Result<
     rustid_core::federation::logout::LogoutToken,
     rustid_core::federation::flow::LogoutFailure,
@@ -1205,4 +1211,46 @@ async fn logout_tokens_older_than_the_replay_window_are_refused() {
     c["jti"] = format!("jti-{}", rand_suffix()).into();
     c["iat"] = (NOW - 599).into();
     assert!(verify(&fed, &p, token(&k, &c), &replay).await.is_ok());
+}
+
+struct DownReplay;
+
+#[async_trait::async_trait]
+impl rustid_core::replay::ReplayCache for DownReplay {
+    async fn add_if_absent(
+        &self,
+        _: &str,
+        _: &str,
+        _: i64,
+        _: i64,
+    ) -> Result<bool, rustid_core::stores::StoreError> {
+        Err(rustid_core::stores::StoreError::Backend("down".into()))
+    }
+    async fn remove_expired(
+        &self,
+        _: i64,
+        _: usize,
+    ) -> Result<u64, rustid_core::stores::StoreError> {
+        Err(rustid_core::stores::StoreError::Backend("down".into()))
+    }
+    async fn remove(&self, _: &str, _: &str) -> Result<(), rustid_core::stores::StoreError> {
+        Err(rustid_core::stores::StoreError::Backend("down".into()))
+    }
+}
+
+#[tokio::test]
+async fn a_failing_replay_cache_is_its_own_failure() {
+    use rustid_core::federation::flow::LogoutFailure;
+    let k = key("k1", "RS256");
+    let fed = federation(Fake::new(&[&k]));
+    let p = fed.find("up").await.unwrap().unwrap();
+    let failure = verify(&fed, &p, token(&k, &logout_claims()), &DownReplay)
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(failure, LogoutFailure::ReplayUnavailable(_)),
+        "{failure:?}"
+    );
+    assert_eq!(failure.reason(), "replay_unavailable");
+    assert_eq!(failure.check(), None);
 }

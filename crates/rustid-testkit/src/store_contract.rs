@@ -669,6 +669,30 @@ pub async fn replay_cache(cache: Arc<dyn rustid_core::replay::ReplayCache>) {
             .await
             .unwrap()
     );
+    // A released entry may be used again at once; others stay.
+    cache
+        .add_if_absent("p", "released", now + 60, now)
+        .await
+        .unwrap();
+    cache
+        .add_if_absent("p", "kept", now + 60, now)
+        .await
+        .unwrap();
+    cache.remove("p", "released").await.unwrap();
+    cache.remove("p", "never-added").await.unwrap();
+    assert!(
+        cache
+            .add_if_absent("p", "released", now + 60, now)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !cache
+            .add_if_absent("p", "kept", now + 60, now)
+            .await
+            .unwrap(),
+        "another entry stays"
+    );
 }
 
 /// Per key, compared at

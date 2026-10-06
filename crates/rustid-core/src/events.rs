@@ -89,6 +89,9 @@ pub enum EventDetails {
     },
     UserLogoutSuccess {
         provider: String,
+        /// The rustid session that ended.
+        subject_id: String,
+        session_id: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         sub: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]

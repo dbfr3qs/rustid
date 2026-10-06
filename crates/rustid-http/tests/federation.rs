@@ -1276,3 +1276,134 @@ async fn front_channel_logout_needs_the_sid_when_the_session_has_one() {
         assert_eq!(session(&mut b).await["idp"], "up", "{query}");
     }
 }
+
+#[tokio::test]
+async fn a_failed_back_channel_logout_can_be_retried_with_the_same_token() {
+    let flaky = std::sync::Mutex::new(None);
+    let f = federated_with_stores(Default::default(), logout_channels, true, |stores| {
+        let wrapped = FlakyGrants::wrap(stores.grants.clone());
+        *flaky.lock().unwrap() = Some(wrapped.clone());
+        stores.grants = wrapped;
+    });
+    let flaky = flaky.into_inner().unwrap().unwrap();
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let token = logout_token(&f, |_| {});
+    flaky
+        .fail_remove
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    assert_eq!(
+        back_channel(&mut b, &token).await.status,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    flaky
+        .fail_remove
+        .store(false, std::sync::atomic::Ordering::SeqCst);
+    let retry = back_channel(&mut b, &token).await;
+    assert_eq!(retry.status, StatusCode::OK, "{}", retry.body);
+    assert_eq!(session(&mut b).await["error"], "no_session");
+    // Once it worked, the token is spent.
+    assert_eq!(
+        back_channel(&mut b, &token).await.status,
+        StatusCode::BAD_REQUEST
+    );
+}
+
+#[tokio::test]
+async fn logout_events_name_each_rustid_session_ended() {
+    let f = federated_custom(Default::default(), logout_channels, true);
+    let mut first = Browser::new(&f.app);
+    let mut second = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut first).await;
+    signed_in_upstream(&f, &mut second).await;
+    let mut expected = vec![
+        session(&mut first).await["sessionId"].clone(),
+        session(&mut second).await["sessionId"].clone(),
+    ];
+    let token = logout_token(&f, |c| {
+        c.as_object_mut().unwrap().remove("sid");
+    });
+    assert_eq!(
+        back_channel(&mut first, &token).await.status,
+        StatusCode::OK
+    );
+    let events = f.events.named("User Logout Success");
+    let mut ended: Vec<_> = events.iter().map(|e| e["SessionId"].clone()).collect();
+    ended.sort_by_key(|v| v.to_string());
+    expected.sort_by_key(|v| v.to_string());
+    assert_eq!(ended, expected);
+    let subject = subject_for(AUTHORITY, "upstream-user");
+    assert!(events.iter().all(|e| e["SubjectId"] == subject.as_str()));
+}
+
+#[tokio::test]
+async fn the_front_channel_event_names_the_session_ended() {
+    let f = federated_custom(Default::default(), logout_channels, false);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let info = session(&mut b).await;
+    b.get("/federation/up/frontchannel-logout?sid=up-sid-1")
+        .await;
+    let events = f.events.named("User Logout Success");
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["SessionId"], info["sessionId"]);
+    assert_eq!(events[0]["SubjectId"], info["subjectId"]);
+}
+
+async fn upstream_session_records(f: &Federated) -> usize {
+    f.app
+        .0
+        .stores
+        .grants
+        .get_all(&rustid_core::grants::GrantFilter {
+            grant_type: Some("federation_upstream_session".into()),
+            ..Default::default()
+        })
+        .await
+        .unwrap()
+        .len()
+}
+
+#[tokio::test]
+async fn sid_records_only_with_back_channel_logout_and_gone_once_it_ends() {
+    let f = federated_custom(Default::default(), |p| p.front_channel_logout = true, true);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    assert_eq!(upstream_session_records(&f).await, 0);
+
+    let f = federated_custom(Default::default(), logout_channels, true);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    assert_eq!(upstream_session_records(&f).await, 1);
+    let token = logout_token(&f, |c| {
+        c.as_object_mut().unwrap().remove("sub");
+    });
+    assert_eq!(back_channel(&mut b, &token).await.status, StatusCode::OK);
+    assert_eq!(upstream_session_records(&f).await, 0);
+
+    // The front channel removes it too.
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    assert_eq!(upstream_session_records(&f).await, 1);
+    b.get("/federation/up/frontchannel-logout?sid=up-sid-1")
+        .await;
+    assert_eq!(session(&mut b).await["error"], "no_session");
+    assert_eq!(upstream_session_records(&f).await, 0);
+}
+
+#[tokio::test]
+async fn a_failed_sid_record_keeps_the_sign_in() {
+    let f = federated_with_stores(Default::default(), logout_channels, true, |stores| {
+        let wrapped = FlakyGrants::wrap(stores.grants.clone());
+        *wrapped.fail_store_type.lock().unwrap() = Some("federation_upstream_session".into());
+        stores.grants = wrapped;
+    });
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    assert_eq!(session(&mut b).await["idp"], "up");
+}

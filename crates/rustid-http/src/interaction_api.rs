@@ -1066,8 +1066,10 @@ async fn continue_login(
         Ok(cookie) => cookies::append(&mut response, &cookie),
         Err(e) => return internal_error(state, info, "InteractionContinue", &e.to_string()),
     }
+    // Without the record, only a logout token naming just this `sid`
+    // misses the session; the sign-in stands.
     if let Err(e) = crate::federation::record_upstream_session(state, &session).await {
-        return internal_error(state, info, "InteractionContinue", &e.to_string());
+        tracing::warn!(scheme = %session.idp, error = %e, "the upstream session's record couldn't be written; a logout token naming only its sid won't find this session");
     }
     response
 }

@@ -326,3 +326,54 @@ async fn the_admin_api_never_reads_environment_variables_or_files() {
         );
     }
 }
+
+#[tokio::test]
+async fn the_registered_id_token_algorithm_round_trips_and_is_validated() {
+    let store = InMemoryConfiguration::default();
+    let p = protector(&[("a", [1; 32])]);
+    let admin = IdentityProviderAdmin::new(p.clone());
+    let mut with_alg = provider("up");
+    with_alg["idTokenSignedResponseAlg"] = "ES256".into();
+    let saved = admin
+        .create(&store, input(with_alg))
+        .await
+        .unwrap()
+        .unwrap();
+    let read = admin.get(&store, &saved.id).await.unwrap().unwrap();
+    assert_eq!(
+        serde_json::to_value(&read.item).unwrap()["idTokenSignedResponseAlg"],
+        "ES256"
+    );
+    let stored = store
+        .read(EntityKind::IdentityProvider, &saved.id)
+        .await
+        .unwrap()
+        .unwrap();
+    let resolved = resolve(&stored, &p, &no_env).unwrap();
+    assert_eq!(
+        resolved.config.id_token_signed_response_alg.as_deref(),
+        Some("ES256")
+    );
+
+    // Cleared by an update without it; a symmetric algorithm is refused.
+    let v2 = admin
+        .update(&store, &saved.id, input(provider("up")), 1)
+        .await
+        .unwrap()
+        .unwrap();
+    let read = admin.get(&store, &v2.id).await.unwrap().unwrap();
+    assert!(
+        serde_json::to_value(&read.item)
+            .unwrap()
+            .get("idTokenSignedResponseAlg")
+            .is_none()
+    );
+    let mut hs = provider("up");
+    hs["idTokenSignedResponseAlg"] = "HS256".into();
+    let errors = admin
+        .update(&store, &saved.id, input(hs), 2)
+        .await
+        .unwrap()
+        .unwrap_err();
+    assert_eq!(errors[0].code, "validation_failed", "{errors:?}");
+}

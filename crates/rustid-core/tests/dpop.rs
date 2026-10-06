@@ -495,6 +495,10 @@ impl rustid_core::replay::ReplayCache for DownCache {
     ) -> Result<u64, rustid_core::stores::StoreError> {
         Err(rustid_core::stores::StoreError::Backend("down".into()))
     }
+
+    async fn remove(&self, _: &str, _: &str) -> Result<(), rustid_core::stores::StoreError> {
+        Err(rustid_core::stores::StoreError::Backend("down".into()))
+    }
 }
 
 /// A proof is never accepted when its replay can't be checked.

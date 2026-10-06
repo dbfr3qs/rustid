@@ -1175,3 +1175,34 @@ fn a_registered_id_token_algorithm_must_be_asymmetric() {
     c.id_token_signed_response_alg = Some("ES256".into());
     assert!(c.validate(false).is_ok());
 }
+
+#[tokio::test]
+async fn logout_tokens_older_than_the_replay_window_are_refused() {
+    use rustid_core::federation::logout::LogoutTokenCheck;
+    use rustid_core::replay::InMemoryReplayCache;
+    let k = key("k1", "RS256");
+    let fed = federation(Fake::new(&[&k]));
+    let p = fed.find("up").await.unwrap().unwrap();
+    let replay = InMemoryReplayCache::default();
+    // The skew is 300: a token issued 601 seconds ago is past the 300
+    // second window and the skew, with or without a far `exp`.
+    for exp in [None, Some(NOW + 86_400)] {
+        let mut c = logout_claims();
+        c["jti"] = format!("jti-{}", rand_suffix()).into();
+        c["iat"] = (NOW - 601).into();
+        if let Some(exp) = exp {
+            c["exp"] = exp.into();
+        }
+        assert_eq!(
+            verify(&fed, &p, token(&k, &c), &replay)
+                .await
+                .unwrap_err()
+                .check(),
+            Some(LogoutTokenCheck::IssuedAt)
+        );
+    }
+    let mut c = logout_claims();
+    c["jti"] = format!("jti-{}", rand_suffix()).into();
+    c["iat"] = (NOW - 599).into();
+    assert!(verify(&fed, &p, token(&k, &c), &replay).await.is_ok());
+}

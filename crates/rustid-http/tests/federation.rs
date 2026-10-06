@@ -1190,3 +1190,89 @@ async fn front_channel_logout_accepts_a_tenant_issuer() {
     .await;
     assert_eq!(session(&mut b).await["error"], "no_session");
 }
+
+#[tokio::test]
+async fn back_channel_logout_with_sub_and_sid_needs_no_record() {
+    let f = federated_custom(Default::default(), logout_channels, true);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    // The (scheme, sid) record is gone, as purge removes it once the
+    // session outlives its first expiry.
+    f.app
+        .0
+        .stores
+        .grants
+        .remove_all(&rustid_core::grants::GrantFilter {
+            grant_type: Some("federation_upstream_session".into()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    let other = logout_token(&f, |c| c["sid"] = "up-sid-other".into());
+    assert_eq!(back_channel(&mut b, &other).await.status, StatusCode::OK);
+    assert_eq!(session(&mut b).await["idp"], "up");
+    assert!(f.events.named("User Logout Success").is_empty());
+    let token = logout_token(&f, |_| {});
+    assert_eq!(back_channel(&mut b, &token).await.status, StatusCode::OK);
+    assert_eq!(session(&mut b).await["error"], "no_session");
+    assert_eq!(f.events.named("User Logout Success").len(), 1);
+}
+
+#[tokio::test]
+async fn back_channel_logout_by_subject_keeps_tokens_of_other_sessions() {
+    let f = federated_custom(Default::default(), logout_channels, true);
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let subject = rustid_core::federation::session::subject_for(AUTHORITY, "upstream-user");
+    let now = chrono::Utc::now();
+    // An offline refresh token from a session that ended long ago.
+    f.app
+        .0
+        .stores
+        .grants
+        .store(rustid_core::grants::PersistedGrant {
+            key: "offline".into(),
+            grant_type: rustid_core::refresh_tokens::REFRESH_TOKEN.into(),
+            client_id: "fed.client".into(),
+            subject_id: Some(subject.clone()),
+            session_id: Some("an-old-session".into()),
+            description: None,
+            creation_time: now,
+            expiration: Some(now + chrono::Duration::days(30)),
+            consumed_time: None,
+            data: "{}".into(),
+        })
+        .await
+        .unwrap();
+    let token = logout_token(&f, |c| {
+        c.as_object_mut().unwrap().remove("sid");
+    });
+    assert_eq!(back_channel(&mut b, &token).await.status, StatusCode::OK);
+    assert_eq!(session(&mut b).await["error"], "no_session");
+    assert!(
+        f.app
+            .0
+            .stores
+            .grants
+            .get("offline")
+            .await
+            .unwrap()
+            .is_some(),
+        "another session's offline token survives"
+    );
+}
+
+#[tokio::test]
+async fn front_channel_logout_needs_the_sid_when_the_session_has_one() {
+    let f = federated_custom(Default::default(), logout_channels, false);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    // Any site can make the browser load the page without a sid.
+    for query in ["", &format!("iss={}", encode(AUTHORITY))] {
+        b.get(&format!("/federation/up/frontchannel-logout?{query}"))
+            .await;
+        assert_eq!(session(&mut b).await["idp"], "up", "{query}");
+    }
+}

@@ -697,8 +697,7 @@ fn no_store(status: StatusCode, body: &'static str) -> Response {
 
 /// `POST /federation/{scheme}/backchannel-logout`: the provider's logout
 /// token (Back-Channel Logout 1.0). The rustid sessions it names end: the
-/// one its `sid` became, or every session of its `sub`, with their tokens
-/// revoked and rustid's clients notified.
+/// ones its `sid` became, or every session of its `sub` from the provider.
 async fn back_channel_logout(
     state: &ProtocolState,
     incoming: &Incoming<'_>,
@@ -752,19 +751,24 @@ async fn back_channel_logout(
         Ok(checked) => checked,
         Err(failure) => return refuse(failure.reason(), Some(failure.detail())),
     };
-    // The rustid sessions to end: the one the sid became, or every session
-    // of the user.
-    let targets: Vec<(Option<String>, Option<String>)> = match &checked.sid {
-        Some(sid) => match state
+    // Whose sessions: the user `sub` names, or, for a token with only a
+    // `sid`, the user the record of that upstream session names.
+    let subject = match (&checked.sub, &checked.sid) {
+        (Some(sub), _) => Some(rustid_core::federation::session::subject_for(
+            &checked.issuer,
+            sub,
+        )),
+        (None, Some(sid)) => match state
             .stores
             .grants
             .get(&upstream_session_key(scheme, sid))
             .await
         {
-            Ok(Some(record)) if record.grant_type == UPSTREAM_SESSION => {
-                vec![(record.subject_id, record.session_id)]
+            Ok(Some(record)) if record.grant_type == UPSTREAM_SESSION => record.subject_id,
+            Ok(_) => {
+                tracing::info!(%scheme, "a logout token named only a sid rustid has no record of; nothing ended");
+                None
             }
-            Ok(_) => Vec::new(),
             Err(e) => {
                 return crate::response::internal_error(
                     state,
@@ -774,39 +778,21 @@ async fn back_channel_logout(
                 );
             }
         },
-        None => vec![(
-            checked
-                .sub
-                .as_deref()
-                .map(|sub| rustid_core::federation::session::subject_for(&checked.issuer, sub)),
-            None,
-        )],
+        (None, None) => None,
     };
-    // A session rustid never saw (or one already ended): nothing to do.
-    if targets.is_empty() {
+    let Some(subject) = subject else {
         return no_store(StatusCode::OK, "");
-    }
-    let issuer = current_issuer(&state.options, &route.origin);
-    let ctx = rustid_core::access_tokens::ValidationContext {
-        options: &state.options,
-        stores: &state.stores,
-        keys: &state.keys,
-        issuer: &issuer,
-        now,
     };
-    for (subject_id, session_id) in targets {
-        let remove = rustid_core::server_side_sessions::RemoveSessions {
-            subject_id,
-            session_id,
-            client_ids: None,
-            revoke_tokens: true,
-            revoke_consents: false,
-            remove_server_side_session: true,
-            send_backchannel_logout_notification: true,
-        };
-        if let Err(e) =
-            rustid_core::server_side_sessions::remove_sessions(&ctx, sessions, &remove).await
-        {
+    let records = match sessions
+        .store
+        .get_sessions(&rustid_core::server_side_sessions::SessionFilter {
+            subject_id: Some(subject),
+            session_id: None,
+        })
+        .await
+    {
+        Ok(records) => records,
+        Err(e) => {
             return crate::response::internal_error(
                 state,
                 info,
@@ -814,6 +800,50 @@ async fn back_channel_logout(
                 &e.to_string(),
             );
         }
+    };
+    // Each session from this provider (from the upstream session `sid`
+    // names, when it names one) ends as a front-channel logout ends one:
+    // the coordinated clients' tokens are revoked and rustid's clients
+    // told, and the session record goes.
+    let issuer = current_issuer(&state.options, &route.origin);
+    let mut ended = 0;
+    for record in records {
+        let Some(session) =
+            rustid_core::server_side_sessions::open_ticket(&sessions.protector, &record)
+        else {
+            continue;
+        };
+        if session.idp != *scheme
+            || checked
+                .sid
+                .as_deref()
+                .is_some_and(|sid| session.upstream_sid.as_deref() != Some(sid))
+        {
+            continue;
+        }
+        let ctx = rustid_core::access_tokens::ValidationContext {
+            options: &state.options,
+            stores: &state.stores,
+            keys: &state.keys,
+            issuer: session.issuer.as_deref().unwrap_or(&issuer),
+            now,
+        };
+        let result = match rustid_core::logout::process_logout(&ctx, &session).await {
+            Ok(()) => sessions.store.delete_session(&record.key).await,
+            Err(e) => Err(e),
+        };
+        if let Err(e) = result {
+            return crate::response::internal_error(
+                state,
+                info,
+                "FederationLogout",
+                &e.to_string(),
+            );
+        }
+        ended += 1;
+    }
+    if ended == 0 {
+        return no_store(StatusCode::OK, "");
     }
     state.events.raise(
         info,
@@ -849,9 +879,12 @@ async fn front_channel_logout(
     let Some(session) = session.filter(|s| s.idp == provider.config.scheme) else {
         return blank();
     };
-    let sid_ok = params
-        .get("sid")
-        .is_none_or(|sid| session.upstream_sid.as_deref() == Some(sid.as_str()));
+    // A session that came with an upstream sid ends only for that sid:
+    // without it, any site could sign the user out with an image tag.
+    let sid_ok = match (params.get("sid"), session.upstream_sid.as_deref()) {
+        (Some(sid), upstream) => upstream == Some(sid.as_str()),
+        (None, upstream) => upstream.is_none(),
+    };
     // A multi-tenant provider names the tenant's issuer: the discovery
     // issuer's template, filled in with a listed tenant.
     let template = match &provider.config.multi_tenant {

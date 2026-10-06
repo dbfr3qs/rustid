@@ -100,8 +100,13 @@ pub fn validate_logout_token(
     if !audience_ok {
         return Err(LogoutTokenCheck::Audience);
     }
+    // Not in the future, and no older than the replay cache remembers
+    // `jti`s: an older token could be replayed once its `jti` is forgotten.
+    let oldest = expect
+        .now
+        .saturating_sub(LOGOUT_TOKEN_REPLAY_SECONDS.saturating_add(expect.skew));
     let iat = match jws.numeric_date("iat") {
-        Ok(Some(iat)) if iat <= expect.now.saturating_add(expect.skew) => iat,
+        Ok(Some(iat)) if iat <= expect.now.saturating_add(expect.skew) && iat >= oldest => iat,
         _ => return Err(LogoutTokenCheck::IssuedAt),
     };
     match jws.numeric_date("exp") {

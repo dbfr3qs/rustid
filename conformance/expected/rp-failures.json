@@ -1,3 +1,4 @@
 {
-  "oidcc-client-test-idtoken-sig-none": "SKIPPED"
+  "oidcc-client-test-idtoken-sig-none": "SKIPPED",
+  "oidcc-client-test-rp-frontchannel-rpinitlogout": "REVIEW"
 }

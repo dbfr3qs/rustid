@@ -26,6 +26,17 @@ kid = "rp-rsa"
 alg = "RS256"
 key_file = "../../fixtures/signing-key.pem"
 
+# Back-channel logout ends server-side sessions, and signing out upstream
+# sends the provider's id token as id_token_hint, which only a server-side
+# session keeps.
+[server_side_sessions]
+enabled = true
+
+# The scripted UI: GET /account/logout signs out (run.py's logout plans).
+[reference_ui]
+enabled = true
+users_file = "../../fixtures/users.json"
+
 # The suite's certificate comes from the same local CA as rustid's.
 [federation]
 ca_file = "../../target/conformance/ca.pem"

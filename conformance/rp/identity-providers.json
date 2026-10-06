@@ -4,8 +4,71 @@
     "displayName": "OpenID Foundation conformance suite",
     "authority": "https://localhost:8443/test/a/rustid-rp/",
     "clientId": "rustid-rp",
-    "clientAuthentication": { "secret": "rustid-rp-secret" },
-    "scopes": ["openid", "profile", "email"],
+    "clientAuthentication": {
+      "secret": "rustid-rp-secret"
+    },
+    "scopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
     "userinfo": true
+  },
+  {
+    "scheme": "oidf-bcl",
+    "displayName": "OpenID Foundation conformance suite (bcl)",
+    "authority": "https://localhost:8443/test/a/rustid-rp-bcl/",
+    "clientId": "rustid-rp",
+    "clientAuthentication": {
+      "secret": "rustid-rp-secret"
+    },
+    "scopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "userinfo": true,
+    "signOut": true,
+    "backChannelLogout": true,
+    "frontChannelLogout": true,
+    "idTokenSignedResponseAlg": "RS256"
+  },
+  {
+    "scheme": "oidf-fcl",
+    "displayName": "OpenID Foundation conformance suite (fcl)",
+    "authority": "https://localhost:8443/test/a/rustid-rp-fcl/",
+    "clientId": "rustid-rp",
+    "clientAuthentication": {
+      "secret": "rustid-rp-secret"
+    },
+    "scopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "userinfo": true,
+    "signOut": true,
+    "backChannelLogout": true,
+    "frontChannelLogout": true,
+    "idTokenSignedResponseAlg": "RS256"
+  },
+  {
+    "scheme": "oidf-rpi",
+    "displayName": "OpenID Foundation conformance suite (rpi)",
+    "authority": "https://localhost:8443/test/a/rustid-rp-rpi/",
+    "clientId": "rustid-rp",
+    "clientAuthentication": {
+      "secret": "rustid-rp-secret"
+    },
+    "scopes": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "userinfo": true,
+    "signOut": true,
+    "backChannelLogout": true,
+    "frontChannelLogout": true,
+    "idTokenSignedResponseAlg": "RS256"
   }
 ]

@@ -11,6 +11,7 @@ use crate::keys::LoadedKey;
 use crate::session::LOCAL_IDP;
 
 use super::session::STANDARD_CLAIMS;
+use super::upstream::{ASYMMETRIC_ALGORITHMS, Metadata};
 
 /// An upstream OpenID Connect provider, as configured.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -53,6 +54,11 @@ pub struct IdentityProvider {
     /// `organizations` or `common`), accepting the tenants listed.
     #[serde(default)]
     pub multi_tenant: Option<MultiTenant>,
+    /// The id token signing algorithm registered at the provider: id
+    /// tokens and logout tokens signed otherwise are refused. Unset, any
+    /// asymmetric algorithm the provider advertises (OIDC Core §3.1.3.7).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id_token_signed_response_alg: Option<String>,
 }
 
 /// The tenants a multi-tenant provider accepts.
@@ -175,6 +181,14 @@ fn valid_scheme(scheme: &str) -> bool {
 }
 
 impl IdentityProvider {
+    /// The algorithms its id tokens and logout tokens may be signed with.
+    pub fn id_token_algorithms(&self, metadata: &Metadata) -> Vec<String> {
+        match &self.id_token_signed_response_alg {
+            Some(alg) => vec![alg.clone()],
+            None => metadata.id_token_algorithms(),
+        }
+    }
+
     /// The rules that need nothing outside the provider itself.
     pub fn validate(&self, allow_insecure_loopback: bool) -> Result<(), ProviderError> {
         if self.scheme == LOCAL_IDP {
@@ -208,6 +222,11 @@ impl IdentityProvider {
             if !multi.tenants.iter().all(|t| is_guid(t)) {
                 return invalid("`multiTenant.tenants` entries must be tenant ids (GUIDs)");
             }
+        }
+        if let Some(alg) = &self.id_token_signed_response_alg
+            && !ASYMMETRIC_ALGORITHMS.contains(&alg.as_str())
+        {
+            return invalid("`idTokenSignedResponseAlg` must be an asymmetric algorithm");
         }
         let auth = &self.client_authentication;
         match auth.method {

@@ -372,7 +372,7 @@ impl Federation {
             .ok_or_else(|| {
                 Failure::TokenRequestFailed("the token response has no id_token".into())
             })?;
-        let algorithms = metadata.id_token_algorithms();
+        let algorithms = provider.config.id_token_algorithms(&metadata);
         let issuer = match &provider.config.multi_tenant {
             None => provider.config.authority.clone(),
             Some(multi) => tenant_issuer(multi, &metadata, id_token)?,
@@ -523,7 +523,7 @@ impl Federation {
             .metadata(provider, now)
             .await
             .map_err(|f| LogoutFailure::MetadataUnavailable(f.detail()))?;
-        let algorithms = metadata.id_token_algorithms();
+        let algorithms = provider.config.id_token_algorithms(&metadata);
         let issuer = match &provider.config.multi_tenant {
             None => provider.config.authority.clone(),
             Some(multi) => tenant_issuer(multi, &metadata, token)

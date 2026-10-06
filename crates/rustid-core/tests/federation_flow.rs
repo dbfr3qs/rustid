@@ -1114,3 +1114,64 @@ fn sign_in_keeps_the_upstream_session_id() {
         Some("upstream-sid")
     );
 }
+
+#[tokio::test]
+async fn a_registered_id_token_algorithm_is_the_only_one_accepted() {
+    use rustid_core::federation::logout::LogoutTokenCheck;
+    use rustid_core::replay::InMemoryReplayCache;
+    let rs = key("k1", "RS256");
+    let es = key("k2", "ES256");
+    let fake = Fake::new(&[&rs, &es]);
+    fake.0.lock().unwrap().discovery["id_token_signing_alg_values_supported"] =
+        json!(["RS256", "ES256"]);
+    let replay = InMemoryReplayCache::default();
+    let fresh = || {
+        let mut c = logout_claims();
+        c["jti"] = format!("jti-{}", rand_suffix()).into();
+        c
+    };
+
+    // Without the setting, anything asymmetric the provider advertises.
+    let fed = federation(fake.clone());
+    let p = fed.find("up").await.unwrap().unwrap();
+    assert!(
+        verify(&fed, &p, token(&es, &fresh()), &replay)
+            .await
+            .is_ok()
+    );
+
+    // With it, only the registered algorithm, for logout and id tokens.
+    let mut pinned = provider(Credential::Basic("s".into()));
+    pinned.config.id_token_signed_response_alg = Some("RS256".into());
+    let fed = Federation::new(Providers::new(vec![pinned]).unwrap(), fake.clone(), false);
+    let p = fed.find("up").await.unwrap().unwrap();
+    assert_eq!(
+        verify(&fed, &p, token(&es, &fresh()), &replay)
+            .await
+            .unwrap_err()
+            .check(),
+        Some(LogoutTokenCheck::Algorithm)
+    );
+    assert!(
+        verify(&fed, &p, token(&rs, &fresh()), &replay)
+            .await
+            .is_ok()
+    );
+    let c = Correlation::new("up", "/return", NOW);
+    fake.0.lock().unwrap().token_body = json!({ "id_token": token(&es, &baseline(&c.nonce)) });
+    assert_eq!(
+        fed.redeem(&p, "code", "https://rp/cb", &c, 300, NOW)
+            .await
+            .unwrap_err(),
+        Failure::IdTokenInvalid(IdTokenCheck::Algorithm)
+    );
+}
+
+#[test]
+fn a_registered_id_token_algorithm_must_be_asymmetric() {
+    let mut c = config();
+    c.id_token_signed_response_alg = Some("HS256".into());
+    assert!(c.validate(false).is_err());
+    c.id_token_signed_response_alg = Some("ES256".into());
+    assert!(c.validate(false).is_ok());
+}

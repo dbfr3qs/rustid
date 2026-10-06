@@ -332,14 +332,17 @@ async fn protocol(State(state): State<AppState>, request: Request<Body>) -> Resp
         .as_deref()
         .is_some_and(|path| path.eq_ignore_ascii_case(&route.path))
     {
-        if method != axum::http::Method::GET {
+        if method == axum::http::Method::GET {
+            return protected_resource::handle(state, &route, &method, headers).await;
+        }
+        // An endpoint at the same path keeps its other methods.
+        if Endpoint::find(state, &route).is_none() {
             return (
                 StatusCode::METHOD_NOT_ALLOWED,
                 [(axum::http::header::ALLOW, "GET")],
             )
                 .into_response();
         }
-        return protected_resource::handle(state, &route, &method, headers).await;
     }
     if let Some(settings) = &state.dcr {
         match dcr::Target::find(settings, &route.path) {

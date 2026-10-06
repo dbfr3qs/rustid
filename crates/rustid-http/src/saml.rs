@@ -1076,11 +1076,13 @@ pub(crate) async fn front_channel_logouts(
                 now + chrono::Duration::seconds(saml.options.logout_session_lifetime.0),
             ),
         };
-        saml.stores
-            .logout_sessions
-            .store(session)
-            .await
-            .map_err(|e| e.to_string())?;
+        match saml.stores.logout_sessions.store(session).await {
+            Ok(()) => {}
+            // A reload racing the first load, or one after the session
+            // expired but before the purge: the first load's requests stand.
+            Err(rustid_core::stores::StoreError::DuplicateLogoutId(_)) => return Ok(Vec::new()),
+            Err(e) => return Err(e.to_string()),
+        }
     }
     Ok(out)
 }

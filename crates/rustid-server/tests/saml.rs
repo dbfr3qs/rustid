@@ -140,8 +140,13 @@ async fn postgres_serves_the_imported_service_providers() {
 
 /// A fresh database on the TEST_POSTGRES_URL server.
 async fn rustid_testkit_scratch() -> Option<String> {
+    scratch_named("sps").await
+}
+
+/// As [`rustid_testkit_scratch`], one database per `tag`.
+async fn scratch_named(tag: &str) -> Option<String> {
     let base = std::env::var("TEST_POSTGRES_URL").ok()?;
-    let name = format!("saml_{}", std::process::id());
+    let name = format!("saml_{tag}_{}", std::process::id());
     let admin = sqlx::PgPool::connect(&base).await.ok()?;
     let _ = sqlx::query(sqlx::AssertSqlSafe(format!(
         "DROP DATABASE IF EXISTS {name}"
@@ -460,6 +465,16 @@ async fn saml_browser_server_with(
     dir: &Path,
     interactive: bool,
 ) -> (String, reqwest::Client, tokio::sync::oneshot::Sender<()>) {
+    saml_browser_server_options(dir, interactive, serde_json::json!({}), None).await
+}
+
+/// As [`saml_browser_server_with`], with these `[saml]` settings added.
+async fn saml_browser_server_options(
+    dir: &Path,
+    interactive: bool,
+    saml: serde_json::Value,
+    store: Option<serde_json::Value>,
+) -> (String, reqwest::Client, tokio::sync::oneshot::Sender<()>) {
     let config = serde_json::json!({
         "signing_keys": [{ "kid": "k1", "alg": "RS256",
             "key_file": fixture("validation-cert-key.pem"), "cert_file": fixture("validation-cert.pem") }],
@@ -469,6 +484,13 @@ async fn saml_browser_server_with(
         "reference_ui": { "enabled": true, "interactive": interactive, "users_file": fixture("users.json"), "default_user": "alice" },
         "saml": { "enabled": true, "service_providers_file": fixture("saml-service-providers.json") },
     });
+    let mut config = config;
+    for (key, value) in saml.as_object().unwrap() {
+        config["saml"][key] = value.clone();
+    }
+    if let Some(store) = store {
+        config["store"] = store;
+    }
     let path = dir.join("rustid.json");
     std::fs::write(&path, config.to_string()).unwrap();
     let app = rustid_server::build(&ServerConfig::load(Some(&path)).unwrap())
@@ -1117,4 +1139,68 @@ async fn idp_initiated_sso_through_the_interaction_api() {
     assert!(signed_out.status().is_success(), "{}", signed_out.status());
     let response = browser.get(&continue_url).send().await.unwrap();
     assert_eq!(error(response).await, "User is not authenticated");
+}
+
+#[tokio::test]
+async fn reloading_the_callback_after_its_logout_session_expired_still_answers() {
+    use rustid_saml::bindings::{MessageName, redirect};
+    let dir = tempfile::tempdir().unwrap();
+    // Postgres keeps an expired session until the purge; memory drops it.
+    let store = scratch_named("reload")
+        .await
+        .map(|db| serde_json::json!({ "kind": "postgres", "postgres": { "url": db } }));
+    if store.is_none() {
+        eprintln!("on the memory store only: TEST_POSTGRES_URL is not set");
+    }
+    let (base, browser, _stop) = saml_browser_server_options(
+        dir.path(),
+        false,
+        serde_json::json!({ "logout_session_lifetime": 1 }),
+        store,
+    )
+    .await;
+    // Signed in at unsigned.example, then at sp.example, which logs out.
+    let query = redirect::encode(
+        MessageName::SamlRequest,
+        &authn_request("https://unsigned.example", ""),
+        None,
+        None,
+    )
+    .unwrap();
+    follow(&browser, &base, format!("/Saml2/SSO{query}")).await;
+    let signed = authn_request(
+        "https://sp.example",
+        &format!(r#" Destination="{base}/Saml2/SSO""#),
+    );
+    let credential = sp_credential();
+    let signer: &dyn rustid_saml::xml::dsig::XmlSigner = &credential;
+    let query = redirect::encode(MessageName::SamlRequest, &signed, None, Some(signer)).unwrap();
+    let page = browser
+        .get(format!("{base}/Saml2/SSO{query}"))
+        .send()
+        .await
+        .unwrap();
+    let xml = posted_response(&page.text().await.unwrap());
+    let session_index = attribute_of(&xml, "SessionIndex");
+    let name_id = {
+        let start = xml.find("<saml:NameID").unwrap();
+        let start = start + xml[start..].find('>').unwrap() + 1;
+        xml[start..start + xml[start..].find('<').unwrap()].to_owned()
+    };
+    let to_logout = browser
+        .get(logout_request_url(&base, &name_id, &session_index))
+        .send()
+        .await
+        .unwrap();
+    let logout_page = to_logout.headers()["location"].to_str().unwrap().to_owned();
+    let context: serde_json::Value = follow(&browser, &base, logout_page)
+        .await
+        .json()
+        .await
+        .unwrap();
+    let iframe = context["signOutIFrameUrl"].as_str().unwrap().to_owned();
+    assert_eq!(browser.get(&iframe).send().await.unwrap().status(), 200);
+    // Past the session's lifetime, before any purge.
+    tokio::time::sleep(std::time::Duration::from_millis(2100)).await;
+    assert_eq!(browser.get(&iframe).send().await.unwrap().status(), 200);
 }

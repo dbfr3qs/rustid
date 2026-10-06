@@ -295,3 +295,11 @@ async fn other_methods_on_the_resource_are_405() {
     assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED);
     assert_eq!(headers["allow"], "GET");
 }
+
+#[tokio::test]
+async fn a_resource_on_an_endpoint_path_leaves_its_other_methods_alone() {
+    // The resource answers GET; the token endpoint still takes its POSTs.
+    let state = state(Some("/connect/token"));
+    let token = client_token(state.clone()).await;
+    assert!(!token.is_empty());
+}

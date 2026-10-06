@@ -6,6 +6,7 @@
     "clientId": "rustid-demo-federation",
     "clientAuthentication": { "secret": "federation-secret" },
     "scopes": ["openid", "profile", "email"],
-    "signOut": true
+    "signOut": true,
+    "backChannelLogout": true
   }
 ]

@@ -26,8 +26,9 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 # The upstream identity provider first: the demo server signs users in
-# through it.
-"$bin/rustid-server" --config examples/demo/upstream.toml &
+# through it, and tells it over the back channel when a user signs out there.
+RUSTID_BACK_CHANNEL_LOGOUT__CA_FILE="$PWD/target/demo/ca.pem" \
+  "$bin/rustid-server" --config examples/demo/upstream.toml &
 pids+=($!)
 RUSTID_FEDERATION__CA_FILE="$PWD/target/demo/ca.pem" \
   "$bin/rustid-server" --config examples/demo/rustid.toml &
@@ -76,7 +77,9 @@ cat << 'EOF'
            through a second rustid (https://127.0.0.1:5444) as carol / carol
            or dave / dave; the client then shows a subject derived from the
            upstream's issuer and subject, and idp "upstream". Signing out
-           signs out of the upstream too.
+           signs out of the upstream too, and signing out at the upstream
+           (https://127.0.0.1:5444/connect/endsession) ends the session
+           here over the back channel.
   Logout:  "Sign out" in the client ends both sessions; signing out at
            https://localhost:5443/connect/endsession signs the client out
            over the front channel.

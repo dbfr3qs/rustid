@@ -568,6 +568,10 @@ pub async fn run(
                 bundle.grants.len()
             ));
         }
+        // Checked aside first: a bundle that fails leaves the output
+        // directory as it was.
+        let scratch = tempfile::tempdir().context("creating a scratch directory")?;
+        validate_configuration(&bundle, scratch.path())?;
         std::fs::create_dir_all(out).with_context(|| format!("creating {}", out.display()))?;
         validate_configuration(&bundle, out)?;
         let keys = std::sync::Arc::new(rustid_store_memory::FileSystemSigningKeyStore::new(
@@ -582,11 +586,8 @@ pub async fn run(
         .postgres
         .as_ref()
         .context("store.postgres is required for the postgres store")?;
-    let scratch = std::env::temp_dir().join(format!("rustid-import-{}", std::process::id()));
-    std::fs::create_dir_all(&scratch)?;
-    let validated = validate_configuration(&bundle, &scratch);
-    let _ = std::fs::remove_dir_all(&scratch);
-    validated?;
+    let scratch = tempfile::tempdir().context("creating a scratch directory")?;
+    validate_configuration(&bundle, scratch.path())?;
     let grants = translate_grants(&bundle)?;
     let store = crate::open_postgres(pg).await?;
     store

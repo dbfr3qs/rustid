@@ -328,3 +328,22 @@ fn the_format_is_rustid_migration_bundle_and_the_earlier_name_is_still_read() {
     std::fs::write(&path, value.to_string()).unwrap();
     import::read_bundle(&path).unwrap();
 }
+
+#[tokio::test]
+async fn a_failed_memory_import_writes_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    let (path, _) = bundle(dir.path(), "RS256");
+    let mut value: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    // Valid clients, then resources the loader refuses.
+    value["resources"] = serde_json::json!({ "apiScopes": "not a list" });
+    std::fs::write(&path, value.to_string()).unwrap();
+    let out = dir.path().join("out");
+    import::run(&config(dir.path(), serde_json::json!({})), &path, Some(&out))
+        .await
+        .unwrap_err();
+    let written: Vec<_> = std::fs::read_dir(&out)
+        .map(|d| d.map(|e| e.unwrap().file_name()).collect())
+        .unwrap_or_default();
+    assert!(written.is_empty(), "{written:?}");
+}

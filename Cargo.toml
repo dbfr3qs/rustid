@@ -5,7 +5,7 @@ exclude = ["fuzz"]
 
 [workspace.package]
 edition = "2024"
-version = "0.5.0"
+version = "0.6.0"
 publish = false
 license = "MIT OR Apache-2.0"
 

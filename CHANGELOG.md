@@ -7,6 +7,15 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-06
+
+### Added
+
+- Logout started by an upstream provider. With `backChannelLogout`, the provider's back-channel logout (`POST /federation/<scheme>/backchannel-logout`) ends the rustid sessions its logout token names, by `sid` or by `sub`. It needs server-side sessions. With `frontChannelLogout`, its front-channel logout (`GET /federation/<scheme>/frontchannel-logout`) ends the browser's session. Either way rustid's clients are told through their own logout channels, and `User Logout Success` and `User Logout Failure` events are raised.
+- `idTokenSignedResponseAlg` on a provider: id tokens and logout tokens must be signed with that algorithm.
+- The sessions keep the upstream session id (`sid`).
+- The relying-party conformance run covers the suite's back-channel, front-channel and RP-initiated logout plans.
+
 ## [0.5.0] - 2026-10-06
 
 ### Added

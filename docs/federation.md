@@ -47,6 +47,9 @@ identity_providers_file = "identity-providers.json"
 | `userinfo` | `false` by default. When `true`, rustid also calls the provider's userinfo endpoint with the access token, and its claims join the id token's |
 | `multiTenant` | `{"tenants": ["<tenant id>", …]}`: one entry for a shared multi-tenant endpoint, accepting the tenants listed (see Entra ID with many tenants) |
 | `signOut` | `false` by default. When `true`, signing out of rustid also signs the user out of the provider (see Signing out) |
+| `backChannelLogout` | `false` by default. When `true`, the provider's back-channel logout ends rustid sessions (see Logout started by the provider) |
+| `frontChannelLogout` | `false` by default. When `true`, the provider's front-channel logout ends the browser's rustid session (see Logout started by the provider) |
+| `idTokenSignedResponseAlg` | The id token signing algorithm registered at the provider, such as `RS256`. When set, id tokens and logout tokens signed with any other algorithm are refused. By default rustid accepts any asymmetric algorithm the provider's discovery document lists in `id_token_signing_alg_values_supported` |
 
 ### Client authentication
 
@@ -189,10 +192,50 @@ If the provider can't be reached, or never sends the browser back, the user is s
 
 The logout continuation (`/connect/interaction/logout?token=…`) may now redirect to the provider instead of to the return URL. The interaction API has always had the browser follow that redirect. A UI that visits the continuation itself must send the browser to its `Location` when it isn't the return URL, as the reference UI does.
 
+## Logout started by the provider
+
+When the user signs out at the provider, or the provider ends their session, it can tell rustid. rustid then ends the rustid sessions that came from it. As for any rustid sign-out, it revokes the tokens tied to the session and tells rustid's clients through their back-channel and front-channel logout.
+
+### Back channel
+
+OpenID Connect Back-Channel Logout 1.0, supported by Okta, Keycloak and rustid among others. Set `backChannelLogout`, and register this URI with the provider as the client's `backchannel_logout_uri`:
+
+```
+<rustid issuer>/federation/<scheme>/backchannel-logout
+```
+
+Back-channel logout needs server-side sessions (`[server_side_sessions]`). Without them there is nothing on the server to end, and the endpoint answers 501.
+
+The provider posts a `logout_token`. rustid checks it as the specification requires:
+- the signature, with the provider's keys and an algorithm it accepts for id tokens;
+- `iss`, as for id tokens;
+- `aud` contains `clientId`;
+- `iat` is present and not in the future, and `exp`, if present, has not passed;
+- `jti` is present and not seen before (rustid remembers it for 5 minutes);
+- `events` has the back-channel logout event;
+- `sub` or `sid` is present, and there is no `nonce`.
+
+A token with `sid` ends the rustid session that started from that provider session. A token with only `sub` ends every rustid session of that user. rustid answers 200, also when no session matched, or 400 with `{"error":"invalid_request"}` for a token that fails a check.
+
+### Front channel
+
+OpenID Connect Front-Channel Logout 1.0, as Entra ID uses it. Set `frontChannelLogout`, and register this URI with the provider as the front-channel logout URL, with `frontchannel_logout_session_required` true where the provider asks:
+
+```
+<rustid issuer>/federation/<scheme>/frontchannel-logout
+```
+
+The provider loads that page in a hidden iframe, with `iss` and `sid` in the query. rustid ends the browser's session if it came from that provider and, when they are given, `sid` is the provider session it started from and `iss` is the provider's issuer. Otherwise nothing happens. The page always answers 200, and it may be framed by any site.
+
+Front-channel logout depends on the browser sending rustid's cookies inside the provider's iframe. Browsers that block third-party cookies don't, and nothing is signed out. Prefer the back channel where the provider offers it.
+
+### Events
+
+A logout from the provider that ends a session raises `User Logout Success` (id 1002), with `Provider`, `Channel` (`back` or `front`), and the provider's `Sub` and `Sid` where it named them. A back-channel logout token that fails a check raises `User Logout Failure` (id 1003), with `Provider`, `Channel`, `Reason` (`logout_token_invalid` or `metadata_unavailable`) and `Detail`.
+
 ## Limitations
 
 These are not supported yet:
-- logout started by the provider (its front-channel or back-channel logout to rustid);
 - SAML upstream providers;
 
 Upstream providers must answer in the query response mode.

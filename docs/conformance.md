@@ -9,6 +9,7 @@ Run them with:
     scripts/conformance.sh                 # the thirteen OIDC plans
     scripts/conformance.sh oidcc-basic     # or some, by name (the list is at the top of the script)
     scripts/conformance.sh fapi2 fapi2-final fapi2-ms fapi-ciba   # the FAPI plans, run when named
+    scripts/conformance.sh rp              # the relying-party plans, against upstream federation
     KEEP=1 scripts/conformance.sh logout   # leave the suite up to look at https://localhost:8443
     scripts/conformance.sh stop
 
@@ -41,6 +42,12 @@ Every run used the suite image `sha256:df0385890213…` (pinned by digest in `co
 | `fapi2-security-profile-final-test-plan` | as ID2 | 52 | 44 passed, 4 review, 2 warnings, 1 skip and 1 failure expected |
 | `fapi2-message-signing-final-test-plan` | as final, signed requests (`signed_non_repudiation`), JARM responses | 67 | 58 passed, 4 review, 2 warnings, 1 skip and 1 failure expected |
 | `fapi-ciba-id1-test-plan` | plain FAPI, `private_key_jwt`, poll, static client | 34 | 16 passed, 18 failures expected |
+| `oidcc-client-basic-certification-test-plan` (rp) | static client | 14 | 13 passed, 1 skip expected |
+| `oidcc-client-back-channel-logout-rp-basic` (rp) | code, static client, `client_secret_basic` | 8 | 8 passed |
+| `oidcc-client-front-channel-logout-rp-basic` (rp) | code, static client, `client_secret_basic` | 1 | 1 review |
+| `oidcc-client-rp-initiated-logout-rp-basic` (rp) | code, static client, `client_secret_basic` | 3 | 3 passed |
+
+The *rp* plans test rustid as a relying party: the suite is the upstream provider, and `conformance/rp/run.py` drives each module in place of a browser. It signs in through the suite, and in the logout plans signs out at rustid, which signs out at the suite. The suite then posts a logout token to rustid's back-channel logout endpoint (a broken one in the negative modules, which rustid refuses with 400), or frames its front-channel logout endpoint. `idtoken-sig-none` is skipped because rustid never accepts unsigned id tokens.
 
 *Review* modules completed without failures. They wait for a person to confirm the screenshot the browser took (an error page, a second login, the signed-out page), as certification requires. The runs record the screenshots.
 

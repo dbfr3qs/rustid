@@ -105,11 +105,16 @@ pub(crate) async fn handle(
     }
 }
 
-fn cookie_path(route: &Route, scheme: &str) -> String {
-    format!(
-        "{}/federation/{scheme}/",
-        route.origin.base_path.trim_end_matches('/')
-    )
+/// The path of the provider's URLs (`{issuer}/federation/{scheme}/`), so
+/// its cookies reach the callbacks the provider sends the browser to, as
+/// their URLs are made from the issuer.
+fn cookie_path(state: &ProtocolState, route: &Route, scheme: &str) -> String {
+    let issuer = current_issuer(&state.options, &route.origin);
+    let path = issuer
+        .split_once("://")
+        .and_then(|(_, rest)| rest.find('/').map(|i| &rest[i..]))
+        .unwrap_or("");
+    format!("{}/federation/{scheme}/", path.trim_end_matches('/'))
 }
 
 fn found(location: &str) -> Response {
@@ -120,12 +125,25 @@ fn found(location: &str) -> Response {
 }
 
 fn page(status: StatusCode, message: &str) -> Response {
+    titled_page(status, "Sign-in", message)
+}
+
+/// A short page, never cached (it answers one browser's request).
+fn titled_page(status: StatusCode, title: &str, message: &str) -> Response {
     let html = format!(
-        "<!doctype html><html><head><meta charset=\"utf-8\"><title>Sign-in</title></head>\
-         <body><h1>Sign-in</h1><p>{}</p></body></html>",
+        "<!doctype html><html><head><meta charset=\"utf-8\"><title>{title}</title></head>\
+         <body><h1>{title}</h1><p>{}</p></body></html>",
         html_encode(message)
     );
-    (status, [(CONTENT_TYPE, "text/html; charset=utf-8")], html).into_response()
+    (
+        status,
+        [
+            (CONTENT_TYPE, "text/html; charset=utf-8"),
+            (axum::http::header::CACHE_CONTROL, "no-store"),
+        ],
+        html,
+    )
+        .into_response()
 }
 
 /// The local form of a return URL: as given, or without the request's
@@ -330,7 +348,7 @@ async fn challenge(
     let mut cookie = format!(
         "{CORRELATION_COOKIE}={}; path={}; max-age={CORRELATION_LIFETIME_SECONDS}",
         correlation.seal(&state.interaction.protector),
-        cookie_path(route, &provider.config.scheme)
+        cookie_path(state, route, &provider.config.scheme)
     );
     if route.is_https() {
         cookie.push_str("; secure");
@@ -347,7 +365,7 @@ async fn callback(state: &ProtocolState, incoming: &Incoming<'_>, provider: &Pro
     let route = incoming.route;
     let mut deleted = format!(
         "{CORRELATION_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path={}; max-age=0",
-        cookie_path(route, &provider.config.scheme)
+        cookie_path(state, route, &provider.config.scheme)
     );
     if route.is_https() {
         deleted.push_str("; secure");
@@ -433,15 +451,30 @@ async fn callback_answer(
             .await
             {
                 Ok(redirect_url) => found(&redirect_url),
+                // The request can't be answered any more (its client has
+                // gone, say): the browser gets the page, not the API's error.
+                Err(response) if response.status() == StatusCode::BAD_REQUEST => page(
+                    StatusCode::BAD_REQUEST,
+                    "Your sign-in can't be completed. Start again from the application.",
+                ),
                 Err(response) => *response,
             };
         }
+        let short = |text: &str| text.chars().take(256).collect::<String>();
+        let detail = match params.get("error_description") {
+            Some(description) => format!(
+                "the provider answered {}: {}",
+                short(&error),
+                short(&description)
+            ),
+            None => format!("the provider answered {}", short(&error)),
+        };
         return refusal.answer(
             state,
             info,
             StatusCode::BAD_GATEWAY,
             "upstream_error",
-            Some(format!("the provider answered {error}")),
+            Some(detail),
         );
     }
     let Some(code) = params.get("code") else {
@@ -536,15 +569,20 @@ async fn callback_answer(
     ))
 }
 
-fn signout_cookie(route: &Route, scheme: &str, value: Option<&str>) -> String {
+fn signout_cookie(
+    state: &ProtocolState,
+    route: &Route,
+    scheme: &str,
+    value: Option<&str>,
+) -> String {
     let mut cookie = match value {
         Some(value) => format!(
             "{SIGNOUT_COOKIE}={value}; path={}; max-age={CORRELATION_LIFETIME_SECONDS}",
-            cookie_path(route, scheme)
+            cookie_path(state, route, scheme)
         ),
         None => format!(
             "{SIGNOUT_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path={}; max-age=0",
-            cookie_path(route, scheme)
+            cookie_path(state, route, scheme)
         ),
     };
     if route.is_https() {
@@ -608,6 +646,7 @@ pub(crate) async fn upstream_sign_out(
     crate::cookies::append(
         &mut response,
         &signout_cookie(
+            state,
             route,
             scheme,
             Some(&correlation.seal(&state.interaction.protector)),
@@ -625,7 +664,29 @@ async fn signout_callback(
     incoming: &Incoming<'_>,
     scheme: &str,
 ) -> Response {
-    let Incoming { route, headers, .. } = *incoming;
+    let Incoming {
+        route,
+        headers,
+        info,
+        ..
+    } = *incoming;
+    // A provider's scheme, enabled or not (one disabled since the sign-out
+    // began still gets its cookie cleared); never the path's text as such.
+    let providers = match state.stores.federation.providers().await {
+        Ok(providers) => providers,
+        Err(e) => {
+            return crate::response::internal_error(
+                state,
+                info,
+                "FederationSignout",
+                &e.to_string(),
+            );
+        }
+    };
+    let Some(provider) = providers.iter().find(|p| p.config.scheme == scheme) else {
+        return page(StatusCode::NOT_FOUND, "There is no such sign-in provider.");
+    };
+    let scheme = provider.config.scheme.as_str();
     let now = chrono::Utc::now().timestamp();
     let params = Params::parse_query(&route.query);
     let correlation = crate::cookies::get(headers, SIGNOUT_COOKIE)
@@ -645,9 +706,9 @@ async fn signout_callback(
     };
     let mut response = match return_url {
         Some(url) => found(&url),
-        None => page(StatusCode::OK, "You are signed out."),
+        None => titled_page(StatusCode::OK, "Signed out", "You are signed out."),
     };
-    crate::cookies::append(&mut response, &signout_cookie(route, scheme, None));
+    crate::cookies::append(&mut response, &signout_cookie(state, route, scheme, None));
     response
 }
 

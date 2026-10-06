@@ -1424,8 +1424,136 @@ async fn multi_tenant_sign_out_goes_upstream() {
     let reply = sign_out(&mut b).await;
     assert_eq!(reply.status, StatusCode::FOUND, "{}", reply.body);
     assert!(
-        reply.location().starts_with("https://up.example/endsession?"),
+        reply
+            .location()
+            .starts_with("https://up.example/endsession?"),
         "{}",
         reply.location()
     );
+}
+
+#[tokio::test]
+async fn signout_callback_for_an_unknown_scheme_sets_no_cookie() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    let mut b = Browser::new(&f.app);
+    let reply = b
+        .get("/federation/nope%3Bpath%3D%2F/signout-callback?state=x")
+        .await;
+    assert_eq!(reply.status, StatusCode::NOT_FOUND);
+    assert!(reply.set_cookies().is_empty(), "{:?}", reply.set_cookies());
+}
+
+#[tokio::test]
+async fn the_bad_state_signout_page_says_signed_out() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    let mut b = Browser::new(&f.app);
+    let reply = b.get("/federation/up/signout-callback?state=wrong").await;
+    assert!(
+        reply.body.contains("<title>Signed out</title>"),
+        "{}",
+        reply.body
+    );
+    assert_eq!(reply.headers["cache-control"], "no-store");
+}
+
+#[tokio::test]
+async fn local_sign_out_sets_no_signout_cookie() {
+    let f = federated_custom(Default::default(), sign_out_on, true);
+    let mut b = Browser::new(&f.app);
+    sign_in(&mut b, "alice").await;
+    let reply = sign_out(&mut b).await;
+    assert!(
+        !reply
+            .set_cookies()
+            .iter()
+            .any(|c| c.starts_with("idsrv.federation.signout=")
+                && !c.starts_with("idsrv.federation.signout=;")),
+        "{:?}",
+        reply.set_cookies()
+    );
+}
+
+#[tokio::test]
+async fn the_correlation_cookie_path_follows_the_callback_url() {
+    let options = rustid_core::options::ProtocolOptions {
+        issuer_uri: Some("http://server/idp".into()),
+        ..Default::default()
+    };
+    let f = federated_custom(options, |_| {}, false);
+    let mut b = Browser::new(&f.app);
+    let login = b.get(&authorize_for("fed.client", "")).await;
+    let return_url = return_url(&login.location());
+    let reply = b
+        .get(&format!(
+            "/federation/up/challenge?returnUrl={}",
+            encode(&return_url)
+        ))
+        .await;
+    assert_eq!(reply.status, StatusCode::FOUND, "{}", reply.body);
+    let redirect_uri = query(&reply.location(), "redirect_uri").unwrap();
+    assert!(
+        redirect_uri.starts_with("http://server/idp/federation/up/callback"),
+        "{redirect_uri}"
+    );
+    let cookie = reply
+        .set_cookies()
+        .into_iter()
+        .find(|c| c.starts_with("idsrv.federation="))
+        .unwrap();
+    assert!(cookie.contains("path=/idp/federation/up/"), "{cookie}");
+}
+
+#[tokio::test]
+async fn upstream_errors_record_a_short_description() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let (_, upstream) = start(&mut b).await;
+    let state = query(&upstream, "state").unwrap();
+    let long = "y".repeat(5000);
+    let reply = b
+        .get(&format!(
+            "/federation/up/callback?error=server_error&error_description=the%20database%20{long}&state={}",
+            encode(&state)
+        ))
+        .await;
+    assert_eq!(reply.status, StatusCode::BAD_GATEWAY);
+    assert_eq!(reply.headers["cache-control"], "no-store");
+    let detail = f.events.named("User Login Failure")[0]["Detail"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(detail.contains("server_error"), "{detail}");
+    assert!(detail.contains("the database"), "{detail}");
+    assert!(detail.len() < 600, "{}", detail.len());
+}
+
+#[tokio::test]
+async fn access_denied_for_a_request_no_longer_valid_shows_the_error_page() {
+    let f = federated();
+    let mut b = Browser::new(&f.app);
+    let correlation = rustid_core::federation::challenge::Correlation::new(
+        "up",
+        "/connect/authorize/callback?client_id=gone&response_type=code&redirect_uri=https%3A%2F%2Fx",
+        chrono::Utc::now().timestamp(),
+    );
+    b.cookies.push((
+        "idsrv.federation".into(),
+        correlation.seal(&f.app.0.interaction.protector),
+    ));
+    let reply = b
+        .get(&format!(
+            "/federation/up/callback?error=access_denied&state={}",
+            encode(&correlation.state)
+        ))
+        .await;
+    assert_eq!(reply.status, StatusCode::BAD_REQUEST);
+    assert!(
+        reply.headers["content-type"]
+            .to_str()
+            .unwrap()
+            .starts_with("text/html"),
+        "{:?}",
+        reply.headers
+    );
+    assert_eq!(reply.headers["cache-control"], "no-store");
 }

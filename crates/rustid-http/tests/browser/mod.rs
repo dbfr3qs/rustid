@@ -67,7 +67,10 @@ pub fn state_with_dcr(
 pub fn protocol_state_with(options: rustid_core::options::ProtocolOptions) -> ProtocolState {
     ProtocolState {
         options: rustid_core::options::ProtocolOptions {
-            issuer_uri: Some("https://idsrv.test".into()),
+            issuer_uri: options
+                .issuer_uri
+                .clone()
+                .or_else(|| Some("https://idsrv.test".into())),
             ..options
         },
         keys: signing_keys(),

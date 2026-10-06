@@ -260,6 +260,24 @@ impl ConfigurationStore for InMemoryConfiguration {
             .cloned()
             .unwrap_or_default())
     }
+
+    async fn reorder(&self, kind: EntityKind, first: &[String]) -> Result<(), StoreError> {
+        if kind == EntityKind::Client {
+            return Ok(());
+        }
+        let mut state = self.write_state();
+        let Some(list) = state.entities.get_mut(&kind) else {
+            return Ok(());
+        };
+        let current: Vec<String> = list.iter().map(|e| e.key.clone()).collect();
+        let order = rustid_core::stores::reordered(&current, first);
+        if order == current {
+            return Ok(());
+        }
+        list.sort_by_key(|e| order.iter().position(|k| *k == e.key));
+        state.changed();
+        Ok(())
+    }
 }
 
 #[async_trait]

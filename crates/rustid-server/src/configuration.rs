@@ -82,6 +82,12 @@ where
     async fn list(&self, kind: EntityKind) -> Result<Vec<StoredEntity>, StoreError> {
         self.inner.list(kind).await
     }
+
+    async fn reorder(&self, kind: EntityKind, first: &[String]) -> Result<(), StoreError> {
+        self.inner.reorder(kind, first).await?;
+        self.changed();
+        Ok(())
+    }
 }
 
 #[cfg(test)]

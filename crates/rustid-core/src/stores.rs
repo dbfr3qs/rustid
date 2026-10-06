@@ -257,6 +257,24 @@ pub trait ConfigurationStore: Send + Sync {
 
     /// Every entity of the kind, in configuration order.
     async fn list(&self, kind: EntityKind) -> Result<Vec<StoredEntity>, StoreError>;
+
+    /// Puts the entities with these keys first in configuration order, in
+    /// this order, and the others after them in their current order (a
+    /// configuration file's entries, then those made through admin).
+    /// Versions don't change. Clients, listed by id, are left as they are.
+    async fn reorder(&self, kind: EntityKind, first: &[String]) -> Result<(), StoreError>;
+}
+
+/// `current` keys in the order [`ConfigurationStore::reorder`] gives them.
+pub fn reordered(current: &[String], first: &[String]) -> Vec<String> {
+    let position = |key: &String| first.iter().position(|f| f == key);
+    let mut keys: Vec<String> = first
+        .iter()
+        .filter(|f| current.contains(f))
+        .cloned()
+        .collect();
+    keys.extend(current.iter().filter(|k| position(k).is_none()).cloned());
+    keys
 }
 
 /// The server side session store.
@@ -389,6 +407,10 @@ impl<T: ConfigurationStore + ?Sized> ConfigurationStore for Arc<T> {
 
     async fn list(&self, kind: EntityKind) -> Result<Vec<StoredEntity>, StoreError> {
         (**self).list(kind).await
+    }
+
+    async fn reorder(&self, kind: EntityKind, first: &[String]) -> Result<(), StoreError> {
+        (**self).reorder(kind, first).await
     }
 }
 

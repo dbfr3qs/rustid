@@ -29,7 +29,23 @@ impl IdentityProviderInput {
     pub fn from_json(body: Value) -> Result<Self, AdminError> {
         serde_json::from_value(body)
             .map(IdentityProviderInput)
-            .map_err(|e| AdminError::validation_failed(e.to_string()))
+            .map_err(|e| AdminError::validation_failed(input_error(&e)))
+    }
+}
+
+/// What was wrong with a provider's JSON, naming members but never
+/// repeating a value, which may be a secret sent in the wrong place.
+fn input_error(error: &serde_json::Error) -> String {
+    let text = error.to_string();
+    if ["unknown field", "missing field", "duplicate field"]
+        .iter()
+        .any(|prefix| text.starts_with(prefix))
+    {
+        return text;
+    }
+    match text.split_once(", expected ") {
+        Some((_, expected)) => format!("a member has the wrong type or value: expected {expected}"),
+        None => "a member has the wrong type or value".to_owned(),
     }
 }
 
@@ -336,7 +352,15 @@ impl IdentityProviderAdmin {
         };
         let mut items = Vec::new();
         for entity in store.list(KIND).await? {
-            let config = opened(&entity, &self.protector)?.config;
+            // One that can't be opened is left out of lists; reading it
+            // by itself says why.
+            let config = match opened(&entity, &self.protector) {
+                Ok(opened) => opened.config,
+                Err(error) => {
+                    tracing::warn!(scheme = %entity.key, %error, "identity provider left out of the list: it can't be read");
+                    continue;
+                }
+            };
             if contains(&config.scheme, &filter.scheme)
                 && contains(&config.display_name, &filter.display_name)
                 && filter.enabled.is_none_or(|e| config.enabled == e)
@@ -371,12 +395,32 @@ impl IdentityProviderAdmin {
 /// Imports providers from the configuration file: each is created, or
 /// updated when it differs from the stored one (compared opened, since a
 /// secret is sealed afresh each time), so an unchanged file keeps versions.
-/// Providers the file doesn't name are kept.
+/// Providers the file doesn't name are kept, after the file's in order.
+/// Another instance importing at the same moment (a create or update
+/// that lost) is retried once.
 pub async fn import(
     store: &dyn ConfigurationStore,
     protector: &DataProtector,
     providers: &[IdentityProvider],
 ) -> Result<(), StoreError> {
+    if let Err(lost) = import_once(store, protector, providers).await? {
+        tracing::info!(scheme = %lost, "identity provider import raced another instance; trying again");
+        if let Err(lost) = import_once(store, protector, providers).await? {
+            return Err(backend(format!(
+                "importing identity provider {lost}: it changed meanwhile"
+            )));
+        }
+    }
+    let schemes: Vec<String> = providers.iter().map(|p| p.scheme.clone()).collect();
+    store.reorder(KIND, &schemes).await
+}
+
+/// One import pass; `Ok(Err(scheme))` when another writer got there first.
+async fn import_once(
+    store: &dyn ConfigurationStore,
+    protector: &DataProtector,
+    providers: &[IdentityProvider],
+) -> Result<Result<(), String>, StoreError> {
     for config in providers {
         match store.read_by_key(KIND, &config.scheme).await? {
             Some(existing) => {
@@ -394,6 +438,7 @@ pub async fn import(
                 };
                 match store.update(KIND, &entity).await? {
                     UpdateOutcome::Updated => {}
+                    UpdateOutcome::UnexpectedVersion => return Ok(Err(config.scheme.clone())),
                     other => {
                         return Err(backend(format!(
                             "importing identity provider {}: {other:?}",
@@ -410,13 +455,10 @@ pub async fn import(
                     data: sealed(config, protector),
                 };
                 if store.create(KIND, &entity).await? == CreateOutcome::KeyExists {
-                    return Err(backend(format!(
-                        "importing identity provider {}: it was created meanwhile",
-                        config.scheme
-                    )));
+                    return Ok(Err(config.scheme.clone()));
                 }
             }
         }
     }
-    Ok(())
+    Ok(Ok(()))
 }

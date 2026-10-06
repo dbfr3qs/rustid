@@ -377,3 +377,142 @@ async fn the_registered_id_token_algorithm_round_trips_and_is_validated() {
         .unwrap_err();
     assert_eq!(errors[0].code, "validation_failed", "{errors:?}");
 }
+
+#[tokio::test]
+async fn one_unreadable_provider_leaves_the_list_but_not_its_own_read() {
+    let store = InMemoryConfiguration::default();
+    // Sealed under a key the admin no longer holds.
+    IdentityProviderAdmin::new(protector(&[("gone", [1; 32])]))
+        .create(&store, input(provider("lost")))
+        .await
+        .unwrap()
+        .unwrap();
+    let admin = IdentityProviderAdmin::new(protector(&[("a", [2; 32])]));
+    admin
+        .create(&store, input(provider("fine")))
+        .await
+        .unwrap()
+        .unwrap();
+    let listed = admin
+        .query(
+            &store,
+            &IdentityProviderFilter::default(),
+            None,
+            &Range::default(),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    let schemes: Vec<_> = listed.items.iter().map(|i| i.scheme.as_str()).collect();
+    assert_eq!(schemes, ["fine"]);
+    let error = admin.get_by_scheme(&store, "lost").await.unwrap_err();
+    assert!(error.to_string().contains("lost"), "{error}");
+}
+
+#[test]
+fn malformed_input_errors_never_echo_values() {
+    for body in [
+        json!({ "scheme": "up", "displayName": "Up", "authority": "https://up.example",
+                "clientId": "rustid", "enabled": "hunter2-not-a-bool" }),
+        json!({ "scheme": "up", "displayName": "Up", "authority": "https://up.example",
+                "clientId": "rustid", "clientAuthentication": { "method": "hunter2-method" } }),
+        json!({ "scheme": "up", "displayName": "Up", "authority": "https://up.example",
+                "clientId": "rustid", "scopes": "hunter2-scope" }),
+    ] {
+        let error = IdentityProviderInput::from_json(body).unwrap_err();
+        let text = format!("{error:?}");
+        assert!(!text.contains("hunter2"), "{text}");
+        assert!(text.contains("validation_failed"), "{text}");
+    }
+    // Names of members are fine, and still said.
+    let error = IdentityProviderInput::from_json(json!({ "scheme": "up", "nope": 1 })).unwrap_err();
+    assert!(format!("{error:?}").contains("nope"), "{error:?}");
+}
+
+/// Another instance creates the provider between this import's read and
+/// its create, once.
+struct RacingStore {
+    inner: InMemoryConfiguration,
+    raced: std::sync::atomic::AtomicBool,
+    protector: Arc<DataProtector>,
+}
+
+#[async_trait::async_trait]
+impl ConfigurationStore for RacingStore {
+    async fn create(
+        &self,
+        kind: EntityKind,
+        entity: &rustid_core::stores::StoredEntity,
+    ) -> Result<rustid_core::stores::CreateOutcome, rustid_core::stores::StoreError> {
+        if !self.raced.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            // The other instance imports the same file first.
+            let config: rustid_core::federation::provider::IdentityProvider =
+                serde_json::from_value(provider("up")).unwrap();
+            rustid_core::admin::identity_providers::import(&self.inner, &self.protector, &[config])
+                .await?;
+        }
+        self.inner.create(kind, entity).await
+    }
+    async fn read(
+        &self,
+        kind: EntityKind,
+        id: &rustid_core::admin::EntityId,
+    ) -> Result<Option<rustid_core::stores::StoredEntity>, rustid_core::stores::StoreError> {
+        self.inner.read(kind, id).await
+    }
+    async fn read_by_key(
+        &self,
+        kind: EntityKind,
+        key: &str,
+    ) -> Result<Option<rustid_core::stores::StoredEntity>, rustid_core::stores::StoreError> {
+        self.inner.read_by_key(kind, key).await
+    }
+    async fn update(
+        &self,
+        kind: EntityKind,
+        entity: &rustid_core::stores::StoredEntity,
+    ) -> Result<rustid_core::stores::UpdateOutcome, rustid_core::stores::StoreError> {
+        self.inner.update(kind, entity).await
+    }
+    async fn delete(
+        &self,
+        kind: EntityKind,
+        id: &rustid_core::admin::EntityId,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        self.inner.delete(kind, id).await
+    }
+    async fn list(
+        &self,
+        kind: EntityKind,
+    ) -> Result<Vec<rustid_core::stores::StoredEntity>, rustid_core::stores::StoreError> {
+        self.inner.list(kind).await
+    }
+    async fn reorder(
+        &self,
+        kind: EntityKind,
+        first: &[String],
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        self.inner.reorder(kind, first).await
+    }
+}
+
+#[tokio::test]
+async fn an_import_racing_another_instance_succeeds() {
+    let p = protector(&[("a", [1; 32])]);
+    let store = RacingStore {
+        inner: InMemoryConfiguration::default(),
+        raced: Default::default(),
+        protector: p.clone(),
+    };
+    let config: rustid_core::federation::provider::IdentityProvider =
+        serde_json::from_value(provider("up")).unwrap();
+    rustid_core::admin::identity_providers::import(&store, &p, &[config])
+        .await
+        .unwrap();
+    let stored = store
+        .read_by_key(EntityKind::IdentityProvider, "up")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(stored.version, 1);
+}

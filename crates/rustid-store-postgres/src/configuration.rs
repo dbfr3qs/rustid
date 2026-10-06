@@ -232,4 +232,36 @@ impl ConfigurationStore for PgStore {
         .map(entity)
         .collect()
     }
+
+    async fn reorder(&self, kind: EntityKind, first: &[String]) -> Result<(), StoreError> {
+        if kind == EntityKind::Client {
+            return Ok(());
+        }
+        let (table, key) = table(kind);
+        let mut tx = self.pool.begin().await.map_err(backend)?;
+        let rows: Vec<(String, i32)> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+            "SELECT {key}, ordinal FROM {table} ORDER BY ordinal, {key} FOR UPDATE"
+        )))
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(backend)?;
+        let current: Vec<String> = rows.iter().map(|(k, _)| k.clone()).collect();
+        let order = rustid_core::stores::reordered(&current, first);
+        for (index, k) in order.iter().enumerate() {
+            let ordinal = i32::try_from(index + 1).unwrap_or(i32::MAX);
+            if rows.iter().any(|(rk, ro)| rk == k && *ro == ordinal) {
+                continue;
+            }
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "UPDATE {table} SET ordinal = $1 WHERE {key} = $2"
+            )))
+            .bind(ordinal)
+            .bind(k)
+            .execute(&mut *tx)
+            .await
+            .map_err(backend)?;
+        }
+        tx.commit().await.map_err(backend)?;
+        Ok(())
+    }
 }

@@ -4281,16 +4281,47 @@ pub async fn identity_provider_admin(store: Arc<dyn rustid_core::stores::Configu
         .unwrap()
         .unwrap();
     assert_eq!(kept.version, 1);
-    // Listed in creation order, both present.
-    let listed: Vec<String> = store
-        .list(EntityKind::IdentityProvider)
+    // The file's providers come first, in the file's order, then the
+    // others in creation order.
+    let listed = || async {
+        store
+            .list(EntityKind::IdentityProvider)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|e| e.key)
+            .filter(|k| k.starts_with(&p))
+            .collect::<Vec<String>>()
+    };
+    assert_eq!(listed().await, [from_file.clone(), admin_made.clone()]);
+    let second = format!("{p}second");
+    let both = |order: [&String; 2]| -> Vec<IdentityProvider> {
+        order
+            .iter()
+            .map(|scheme| serde_json::from_value(provider(scheme, "File, renamed")).unwrap())
+            .collect()
+    };
+    import(store.as_ref(), &protector, &both([&second, &from_file]))
+        .await
+        .unwrap();
+    assert_eq!(
+        listed().await,
+        [second.clone(), from_file.clone(), admin_made.clone()]
+    );
+    import(store.as_ref(), &protector, &both([&from_file, &second]))
+        .await
+        .unwrap();
+    assert_eq!(
+        listed().await,
+        [from_file.clone(), second.clone(), admin_made.clone()]
+    );
+    // Reordering alone changes no version.
+    let unchanged = store
+        .read_by_key(EntityKind::IdentityProvider, &from_file)
         .await
         .unwrap()
-        .into_iter()
-        .map(|e| e.key)
-        .filter(|k| k.starts_with(&p))
-        .collect();
-    assert_eq!(listed, [admin_made.clone(), from_file.clone()]);
+        .unwrap();
+    assert_eq!(unchanged.version, 2);
     admin
         .delete(store.as_ref(), &saved.id)
         .await

@@ -68,6 +68,10 @@ impl FromStr for EntityId {
             return Err(InvalidEntityId);
         }
         let hex: String = groups.concat();
+        // `from_str_radix` would also take a sign.
+        if !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Err(InvalidEntityId);
+        }
         let mut bytes = [0u8; 16];
         for (i, byte) in bytes.iter_mut().enumerate() {
             *byte = u8::from_str_radix(hex.get(i * 2..i * 2 + 2).ok_or(InvalidEntityId)?, 16)
@@ -178,4 +182,25 @@ pub struct Versioned<T> {
     pub id: EntityId,
     pub version: i32,
     pub item: T,
+}
+
+#[cfg(test)]
+mod entity_id_tests {
+    use super::*;
+
+    #[test]
+    fn only_hex_digits_parse() {
+        let id = EntityId::new_v7();
+        assert_eq!(id.to_string().parse::<EntityId>(), Ok(id));
+        assert!(
+            "+0000000-0000-0000-0000-000000000000"
+                .parse::<EntityId>()
+                .is_err()
+        );
+        assert!(
+            "00000000-+000-0000-0000-000000000000"
+                .parse::<EntityId>()
+                .is_err()
+        );
+    }
 }

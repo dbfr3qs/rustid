@@ -1624,7 +1624,7 @@ async fn idp_initiated_target(
 }
 
 #[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct IdpInitiatedBody {
     #[serde(default)]
     sp_entity_id: String,
@@ -1733,4 +1733,17 @@ pub(crate) async fn continue_idp_initiated(
     // as the session's NameID here; `respond` records the NameID it issued,
     // so a later LogoutRequest names what the SP actually received.
     respond(state, saml, route, info, session, request).await
+}
+
+#[cfg(test)]
+mod idp_initiated_body_tests {
+    use super::IdpInitiatedBody;
+
+    #[test]
+    fn a_misspelt_member_is_refused() {
+        let ok = serde_json::json!({ "spEntityId": "https://sp", "relayState": "r" });
+        assert!(serde_json::from_value::<IdpInitiatedBody>(ok).is_ok());
+        let misspelt = serde_json::json!({ "spEntityId": "https://sp", "relayStat": "r" });
+        assert!(serde_json::from_value::<IdpInitiatedBody>(misspelt).is_err());
+    }
 }

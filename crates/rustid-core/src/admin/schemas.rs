@@ -201,7 +201,7 @@ fn definitions_error(message: &str) -> AdminError {
 
 /// An attribute code's rules.
 fn code_error(code: &str) -> Option<AdminError> {
-    if code.is_empty() {
+    if code.trim().is_empty() {
         return Some(AdminError::required("AttributeDefinitions"));
     }
     let message = if code.chars().count() > MAX_CODE {
@@ -246,14 +246,21 @@ pub fn schema_id_error(id: &str) -> Option<AdminError> {
 impl SchemaConfiguration {
     /// The first rule the schema breaks.
     pub fn validate(&self) -> Option<AdminError> {
-        schema_id_error(&self.schema_id).or_else(|| {
-            self.attribute_definitions.iter().find_map(|d| {
-                code_error(&d.code)
-                    .or_else(|| text_error(&d.display_name))
-                    .or_else(|| text_error(&d.description))
-                    .or_else(|| d.attribute_type.validate(false))
+        schema_id_error(&self.schema_id)
+            .or_else(|| {
+                self.attribute_definitions.iter().find_map(|d| {
+                    code_error(&d.code)
+                        .or_else(|| text_error(&d.display_name))
+                        .or_else(|| text_error(&d.description))
+                        .or_else(|| d.attribute_type.validate(false))
+                })
             })
-        })
+            .or_else(|| {
+                self.groups
+                    .iter()
+                    .any(|g| g.code.trim().is_empty())
+                    .then(|| AdminError::required("Groups"))
+            })
     }
 
     /// The definition for `code` (case-insensitive); the last wins, as

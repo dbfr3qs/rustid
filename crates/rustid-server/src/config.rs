@@ -503,6 +503,8 @@ pub enum ConfigError {
     Telemetry(String),
     #[error("interaction.api_keys: every key must be at least 16 characters")]
     WeakApiKey,
+    #[error("{0}")]
+    Setting(String),
     #[error(
         "mutual_tls.forwarded_certificate_header is only read from forwarded_headers.trusted_proxies, which is empty"
     )]
@@ -683,6 +685,31 @@ impl ServerConfig {
             .any(|k| k.trim().chars().count() < 16)
         {
             return Err(ConfigError::WeakApiKey);
+        }
+        if let Some(resource) = &self.protected_resource
+            && (!resource.path.starts_with('/')
+                || resource.path.starts_with("//")
+                || resource.path.contains(['?', '#']))
+        {
+            return Err(ConfigError::Setting(format!(
+                "protected_resource.path must be a path starting with '/', got {:?}",
+                resource.path
+            )));
+        }
+        // Durations a timer adds to now: past a year they are mistakes, and
+        // large enough ones overflow.
+        const YEAR: i64 = 366 * 86_400;
+        let outbox = &self.protocol.outbox_processor;
+        for (name, value, minimum) in [
+            ("process_interval", outbox.process_interval.0, 1),
+            ("retry_delay", outbox.retry_delay.0, 0),
+            ("max_retry_delay", outbox.max_retry_delay.0, 0),
+        ] {
+            if !(minimum..=YEAR).contains(&value) {
+                return Err(ConfigError::Setting(format!(
+                    "protocol.outbox_processor.{name} must be between {minimum} seconds and a year, got {value}"
+                )));
+            }
         }
         match (self.store.kind, &self.store.postgres) {
             (StoreKind::Postgres, None) => return Err(ConfigError::MissingPostgres),

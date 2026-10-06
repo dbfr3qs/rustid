@@ -10,12 +10,27 @@ use serde_json::{Value, json};
 
 use super::EntityId;
 
-/// How a secret's plaintext is hashed.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// How a secret's plaintext is hashed. Its name is read without regard
+/// to case (`Sha256`, `SHA256`, `sha256`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
 pub enum HashAlgorithm {
     #[default]
     Sha256,
     Sha512,
+}
+
+impl<'de> Deserialize<'de> for HashAlgorithm {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let name = String::deserialize(deserializer)?;
+        match name.to_ascii_lowercase().as_str() {
+            "sha256" => Ok(HashAlgorithm::Sha256),
+            "sha512" => Ok(HashAlgorithm::Sha512),
+            _ => Err(serde::de::Error::unknown_variant(
+                &name,
+                &["Sha256", "Sha512"],
+            )),
+        }
+    }
 }
 
 impl HashAlgorithm {
@@ -66,7 +81,7 @@ pub struct SecretConfiguration {
 }
 
 /// The arguments of a create secret call.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CreateSecret {
     #[serde(default)]
@@ -79,6 +94,19 @@ pub struct CreateSecret {
     pub expiration: Option<DateTime<Utc>>,
     #[serde(default, rename = "type")]
     pub secret_type: Option<String>,
+}
+
+/// Never the plaintext.
+impl std::fmt::Debug for CreateSecret {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CreateSecret")
+            .field("plaintext_value", &"<redacted>")
+            .field("hash_algorithm", &self.hash_algorithm)
+            .field("description", &self.description)
+            .field("expiration", &self.expiration)
+            .field("secret_type", &self.secret_type)
+            .finish()
+    }
 }
 
 /// A stored secret's type (`SharedSecret` when absent).
@@ -161,4 +189,27 @@ pub fn new_secret(input: &CreateSecret) -> (EntityId, Value) {
         "hashAlgorithm": algorithm.stored_name(),
     });
     (id, secret)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hash_algorithm_names_ignore_case() {
+        for name in ["Sha256", "SHA256", "sha256"] {
+            let parsed: HashAlgorithm = serde_json::from_value(serde_json::json!(name)).unwrap();
+            assert_eq!(parsed, HashAlgorithm::Sha256, "{name}");
+        }
+        let parsed: HashAlgorithm = serde_json::from_value(serde_json::json!("sha512")).unwrap();
+        assert_eq!(parsed, HashAlgorithm::Sha512);
+        assert!(serde_json::from_value::<HashAlgorithm>(serde_json::json!("md5")).is_err());
+    }
+
+    #[test]
+    fn a_secret_to_create_never_shows_its_plaintext() {
+        let input: CreateSecret =
+            serde_json::from_value(serde_json::json!({ "plaintextValue": "hunter2" })).unwrap();
+        assert!(!format!("{input:?}").contains("hunter2"));
+    }
 }

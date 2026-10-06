@@ -672,12 +672,17 @@ fn client_routes() -> Router<AdminState> {
 /// Schemas from `schemas_file` can't be changed (the file is the only source
 /// of those schemas).
 fn read_only() -> Response {
-    json_response(
+    let mut response = json_response(
         StatusCode::METHOD_NOT_ALLOWED,
         &json!({ "errors": [AdminError::validation_failed(
             "Schemas are read-only: they come from schemas_file.",
         )] }),
-    )
+    );
+    response.headers_mut().insert(
+        axum::http::header::ALLOW,
+        axum::http::HeaderValue::from_static("GET"),
+    );
+    response
 }
 
 fn schema_routes() -> Router<AdminState> {

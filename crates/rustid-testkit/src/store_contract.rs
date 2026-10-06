@@ -1275,13 +1275,16 @@ pub async fn api_resource_admin(store: Arc<dyn rustid_core::stores::Configuratio
             .unwrap()
             .contains(&hash_secret("one", HashAlgorithm::Sha256))
     );
+    let blank = admin
+        .create_secret(store_ref, &created.id, secret(" ", None))
+        .await
+        .unwrap()
+        .unwrap_err();
+    assert_eq!(blank[0].code, "required");
     assert_eq!(
-        codes(
-            admin
-                .create_secret(store_ref, &created.id, secret(" ", None))
-                .await
-        ),
-        ["required"]
+        blank[0].property_names,
+        ["PlaintextValue"],
+        "as the client secret call names it"
     );
     assert_eq!(
         codes(

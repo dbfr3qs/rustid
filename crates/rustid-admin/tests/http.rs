@@ -793,6 +793,7 @@ async fn read_only_schemas_refuse_writes() {
             reply.body["errors"][0]["message"],
             "Schemas are read-only: they come from schemas_file."
         );
+        assert_eq!(reply.headers["allow"], "GET", "{method} {path}");
     }
     assert_eq!(
         call(&app, Method::GET, "/admin/schemas", None, &[])

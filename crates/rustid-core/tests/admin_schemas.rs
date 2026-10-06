@@ -318,3 +318,19 @@ fn schema_validation_follows_the_value_object_rules() {
         assert_eq!(check(&|s| s.schema_id = ok.into()), None, "{ok}");
     }
 }
+
+#[test]
+fn blank_codes_are_required_values() {
+    let mut s = schema();
+    s.attribute_definitions[0].code = "   ".into();
+    let error = s.validate().unwrap();
+    assert_eq!(error.code, "required", "{error:?}");
+
+    let mut s = schema();
+    s.groups = vec![rustid_core::admin::schemas::AttributeGroup {
+        code: " ".into(),
+        ..Default::default()
+    }];
+    let error = s.validate().expect("a blank group code is refused");
+    assert_eq!(error.property_names, ["Groups"], "{error:?}");
+}

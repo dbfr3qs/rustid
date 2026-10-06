@@ -396,7 +396,7 @@ impl ApiResourceAdmin {
         input: CreateSecret,
     ) -> SaveResult {
         if input.plaintext_value.trim().is_empty() {
-            return Ok(Err(vec![AdminError::required("plaintextValue")]));
+            return Ok(Err(vec![AdminError::required("PlaintextValue")]));
         }
         let Some(existing) = store.read(KIND, id).await? else {
             return Ok(Err(vec![AdminError::not_found(NAME, &id.to_string())]));

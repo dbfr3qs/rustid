@@ -281,3 +281,17 @@ async fn the_resource_echoes_or_issues_a_fapi_interaction_id() {
     let issued = headers["x-fapi-interaction-id"].to_str().unwrap();
     assert_eq!(issued.len(), 36, "a UUID: {issued}");
 }
+
+#[tokio::test]
+async fn other_methods_on_the_resource_are_405() {
+    let (status, headers, _) = send(
+        state(Some("/fapi2/resource")),
+        Request::post("/fapi2/resource")
+            .header("host", "server")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED);
+    assert_eq!(headers["allow"], "GET");
+}

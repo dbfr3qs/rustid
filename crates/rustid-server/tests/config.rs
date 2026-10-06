@@ -670,3 +670,53 @@ fn the_old_environment_prefix_is_refused_in_any_case() {
         Ok(())
     });
 }
+
+#[test]
+fn outbox_delays_must_be_sensible() {
+    figment::Jail::expect_with(|jail| {
+        for (name, body) in [
+            (
+                "negative.toml",
+                "[protocol.outbox_processor]\nretry_delay = -5\n",
+            ),
+            (
+                "huge.toml",
+                "[protocol.outbox_processor]\nmax_retry_delay = 9223372036854775807\n",
+            ),
+            (
+                "zero.toml",
+                "[protocol.outbox_processor]\nprocess_interval = 0\n",
+            ),
+        ] {
+            jail.create_file(name, body)?;
+            let err = ServerConfig::load(Some(Path::new(name))).unwrap_err();
+            assert!(
+                err.to_string().contains("protocol.outbox_processor"),
+                "{name}: {err}"
+            );
+        }
+        Ok(())
+    });
+}
+
+#[test]
+fn the_protected_resource_path_must_be_a_path() {
+    figment::Jail::expect_with(|jail| {
+        for path in [
+            "fapi2/resource",
+            "/fapi2/resource?x=1",
+            "https://x/resource",
+        ] {
+            jail.create_file(
+                "r.toml",
+                &format!("[protected_resource]\npath = \"{path}\"\n"),
+            )?;
+            let err = ServerConfig::load(Some(Path::new("r.toml"))).unwrap_err();
+            assert!(
+                err.to_string().contains("protected_resource.path"),
+                "{path}: {err}"
+            );
+        }
+        Ok(())
+    });
+}

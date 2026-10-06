@@ -25,7 +25,7 @@ struct Args {
     /// Seconds of discarded warm-up before each level's runs.
     #[arg(long, default_value_t = 2)]
     warmup: u64,
-    /// Measured runs per level; the median (by req/s) is reported.
+    /// Measured runs per level; the median (by operations a second) is reported.
     #[arg(long, default_value_t = 3)]
     repeats: usize,
     /// `all`, or flow names, comma-separated.
@@ -112,7 +112,7 @@ async fn main() -> anyhow::Result<()> {
                 let count = runs.len();
                 let median = runs.swap_remove(count / 2);
                 eprintln!(
-                    "{:<10} {:<20} x{concurrency:<3} {:>8.0} req/s, {errors} errors",
+                    "{:<10} {:<20} x{concurrency:<3} {:>8.0} ops/s, {errors} errors",
                     target.name,
                     flow.name(),
                     median.requests_per_second()

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs OpenID Foundation conformance test plans against rustid-server.
 #
-#   scripts/conformance.sh [plan ...]    # all plans when none are named
+#   scripts/conformance.sh [plan ...]    # the default run when none are named
 #   scripts/conformance.sh stop          # stop anything a failed run left
 #
 # Plans: oidcc-basic, implicit, hybrid, formpost-basic, formpost-implicit,

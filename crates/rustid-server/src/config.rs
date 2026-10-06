@@ -346,6 +346,8 @@ impl Default for DynamicClientRegistrationConfig {
 /// The shortest admin API key (or initial access token) the server accepts.
 pub const MIN_ADMIN_KEY_LENGTH: usize = 32;
 
+/// `[protected_resource]`: a resource on the server itself, which the
+/// FAPI 2.0 conformance plans call with the tokens they get.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProtectedResourceConfig {

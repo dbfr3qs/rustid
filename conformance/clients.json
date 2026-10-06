@@ -13,8 +13,7 @@
     "requirePkce": false,
     "redirectUris": [
       "https://localhost:8443/test/a/rustid-oidcc/callback",
-      "https://localhost:8443/test/a/rustid-formpost/callback",
-      "https://localhost:8443/test/a/rustid-config/callback"
+      "https://localhost:8443/test/a/rustid-formpost/callback"
     ],
     "allowedScopes": [
       "openid",
@@ -40,8 +39,7 @@
     "requirePkce": false,
     "redirectUris": [
       "https://localhost:8443/test/a/rustid-oidcc/callback",
-      "https://localhost:8443/test/a/rustid-formpost/callback",
-      "https://localhost:8443/test/a/rustid-config/callback"
+      "https://localhost:8443/test/a/rustid-formpost/callback"
     ],
     "allowedScopes": [
       "openid",

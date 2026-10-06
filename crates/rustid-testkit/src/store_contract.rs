@@ -4364,3 +4364,41 @@ pub async fn identity_provider_admin(store: Arc<dyn rustid_core::stores::Configu
             .is_none()
     );
 }
+
+/// A client registered through dynamic client registration is written as
+/// admin writes clients, and served by the client store at once.
+pub async fn dcr_registered_client(
+    configuration: Arc<dyn rustid_core::stores::ConfigurationStore>,
+    clients: Arc<dyn ClientStore>,
+) {
+    let request = rustid_core::dcr::parse(
+        serde_json::json!({
+            "redirect_uris": ["https://dcr.example/cb"],
+            "grant_types": ["authorization_code"],
+            "client_name": "registered",
+            "scope": "openid",
+        })
+        .to_string()
+        .as_bytes(),
+    )
+    .unwrap();
+    let body = rustid_core::dcr::register(
+        configuration.as_ref(),
+        &Default::default(),
+        &Default::default(),
+        request,
+        Utc::now(),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    let client_id = body["client_id"].as_str().unwrap();
+    let client = clients
+        .find_client_by_id(client_id)
+        .await
+        .unwrap()
+        .expect("served at once");
+    assert_eq!(client.client_name.as_deref(), Some("registered"));
+    assert_eq!(client.redirect_uris, ["https://dcr.example/cb"]);
+    assert!(!client.client_secrets.is_empty(), "a generated secret");
+}

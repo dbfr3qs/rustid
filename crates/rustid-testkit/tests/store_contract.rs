@@ -97,6 +97,7 @@ async fn memory_stores_meet_the_contract() {
     store_contract::resource_store_lookups(configuration.as_ref()).await;
     store_contract::client_store(configuration.as_ref()).await;
     store_contract::client_configuration(configuration.clone(), configuration.clone()).await;
+    store_contract::dcr_registered_client(configuration.clone(), configuration.clone()).await;
     for admin in [
         rustid_core::admin::resources::ResourceAdmin::identity_resources(),
         rustid_core::admin::resources::ResourceAdmin::api_scopes(),
@@ -199,6 +200,7 @@ async fn postgres_stores_meet_the_contract() {
     store_contract::replay_cache(Arc::new(store.clone())).await;
     store_contract::configuration_store(Arc::new(store.clone()), Arc::new(store.clone())).await;
     store_contract::client_configuration(Arc::new(store.clone()), Arc::new(store.clone())).await;
+    store_contract::dcr_registered_client(Arc::new(store.clone()), Arc::new(store.clone())).await;
     for admin in [
         rustid_core::admin::resources::ResourceAdmin::identity_resources(),
         rustid_core::admin::resources::ResourceAdmin::api_scopes(),

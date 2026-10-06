@@ -10,8 +10,8 @@ fn the_harness_answers_a_token_request() {
 
 #[test]
 fn the_harness_reaches_saml_and_admin() {
-    // Selector 6 = GET /Saml2/SSO?<rest>: no message is an error page.
-    assert!(rustid_fuzz::http::request(&[6]).is_some());
+    // Selector 6 = GET /Saml2/SSO?<rest>: no message redirects to the error page.
+    assert_eq!(rustid_fuzz::http::request(&[6]), Some(302));
     // Selector 8 = POST /admin/clients: an empty body is a 400, not a 401.
     assert_eq!(rustid_fuzz::http::request(b"\x08{}"), Some(400));
 }

@@ -30,6 +30,8 @@ USER = ("alice", "alice")
 SUBJECT = "1"
 PORT = 5451
 
+# One pending request at a time is enough: the plan's modules run one after
+# another (run-test-plan.py --no-parallel), each starting one CIBA request.
 pending = {"internal_id": None, "scopes": []}
 lock = threading.Lock()
 TLS = ssl.create_default_context()
@@ -88,12 +90,15 @@ def sign_in():
     url = location(headers, login)
     for _ in range(5):  # the continuation sets the session cookie
         if "/approver/signed-in" in url:
-            break
+            # Only a sign-in that arrived counts; a failed one is tried again
+            # at the next approval.
+            signed_in["done"] = True
+            return
         status, headers, _ = fetch(url)
         if status not in (301, 302, 303):
             break
         url = location(headers, url)
-    signed_in["done"] = True
+    raise RuntimeError(f"signing alice in at the reference UI stopped at {url}")
 
 
 def complete(action):

@@ -4,10 +4,10 @@
 //! over HTTP under `/admin`, authenticated by bearer API keys.
 //!
 //! Each kind has `POST /` (create: 201 `{id, version}`), `GET /` (query),
-//! `GET /{id}` and `GET /by-name/{name}` (`/by-client-id/{clientId}` for
-//! clients) (the configuration with its `id`
-//! and `version`, and `ETag`), `PUT /{id}` (needs `If-Match`), and
-//! `DELETE /{id}` (204, idempotent). SAML service providers (the `saml`
+//! `GET /{id}` and `GET /by-name/{name}` (the configuration with its `id`
+//! and `version`, and `ETag`; clients are read by `/by-client-id/{clientId}`
+//! instead of by name), `PUT /{id}` (needs `If-Match`), and `DELETE /{id}`
+//! (204, idempotent). SAML service providers (the `saml`
 //! feature) are read by entity id at `/by-entity-id/{entityId}`. Errors are
 //! `{"errors": [{code, message, propertyNames}]}`.
 

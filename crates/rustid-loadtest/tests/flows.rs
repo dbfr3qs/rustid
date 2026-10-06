@@ -100,12 +100,13 @@ fn the_report_has_a_table_per_flow_and_the_ratio() {
     assert!(text.contains("| 0.50 |"), "server CPU cores: {text}");
     assert!(text.contains("| 50 |"), "peak RSS MiB: {text}");
     assert!(
-        text.contains("rustid ÷ reference at 16: 2.00× req/s, 0.50× p50"),
+        text.contains("| Concurrency | Target | ops/s |")
+            && text.contains("rustid ÷ reference at 16: 2.00× ops/s, 0.50× p50"),
         "{text}"
     );
     // The reference side had errors: the ratio line says so.
     assert!(
-        text.contains("rustid ÷ reference at 16: 2.00× req/s, 0.50× p50 (errors in the runs)"),
+        text.contains("rustid ÷ reference at 16: 2.00× ops/s, 0.50× p50 (errors in the runs)"),
         "{text}"
     );
 }

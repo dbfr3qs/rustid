@@ -720,3 +720,52 @@ fn the_protected_resource_path_must_be_a_path() {
         Ok(())
     });
 }
+
+#[test]
+fn saml_and_the_outbox_processor_read_from_toml() {
+    figment::Jail::expect_with(|jail| {
+        jail.create_file(
+            "s.toml",
+            r#"
+[saml]
+enabled = true
+service_providers_file = "sps.json"
+entity_id = "https://idp.example/saml"
+want_authn_requests_signed = false
+default_assertion_lifetime = "00:10:00"
+
+[protocol.outbox_processor]
+enable_processor = false
+process_interval = "00:00:10"
+batch_size = 50
+max_retries = 5
+retry_delay = 30
+retry_backoff_multiplier = 1.5
+max_retry_delay = "01:00:00"
+fuzz_startup = false
+"#,
+        )?;
+        let cfg = ServerConfig::load(Some(Path::new("s.toml"))).unwrap();
+        assert!(cfg.saml.enabled);
+        assert!(
+            cfg.saml
+                .service_providers_file
+                .unwrap()
+                .ends_with("sps.json")
+        );
+        assert_eq!(
+            cfg.saml.options.entity_id.as_deref(),
+            Some("https://idp.example/saml")
+        );
+        assert!(!cfg.saml.options.want_authn_requests_signed);
+        assert_eq!(cfg.saml.options.default_assertion_lifetime, TimeSpan(600));
+        let outbox = &cfg.protocol.outbox_processor;
+        assert!(!outbox.enable_processor && !outbox.fuzz_startup);
+        assert_eq!(outbox.process_interval, TimeSpan(10));
+        assert_eq!((outbox.batch_size, outbox.max_retries), (50, 5));
+        assert_eq!(outbox.retry_delay, TimeSpan(30));
+        assert_eq!(outbox.retry_backoff_multiplier, 1.5);
+        assert_eq!(outbox.max_retry_delay, TimeSpan(3600));
+        Ok(())
+    });
+}

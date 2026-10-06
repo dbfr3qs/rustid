@@ -333,6 +333,9 @@ pub async fn build(config: &ServerConfig) -> anyhow::Result<App> {
 }
 
 /// Loads keys, connects the stores and assembles the shared request state.
+/// The configuration files are imported into the configuration store on
+/// the way: identity providers on either store, and on Postgres the
+/// clients, resources and SAML service providers too, at every start.
 pub async fn build_state(config: &ServerConfig) -> anyhow::Result<AppState> {
     Ok(build_state_and_saml(config).await?.0)
 }

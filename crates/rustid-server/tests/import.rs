@@ -339,9 +339,13 @@ async fn a_failed_memory_import_writes_nothing() {
     value["resources"] = serde_json::json!({ "apiScopes": "not a list" });
     std::fs::write(&path, value.to_string()).unwrap();
     let out = dir.path().join("out");
-    import::run(&config(dir.path(), serde_json::json!({})), &path, Some(&out))
-        .await
-        .unwrap_err();
+    import::run(
+        &config(dir.path(), serde_json::json!({})),
+        &path,
+        Some(&out),
+    )
+    .await
+    .unwrap_err();
     let written: Vec<_> = std::fs::read_dir(&out)
         .map(|d| d.map(|e| e.unwrap().file_name()).collect())
         .unwrap_or_default();

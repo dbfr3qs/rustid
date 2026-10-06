@@ -49,7 +49,7 @@ pub fn render(report: &Report) -> String {
         let _ = writeln!(out, "\n## {}\n", flow.flow.name());
         let _ = writeln!(out, "One operation: {}.\n", flow.flow.operation());
         out.push_str(
-            "| Concurrency | Target | req/s | p50 ms | p90 ms | p99 ms | errors | server CPU (cores) | harness CPU (cores) | peak RSS MiB |\n",
+            "| Concurrency | Target | ops/s | p50 ms | p90 ms | p99 ms | errors | server CPU (cores) | harness CPU (cores) | peak RSS MiB |\n",
         );
         out.push_str("|---|---|---|---|---|---|---|---|---|---|\n");
         for level in &flow.levels {
@@ -87,7 +87,7 @@ pub fn render(report: &Report) -> String {
                 };
                 let _ = writeln!(
                     out,
-                    "- rustid ÷ reference at {}: {rps:.2}× req/s, {p50:.2}× p50{marker}",
+                    "- rustid ÷ reference at {}: {rps:.2}× ops/s, {p50:.2}× p50{marker}",
                     level.concurrency
                 );
             }

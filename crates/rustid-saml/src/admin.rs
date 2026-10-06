@@ -539,11 +539,13 @@ fn subject(certificate: &x509_parser::certificate::X509Certificate<'_>) -> Strin
 /// otherwise its bytes as RFC 4514's `#` hex.
 fn other_value(value: &x509_parser::der_parser::asn1_rs::Any<'_>) -> String {
     use x509_parser::der_parser::asn1_rs::Tag;
-    if value.tag() == Tag::BmpString && value.data.len() % 2 == 0 {
+    if value.tag() == Tag::BmpString && value.data.len().is_multiple_of(2) {
         let units: Vec<u16> = value
             .data
-            .chunks_exact(2)
-            .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|pair| u16::from_be_bytes(*pair))
             .collect();
         if let Ok(text) = String::from_utf16(&units) {
             return text;

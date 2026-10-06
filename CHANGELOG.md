@@ -11,7 +11,7 @@ minor version may change configuration or APIs.
 
 ### Fixed
 
-- Upstream logout: a back-channel logout that fails after its token was accepted answers 500 and leaves the token unused, so the provider's retry works; a replay cache failure is a 500, not a 400. A failed write of the upstream session record no longer fails the sign-in.
+- Upstream logout: a back-channel logout that fails after its token was accepted answers 500 and leaves the token unused, so the provider's retry works; a replay cache failure is a 500, and an unreachable provider a 503, not a 400. A failed write of the upstream session record no longer fails the sign-in.
 - A failed discovery is remembered for a minute, and a stored provider that can't be resolved is logged once a minute, instead of on every sign-in or sign-out.
 - Admin: one unreadable stored provider no longer makes `GET /admin/identity-providers` fail; malformed provider JSON is reported without repeating the values sent; an import racing another instance is retried.
 - Multi-tenant: `{tenantid}` is accepted only as a path segment of the discovery issuer, and only that segment is filled in.

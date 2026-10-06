@@ -845,6 +845,12 @@ async fn back_channel_logout(
                 &failure.detail(),
             );
         }
+        // The provider can't be reached: not the token's fault, and a 400
+        // would tell the provider not to send it again.
+        Err(failure @ rustid_core::federation::flow::LogoutFailure::MetadataUnavailable(_)) => {
+            refuse(failure.reason(), Some(failure.detail()));
+            return no_store(StatusCode::SERVICE_UNAVAILABLE, "");
+        }
         Err(failure) => return refuse(failure.reason(), Some(failure.detail())),
     };
     // Whose sessions: the user `sub` names, or, for a token with only a
@@ -925,8 +931,10 @@ async fn back_channel_logout(
         };
         let result = async {
             rustid_core::logout::process_logout(&ctx, &session).await?;
-            forget_upstream_session(state, &session).await?;
-            sessions.store.delete_session(&record.key).await
+            // The session first: a record left behind by a failure after
+            // it still lets the provider's retry find the session.
+            sessions.store.delete_session(&record.key).await?;
+            forget_upstream_session(state, &session).await
         }
         .await;
         if let Err(e) = result {

@@ -367,3 +367,73 @@ impl rustid_core::stores::PersistedGrantStore for FlakyGrants {
         self.inner.remove_expired(now, batch, consumed_before).await
     }
 }
+
+/// A session store whose `delete_session` fails while `fail_delete` is set.
+pub struct FlakySessions {
+    pub inner: Arc<dyn rustid_core::stores::ServerSideSessionStore>,
+    pub fail_delete: std::sync::atomic::AtomicBool,
+}
+
+#[async_trait::async_trait]
+impl rustid_core::stores::ServerSideSessionStore for FlakySessions {
+    async fn create_session(
+        &self,
+        session: rustid_core::server_side_sessions::ServerSideSession,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        self.inner.create_session(session).await
+    }
+    async fn get_session(
+        &self,
+        key: &str,
+    ) -> Result<
+        Option<rustid_core::server_side_sessions::ServerSideSession>,
+        rustid_core::stores::StoreError,
+    > {
+        self.inner.get_session(key).await
+    }
+    async fn update_session(
+        &self,
+        session: rustid_core::server_side_sessions::ServerSideSession,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        self.inner.update_session(session).await
+    }
+    async fn delete_session(&self, key: &str) -> Result<(), rustid_core::stores::StoreError> {
+        if self.fail_delete.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(down());
+        }
+        self.inner.delete_session(key).await
+    }
+    async fn get_sessions(
+        &self,
+        filter: &rustid_core::server_side_sessions::SessionFilter,
+    ) -> Result<
+        Vec<rustid_core::server_side_sessions::ServerSideSession>,
+        rustid_core::stores::StoreError,
+    > {
+        self.inner.get_sessions(filter).await
+    }
+    async fn delete_sessions(
+        &self,
+        filter: &rustid_core::server_side_sessions::SessionFilter,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        self.inner.delete_sessions(filter).await
+    }
+    async fn move_expired_to_outbox(
+        &self,
+        count: usize,
+        now: chrono::DateTime<chrono::Utc>,
+    ) -> Result<usize, rustid_core::stores::StoreError> {
+        self.inner.move_expired_to_outbox(count, now).await
+    }
+    async fn query_sessions(
+        &self,
+        query: &rustid_core::server_side_sessions::SessionQuery,
+    ) -> Result<
+        rustid_core::server_side_sessions::QueryResult<
+            rustid_core::server_side_sessions::ServerSideSession,
+        >,
+        rustid_core::stores::StoreError,
+    > {
+        self.inner.query_sessions(query).await
+    }
+}

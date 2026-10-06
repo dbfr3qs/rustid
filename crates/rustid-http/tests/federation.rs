@@ -1557,3 +1557,56 @@ async fn access_denied_for_a_request_no_longer_valid_shows_the_error_page() {
     );
     assert_eq!(reply.headers["cache-control"], "no-store");
 }
+
+#[tokio::test]
+async fn a_sid_only_logout_whose_session_delete_failed_can_be_retried() {
+    let flaky = std::sync::Mutex::new(None);
+    let f = federated_with_stores(Default::default(), logout_channels, true, |stores| {
+        let sessions = stores.sessions.clone().unwrap();
+        let wrapped = std::sync::Arc::new(FlakySessions {
+            inner: sessions.store.clone(),
+            fail_delete: Default::default(),
+        });
+        *flaky.lock().unwrap() = Some(wrapped.clone());
+        stores.sessions = Some(std::sync::Arc::new(
+            rustid_core::server_side_sessions::ServerSideSessions {
+                store: wrapped,
+                outbox: sessions.outbox.clone(),
+                protector: sessions.protector.clone(),
+            },
+        ));
+    });
+    let flaky = flaky.into_inner().unwrap().unwrap();
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let token = logout_token(&f, |c| {
+        c.as_object_mut().unwrap().remove("sub");
+    });
+    flaky
+        .fail_delete
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    assert_eq!(
+        back_channel(&mut b, &token).await.status,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    flaky
+        .fail_delete
+        .store(false, std::sync::atomic::Ordering::SeqCst);
+    assert_eq!(back_channel(&mut b, &token).await.status, StatusCode::OK);
+    assert_eq!(session(&mut b).await["error"], "no_session");
+}
+
+#[tokio::test]
+async fn an_unreachable_provider_is_asked_to_resend_its_logout_token() {
+    let f = federated_custom(Default::default(), logout_channels, true);
+    f.fake.edit(|s| s.discovery = serde_json::json!(null));
+    let mut b = Browser::new(&f.app);
+    let reply = back_channel(&mut b, &logout_token(&f, |_| {})).await;
+    assert_eq!(
+        reply.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        reply.body
+    );
+}

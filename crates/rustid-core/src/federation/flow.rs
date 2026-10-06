@@ -19,6 +19,9 @@ use crate::jwt::PublicJwk;
 pub const METADATA_LIFETIME_SECONDS: i64 = 86_400;
 /// The most key set refetches for one provider in a minute.
 pub const JWKS_REFETCH_LIMIT: usize = 60;
+/// How long a failed discovery, or a stored provider that can't be
+/// resolved, is remembered before it is tried again.
+pub const FAILURE_SECONDS: i64 = 60;
 
 #[derive(Debug, Clone)]
 struct Cached {
@@ -30,8 +33,8 @@ struct Cached {
 }
 
 /// Stored providers resolved, by scheme: the entity id and version they
-/// were resolved at.
-type Resolved = Mutex<HashMap<String, (crate::admin::EntityId, i32, Arc<Provider>)>>;
+/// were resolved at, and the provider, or when resolving it failed.
+type Resolved = Mutex<HashMap<String, (crate::admin::EntityId, i32, Result<Arc<Provider>, i64>)>>;
 
 /// Where federation's providers come from.
 enum Source {
@@ -52,6 +55,8 @@ pub struct Federation {
     pub upstream: Arc<dyn UpstreamClient>,
     pub allow_insecure_loopback: bool,
     cache: Mutex<HashMap<String, Cached>>,
+    /// Failed discoveries, by provider: when, and why.
+    failures: Mutex<HashMap<String, (i64, String)>>,
 }
 
 impl std::fmt::Debug for Federation {
@@ -140,6 +145,7 @@ impl Federation {
             upstream,
             allow_insecure_loopback,
             cache: Mutex::new(HashMap::new()),
+            failures: Mutex::new(HashMap::new()),
         }
     }
 
@@ -160,41 +166,46 @@ impl Federation {
             upstream,
             allow_insecure_loopback,
             cache: Mutex::new(HashMap::new()),
+            failures: Mutex::new(HashMap::new()),
         }
     }
 
     /// A stored provider, resolved once per version. One that can't be
     /// resolved (its secret's environment variable has gone, say) is
-    /// logged and left out.
+    /// logged and left out, and tried again after a minute or as soon as
+    /// it changes.
     fn resolved(
         resolved: &Resolved,
         protector: &crate::data_protection::DataProtector,
         entity: &crate::stores::StoredEntity,
     ) -> Option<Arc<Provider>> {
+        let now = chrono::Utc::now().timestamp();
         // The id too: a provider deleted and created again starts at
         // version 1 again.
-        if let Some((id, version, provider)) = resolved.lock().unwrap().get(&entity.key)
+        if let Some((id, version, outcome)) = resolved.lock().unwrap().get(&entity.key)
             && *id == entity.id
             && *version == entity.version
         {
-            return Some(provider.clone());
+            match outcome {
+                Ok(provider) => return Some(provider.clone()),
+                Err(at) if now - at < FAILURE_SECONDS => return None,
+                Err(_) => {}
+            }
         }
-        match crate::admin::identity_providers::resolve(entity, protector, &|name| {
+        let outcome = match crate::admin::identity_providers::resolve(entity, protector, &|name| {
             std::env::var(name).ok()
         }) {
-            Ok(provider) => {
-                let provider = Arc::new(provider);
-                resolved.lock().unwrap().insert(
-                    entity.key.clone(),
-                    (entity.id, entity.version, provider.clone()),
-                );
-                Some(provider)
-            }
+            Ok(provider) => Ok(Arc::new(provider)),
             Err(error) => {
                 tracing::warn!(scheme = %entity.key, %error, "identity provider left out: it can't be used");
-                None
+                Err(now)
             }
-        }
+        };
+        resolved.lock().unwrap().insert(
+            entity.key.clone(),
+            (entity.id, entity.version, outcome.clone()),
+        );
+        outcome.ok()
     }
 
     /// Every provider, enabled or not.
@@ -205,12 +216,20 @@ impl Federation {
                 configuration,
                 protector,
                 resolved,
-            } => Ok(configuration
-                .list(crate::stores::EntityKind::IdentityProvider)
-                .await?
-                .iter()
-                .filter_map(|entity| Self::resolved(resolved, protector, entity))
-                .collect()),
+            } => {
+                let entities = configuration
+                    .list(crate::stores::EntityKind::IdentityProvider)
+                    .await?;
+                // Deleted providers are forgotten.
+                resolved
+                    .lock()
+                    .unwrap()
+                    .retain(|scheme, _| entities.iter().any(|e| &e.key == scheme));
+                Ok(entities
+                    .iter()
+                    .filter_map(|entity| Self::resolved(resolved, protector, entity))
+                    .collect())
+            }
         }
     }
 
@@ -225,10 +244,16 @@ impl Federation {
                 configuration,
                 protector,
                 resolved,
-            } => configuration
+            } => match configuration
                 .read_by_key(crate::stores::EntityKind::IdentityProvider, scheme)
                 .await?
-                .and_then(|entity| Self::resolved(resolved, protector, &entity)),
+            {
+                Some(entity) => Self::resolved(resolved, protector, &entity),
+                None => {
+                    resolved.lock().unwrap().remove(scheme);
+                    None
+                }
+            },
         };
         Ok(provider.filter(|p| p.config.enabled))
     }
@@ -271,6 +296,27 @@ impl Federation {
         {
             return Ok(entry.metadata);
         }
+        if let Some((at, detail)) = self.failures.lock().unwrap().get(&cache_key(provider))
+            && now - at < FAILURE_SECONDS
+        {
+            return Err(Failure::MetadataUnavailable(format!(
+                "{detail} (at {at}; tried again after {FAILURE_SECONDS} seconds)"
+            )));
+        }
+        let fetched = self.fetch_metadata(provider, now).await;
+        let mut failures = self.failures.lock().unwrap();
+        match &fetched {
+            Ok(_) => failures.remove(&cache_key(provider)),
+            Err(failure) => failures.insert(cache_key(provider), (now, failure.detail())),
+        };
+        fetched
+    }
+
+    async fn fetch_metadata(
+        &self,
+        provider: &Provider,
+        now: i64,
+    ) -> Result<Arc<Metadata>, Failure> {
         let authority = &provider.config.authority;
         let url = format!(
             "{}/.well-known/openid-configuration",

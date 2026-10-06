@@ -171,11 +171,34 @@ async fn metadata_is_checked_and_cached() {
         other => panic!("{other:?}"),
     }
     fake.0.lock().unwrap().discovery = discovery();
-    fed.metadata(p, NOW + 1).await.unwrap();
-    fed.metadata(p, NOW + 2).await.unwrap();
+    // The failure is kept for a minute.
+    fed.metadata(p, NOW + 61).await.unwrap();
+    fed.metadata(p, NOW + 62).await.unwrap();
     assert_eq!(fake.gets(DISCOVERY), 2, "one failed, one cached");
-    fed.metadata(p, NOW + 1 + 86_401).await.unwrap();
+    fed.metadata(p, NOW + 61 + 86_401).await.unwrap();
     assert_eq!(fake.gets(DISCOVERY), 3);
+}
+
+#[tokio::test]
+async fn a_failed_discovery_is_kept_for_a_minute() {
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    fake.0.lock().unwrap().discovery = json!(null);
+    let fed = federation(fake.clone());
+    let p = fed.find("up").await.unwrap().unwrap();
+    assert!(fed.metadata(&p, NOW).await.is_err());
+    // Recovered upstream, but within the minute: the failure answers,
+    // without a request.
+    fake.0.lock().unwrap().discovery = discovery();
+    assert!(matches!(
+        fed.metadata(&p, NOW + 59).await,
+        Err(Failure::MetadataUnavailable(_))
+    ));
+    assert_eq!(fake.gets(DISCOVERY), 1);
+    // After it, the provider is asked again, and the success replaces it.
+    fed.metadata(&p, NOW + 60).await.unwrap();
+    fed.metadata(&p, NOW + 61).await.unwrap();
+    assert_eq!(fake.gets(DISCOVERY), 2);
 }
 
 #[tokio::test]

@@ -33,6 +33,8 @@ pub(crate) enum Leg {
     Challenge,
     Callback,
     SignoutCallback,
+    BackchannelLogout,
+    FrontchannelLogout,
 }
 
 /// `/federation/{scheme}/challenge` or `/federation/{scheme}/callback`.
@@ -43,6 +45,8 @@ pub(crate) fn find(lower_path: &str) -> Option<(String, Leg)> {
         "challenge" => Leg::Challenge,
         "callback" => Leg::Callback,
         "signout-callback" => Leg::SignoutCallback,
+        "backchannel-logout" => Leg::BackchannelLogout,
+        "frontchannel-logout" => Leg::FrontchannelLogout,
         _ => return None,
     };
     (!scheme.is_empty()).then(|| (scheme.to_owned(), leg))
@@ -61,10 +65,15 @@ pub(crate) fn challenge_url(route: &Route, scheme: &str, return_url: &str) -> St
 pub(crate) async fn handle(
     state: &ProtocolState,
     incoming: &Incoming<'_>,
+    body: axum::body::Body,
     scheme: &str,
     leg: Leg,
 ) -> Response {
-    if incoming.method != Method::GET {
+    let expected = match leg {
+        Leg::BackchannelLogout => Method::POST,
+        _ => Method::GET,
+    };
+    if incoming.method != expected {
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
     if let Leg::SignoutCallback = leg {
@@ -85,6 +94,13 @@ pub(crate) async fn handle(
     match leg {
         Leg::Challenge => challenge(state, incoming, &provider).await,
         Leg::Callback => callback(state, incoming, &provider).await,
+        Leg::BackchannelLogout if provider.config.back_channel_logout => {
+            back_channel_logout(state, incoming, body, &provider).await
+        }
+        Leg::FrontchannelLogout if provider.config.front_channel_logout => {
+            front_channel_logout(state, incoming, &provider).await
+        }
+        Leg::BackchannelLogout | Leg::FrontchannelLogout => StatusCode::NOT_FOUND.into_response(),
         Leg::SignoutCallback => unreachable!("answered above"),
     }
 }
@@ -630,5 +646,300 @@ async fn signout_callback(
         None => page(StatusCode::OK, "You are signed out."),
     };
     crate::cookies::append(&mut response, &signout_cookie(route, scheme, None));
+    response
+}
+
+/// The persisted grant type of an upstream session's record: which rustid
+/// session a provider's session (`sid`) became.
+pub(crate) const UPSTREAM_SESSION: &str = "federation_upstream_session";
+
+fn upstream_session_key(scheme: &str, sid: &str) -> String {
+    rustid_core::grants::hashed_key(&format!("{scheme}\0{sid}"), UPSTREAM_SESSION)
+}
+
+/// Records which rustid session an upstream session became, so the
+/// provider's back-channel logout naming its `sid` can end it. Only with
+/// server-side sessions: without them nothing server-side can be ended.
+pub(crate) async fn record_upstream_session(
+    state: &ProtocolState,
+    session: &rustid_core::session::UserSession,
+) -> Result<(), rustid_core::stores::StoreError> {
+    let (Some(sid), Some(_)) = (&session.upstream_sid, &state.stores.sessions) else {
+        return Ok(());
+    };
+    state
+        .stores
+        .grants
+        .store(rustid_core::grants::PersistedGrant {
+            key: upstream_session_key(&session.idp, sid),
+            grant_type: UPSTREAM_SESSION.to_owned(),
+            client_id: String::new(),
+            subject_id: Some(session.subject_id.clone()),
+            session_id: Some(session.session_id.clone()),
+            description: None,
+            creation_time: session.issued,
+            expiration: (session.expires != chrono::DateTime::<chrono::Utc>::MAX_UTC)
+                .then_some(session.expires),
+            consumed_time: None,
+            data: String::new(),
+        })
+        .await
+}
+
+fn no_store(status: StatusCode, body: &'static str) -> Response {
+    let mut response = (status, body).into_response();
+    response.headers_mut().insert(
+        axum::http::header::CACHE_CONTROL,
+        HeaderValue::from_static("no-store"),
+    );
+    response
+}
+
+/// `POST /federation/{scheme}/backchannel-logout`: the provider's logout
+/// token (Back-Channel Logout 1.0). The rustid sessions it names end: the
+/// one its `sid` became, or every session of its `sub`, with their tokens
+/// revoked and rustid's clients notified.
+async fn back_channel_logout(
+    state: &ProtocolState,
+    incoming: &Incoming<'_>,
+    body: axum::body::Body,
+    provider: &Provider,
+) -> Response {
+    let Incoming { route, info, .. } = *incoming;
+    let scheme = &provider.config.scheme;
+    let Some(sessions) = &state.stores.sessions else {
+        tracing::warn!(%scheme, "a back-channel logout arrived, but server-side sessions are off: there is nothing to end");
+        return no_store(StatusCode::NOT_IMPLEMENTED, "");
+    };
+    let refuse = |reason: &str, detail: Option<String>| {
+        tracing::warn!(%scheme, reason, detail = detail.as_deref().unwrap_or(""), "upstream logout refused");
+        state.events.raise(
+            info,
+            chrono::Utc::now(),
+            Event::user_logout_failure(EventDetails::UserLogoutFailure {
+                provider: scheme.clone(),
+                reason: reason.to_owned(),
+                detail,
+                channel: "back",
+            }),
+        );
+        let mut response = no_store(StatusCode::BAD_REQUEST, r#"{"error":"invalid_request"}"#);
+        response
+            .headers_mut()
+            .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        response
+    };
+    let token = crate::endpoint::read_form(body)
+        .await
+        .and_then(|form| form.get("logout_token"));
+    let Some(token) = token else {
+        return refuse("logout_token_missing", None);
+    };
+    let now = chrono::Utc::now();
+    let skew = state.options.jwt_validation_clock_skew.0;
+    let checked = match state
+        .stores
+        .federation
+        .verify_logout_token(
+            provider,
+            &token,
+            state.stores.replay.as_ref(),
+            skew,
+            now.timestamp(),
+        )
+        .await
+    {
+        Ok(checked) => checked,
+        Err(failure) => return refuse(failure.reason(), Some(failure.detail())),
+    };
+    // The rustid sessions to end: the one the sid became, or every session
+    // of the user.
+    let targets: Vec<(Option<String>, Option<String>)> = match &checked.sid {
+        Some(sid) => match state
+            .stores
+            .grants
+            .get(&upstream_session_key(scheme, sid))
+            .await
+        {
+            Ok(Some(record)) if record.grant_type == UPSTREAM_SESSION => {
+                vec![(record.subject_id, record.session_id)]
+            }
+            Ok(_) => Vec::new(),
+            Err(e) => {
+                return crate::response::internal_error(
+                    state,
+                    info,
+                    "FederationLogout",
+                    &e.to_string(),
+                );
+            }
+        },
+        None => vec![(
+            checked
+                .sub
+                .as_deref()
+                .map(|sub| rustid_core::federation::session::subject_for(&checked.issuer, sub)),
+            None,
+        )],
+    };
+    // A session rustid never saw (or one already ended): nothing to do.
+    if targets.is_empty() {
+        return no_store(StatusCode::OK, "");
+    }
+    let issuer = current_issuer(&state.options, &route.origin);
+    let ctx = rustid_core::access_tokens::ValidationContext {
+        options: &state.options,
+        stores: &state.stores,
+        keys: &state.keys,
+        issuer: &issuer,
+        now,
+    };
+    for (subject_id, session_id) in targets {
+        let remove = rustid_core::server_side_sessions::RemoveSessions {
+            subject_id,
+            session_id,
+            client_ids: None,
+            revoke_tokens: true,
+            revoke_consents: false,
+            remove_server_side_session: true,
+            send_backchannel_logout_notification: true,
+        };
+        if let Err(e) =
+            rustid_core::server_side_sessions::remove_sessions(&ctx, sessions, &remove).await
+        {
+            return crate::response::internal_error(
+                state,
+                info,
+                "FederationLogout",
+                &e.to_string(),
+            );
+        }
+    }
+    state.events.raise(
+        info,
+        chrono::Utc::now(),
+        Event::user_logout_success(EventDetails::UserLogoutSuccess {
+            provider: scheme.clone(),
+            sub: checked.sub.clone(),
+            sid: checked.sid.clone(),
+            channel: "back",
+        }),
+    );
+    no_store(StatusCode::OK, "")
+}
+
+/// `GET /federation/{scheme}/frontchannel-logout?iss=…&sid=…`, in the
+/// provider's iframe (Front-Channel Logout 1.0): the browser's session
+/// ends when it came from this provider and, when given, this `sid` and
+/// issuer. rustid's own front-channel iframe then tells its clients.
+async fn front_channel_logout(
+    state: &ProtocolState,
+    incoming: &Incoming<'_>,
+    provider: &Provider,
+) -> Response {
+    let Incoming {
+        route,
+        headers,
+        info,
+        session,
+        ..
+    } = *incoming;
+    let params = Params::parse_query(&route.query);
+    let blank = || no_store(StatusCode::OK, "");
+    let Some(session) = session.filter(|s| s.idp == provider.config.scheme) else {
+        return blank();
+    };
+    let sid_ok = params
+        .get("sid")
+        .is_none_or(|sid| session.upstream_sid.as_deref() == Some(sid.as_str()));
+    // A multi-tenant provider names the tenant's issuer: the discovery
+    // issuer's template, filled in with a listed tenant.
+    let template = match &provider.config.multi_tenant {
+        Some(_) => state
+            .stores
+            .federation
+            .metadata(provider, chrono::Utc::now().timestamp())
+            .await
+            .ok()
+            .map(|m| m.issuer.clone()),
+        None => None,
+    };
+    let iss_ok = params.get("iss").is_none_or(|iss| {
+        iss == provider.config.authority
+            || provider
+                .config
+                .multi_tenant
+                .as_ref()
+                .zip(template.as_deref())
+                .is_some_and(|(multi, template)| {
+                    multi.tenants.iter().any(|t| {
+                        iss.eq_ignore_ascii_case(
+                            &template
+                                .replace(rustid_core::federation::upstream::TENANT_PLACEHOLDER, t),
+                        )
+                    })
+                })
+    });
+    if !sid_ok || !iss_ok {
+        return blank();
+    }
+    let now = chrono::Utc::now();
+    let iframe = crate::end_session::sign_out_iframe_url(state, route, None, None, Some(session))
+        .await
+        .ok()
+        .flatten();
+    let issuer = current_issuer(&state.options, &route.origin);
+    let ctx = rustid_core::access_tokens::ValidationContext {
+        options: &state.options,
+        stores: &state.stores,
+        keys: &state.keys,
+        issuer: &issuer,
+        now,
+    };
+    if let Err(e) = rustid_core::logout::process_logout(&ctx, session).await {
+        return crate::response::internal_error(state, info, "FederationLogout", &e.to_string());
+    }
+    if let Err(e) = crate::session_cookie::remove(state, session).await {
+        return crate::response::internal_error(state, info, "FederationLogout", &e.to_string());
+    }
+    let body = match &iframe {
+        Some(url) => format!(
+            "<!doctype html><html><head><meta charset=\"utf-8\"><title>Signed out</title></head><body><iframe src=\"{}\" width=\"0\" height=\"0\" hidden></iframe></body></html>",
+            html_encode(url)
+        ),
+        None => "<!doctype html><html><head><meta charset=\"utf-8\"><title>Signed out</title></head><body></body></html>".to_owned(),
+    };
+    let mut response = (
+        StatusCode::OK,
+        [(CONTENT_TYPE, "text/html; charset=utf-8")],
+        body,
+    )
+        .into_response();
+    response.headers_mut().insert(
+        axum::http::header::CACHE_CONTROL,
+        HeaderValue::from_static("no-store"),
+    );
+    let path = crate::cookies::cookie_path(&route.origin.base_path);
+    crate::cookies::append(
+        &mut response,
+        &crate::cookies::deleted(rustid_core::session::SESSION_COOKIE, path, route.is_https()),
+    );
+    let check_session = &state.options.authentication.check_session_cookie_name;
+    if crate::cookies::get(headers, check_session).is_some() {
+        crate::cookies::append(
+            &mut response,
+            &crate::cookies::expired(check_session, path, route.is_https(), now),
+        );
+    }
+    state.events.raise(
+        info,
+        now,
+        Event::user_logout_success(EventDetails::UserLogoutSuccess {
+            provider: provider.config.scheme.clone(),
+            sub: None,
+            sid: session.upstream_sid.clone(),
+            channel: "front",
+        }),
+    );
     response
 }

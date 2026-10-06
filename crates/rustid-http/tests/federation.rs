@@ -999,3 +999,194 @@ async fn providers_managed_through_admin_take_effect_at_once() {
     let reply = b2.get("/federation/up/callback?code=c&state=s").await;
     assert_eq!(reply.status, StatusCode::NOT_FOUND);
 }
+
+fn logout_channels(p: &mut rustid_core::federation::provider::IdentityProvider) {
+    p.back_channel_logout = true;
+    p.front_channel_logout = true;
+}
+
+/// A logout token from the fake upstream, with `edit` applied.
+fn logout_token(f: &Federated, edit: impl FnOnce(&mut serde_json::Value)) -> String {
+    let now = chrono::Utc::now().timestamp();
+    let mut claims = serde_json::json!({
+        "iss": AUTHORITY, "aud": "rustid", "iat": now,
+        "jti": rustid_core::federation::challenge::random_value(),
+        "sub": "upstream-user", "sid": "up-sid-1",
+        "events": { "http://schemas.openid.net/event/backchannel-logout": {} },
+    });
+    edit(&mut claims);
+    rustid_core::jwt::encode(&f.fake.key, &[], claims.as_object().unwrap()).unwrap()
+}
+
+async fn back_channel(b: &mut Browser, token: &str) -> Reply {
+    let mut channel = Browser::new(&b.app);
+    channel
+        .send(
+            Method::POST,
+            "/federation/up/backchannel-logout",
+            &[("content-type", "application/x-www-form-urlencoded")],
+            &format!("logout_token={}", encode(token)),
+        )
+        .await
+}
+
+#[tokio::test]
+async fn back_channel_logout_ends_the_session_it_names() {
+    let f = federated_custom(Default::default(), logout_channels, true);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    assert_eq!(session(&mut b).await["idp"], "up");
+
+    // Another upstream session: nothing ends.
+    let other = logout_token(&f, |c| {
+        c["sid"] = "up-sid-other".into();
+        c.as_object_mut().unwrap().remove("sub");
+    });
+    let reply = back_channel(&mut b, &other).await;
+    assert_eq!(reply.status, StatusCode::OK, "{}", reply.body);
+    assert_eq!(session(&mut b).await["idp"], "up");
+
+    // Its own sid: the session ends.
+    let token = logout_token(&f, |c| {
+        c.as_object_mut().unwrap().remove("sub");
+    });
+    let reply = back_channel(&mut b, &token).await;
+    assert_eq!(reply.status, StatusCode::OK, "{}", reply.body);
+    assert_eq!(reply.headers["cache-control"], "no-store");
+    assert_eq!(session(&mut b).await["error"], "no_session");
+    // A replay is refused.
+    assert_eq!(
+        back_channel(&mut b, &token).await.status,
+        StatusCode::BAD_REQUEST
+    );
+    assert_eq!(f.events.named("User Logout Success").len(), 1);
+}
+
+#[tokio::test]
+async fn back_channel_logout_by_subject_ends_every_session_of_the_user() {
+    let f = federated_custom(Default::default(), logout_channels, true);
+    let mut first = Browser::new(&f.app);
+    let mut second = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut first).await;
+    signed_in_upstream(&f, &mut second).await;
+    let token = logout_token(&f, |c| {
+        c.as_object_mut().unwrap().remove("sid");
+    });
+    assert_eq!(
+        back_channel(&mut first, &token).await.status,
+        StatusCode::OK
+    );
+    assert_eq!(session(&mut first).await["error"], "no_session");
+    assert_eq!(session(&mut second).await["error"], "no_session");
+}
+
+#[tokio::test]
+async fn invalid_logout_tokens_are_400() {
+    let f = federated_custom(Default::default(), logout_channels, true);
+    let mut b = Browser::new(&f.app);
+    for edit in [
+        Box::new(|c: &mut serde_json::Value| c["iss"] = "https://evil".into())
+            as Box<dyn FnOnce(&mut serde_json::Value)>,
+        Box::new(|c: &mut serde_json::Value| c["aud"] = "other".into()),
+        Box::new(|c: &mut serde_json::Value| c["nonce"] = "n".into()),
+        Box::new(|c: &mut serde_json::Value| {
+            c.as_object_mut().unwrap().remove("events");
+        }),
+    ] {
+        let reply = back_channel(&mut b, &logout_token(&f, edit)).await;
+        assert_eq!(reply.status, StatusCode::BAD_REQUEST);
+        assert_eq!(reply.body, r#"{"error":"invalid_request"}"#);
+    }
+    let missing = Browser::new(&f.app)
+        .send(
+            Method::POST,
+            "/federation/up/backchannel-logout",
+            &[("content-type", "application/x-www-form-urlencoded")],
+            "",
+        )
+        .await;
+    assert_eq!(missing.status, StatusCode::BAD_REQUEST);
+    assert_eq!(f.events.named("User Logout Failure").len(), 5);
+}
+
+#[tokio::test]
+async fn back_channel_logout_needs_server_side_sessions_and_the_flag() {
+    let f = federated_custom(Default::default(), logout_channels, false);
+    let mut b = Browser::new(&f.app);
+    assert_eq!(
+        back_channel(&mut b, &logout_token(&f, |_| {})).await.status,
+        StatusCode::NOT_IMPLEMENTED
+    );
+    let f = federated_custom(Default::default(), |_| {}, true);
+    let mut b = Browser::new(&f.app);
+    assert_eq!(
+        back_channel(&mut b, &logout_token(&f, |_| {})).await.status,
+        StatusCode::NOT_FOUND
+    );
+}
+
+#[tokio::test]
+async fn front_channel_logout_ends_the_matching_session_only() {
+    let f = federated_custom(Default::default(), logout_channels, false);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    // Another sid, or another issuer: nothing ends.
+    for query in ["sid=other", "iss=https%3A%2F%2Fevil&sid=up-sid-1"] {
+        let reply = b
+            .get(&format!("/federation/up/frontchannel-logout?{query}"))
+            .await;
+        assert_eq!(reply.status, StatusCode::OK);
+        assert_eq!(session(&mut b).await["idp"], "up", "{query}");
+    }
+    let reply = b
+        .get(&format!(
+            "/federation/up/frontchannel-logout?iss={}&sid=up-sid-1",
+            encode(AUTHORITY)
+        ))
+        .await;
+    assert_eq!(reply.status, StatusCode::OK);
+    assert_eq!(reply.headers["cache-control"], "no-store");
+    assert!(
+        reply.set_cookies().iter().any(|c| c.starts_with("idsrv=;")),
+        "{:?}",
+        reply.set_cookies()
+    );
+    assert_eq!(session(&mut b).await["error"], "no_session");
+}
+
+#[tokio::test]
+async fn front_channel_logout_for_a_local_session_does_nothing() {
+    let f = federated_custom(Default::default(), logout_channels, false);
+    let mut b = Browser::new(&f.app);
+    sign_in(&mut b, "alice").await;
+    let reply = b
+        .get("/federation/up/frontchannel-logout?sid=up-sid-1")
+        .await;
+    assert_eq!(reply.status, StatusCode::OK);
+    assert!(reply.set_cookies().is_empty());
+}
+
+#[tokio::test]
+async fn front_channel_logout_accepts_a_tenant_issuer() {
+    let f = federated_custom(
+        Default::default(),
+        |p| {
+            entra(p);
+            logout_channels(p);
+        },
+        false,
+    );
+    tenant(&f, TENANT);
+    f.fake.edit(|s| s.claims["sid"] = "up-sid-1".into());
+    let mut b = Browser::new(&f.app);
+    signed_in_upstream(&f, &mut b).await;
+    let iss = format!("https://up.example/{TENANT}/v2.0");
+    b.get(&format!(
+        "/federation/up/frontchannel-logout?iss={}&sid=up-sid-1",
+        encode(&iss)
+    ))
+    .await;
+    assert_eq!(session(&mut b).await["error"], "no_session");
+}

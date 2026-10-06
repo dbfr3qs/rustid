@@ -357,7 +357,7 @@ async fn protocol(State(state): State<AppState>, request: Request<Body>) -> Resp
             info: &info,
             session: session.as_ref(),
         };
-        return federation::handle(state, &incoming, &scheme, leg).await;
+        return federation::handle(state, &incoming, body, &scheme, leg).await;
     }
     if let Some(call) = interaction_api::Call::find(&route.path.to_ascii_lowercase()) {
         let incoming = request::Incoming {

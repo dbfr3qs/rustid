@@ -1066,6 +1066,9 @@ async fn continue_login(
         Ok(cookie) => cookies::append(&mut response, &cookie),
         Err(e) => return internal_error(state, info, "InteractionContinue", &e.to_string()),
     }
+    if let Err(e) = crate::federation::record_upstream_session(state, &session).await {
+        return internal_error(state, info, "InteractionContinue", &e.to_string());
+    }
     response
 }
 

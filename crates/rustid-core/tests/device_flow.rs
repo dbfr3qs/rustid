@@ -347,3 +347,90 @@ async fn the_interaction_service_reads_and_decides_a_user_code() {
     let tokens = token(&f, Utc::now(), &poll(&r.device_code)).await.unwrap();
     assert_eq!(tokens.scope, "openid");
 }
+
+/// Another request takes the first user code between the check and the
+/// write.
+struct TakenOnce {
+    inner: std::sync::Arc<dyn rustid_core::stores::DeviceFlowStore>,
+    taken: std::sync::atomic::AtomicBool,
+}
+
+#[async_trait::async_trait]
+impl rustid_core::stores::DeviceFlowStore for TakenOnce {
+    async fn store_device_authorization(
+        &self,
+        device_code: &str,
+        user_code: &str,
+        client_id: &str,
+        creation_time: chrono::DateTime<Utc>,
+        expiration: chrono::DateTime<Utc>,
+        data: &str,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        if !self.taken.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            return Err(rustid_core::stores::StoreError::DuplicateDeviceCode);
+        }
+        self.inner
+            .store_device_authorization(
+                device_code,
+                user_code,
+                client_id,
+                creation_time,
+                expiration,
+                data,
+            )
+            .await
+    }
+    async fn find_by_user_code(
+        &self,
+        user_code: &str,
+    ) -> Result<Option<String>, rustid_core::stores::StoreError> {
+        self.inner.find_by_user_code(user_code).await
+    }
+    async fn find_by_device_code(
+        &self,
+        device_code: &str,
+    ) -> Result<Option<String>, rustid_core::stores::StoreError> {
+        self.inner.find_by_device_code(device_code).await
+    }
+    async fn update_by_user_code(
+        &self,
+        user_code: &str,
+        subject_id: Option<&str>,
+        data: &str,
+    ) -> Result<(), rustid_core::stores::StoreError> {
+        self.inner
+            .update_by_user_code(user_code, subject_id, data)
+            .await
+    }
+    async fn remove_by_device_code(
+        &self,
+        device_code: &str,
+    ) -> Result<bool, rustid_core::stores::StoreError> {
+        self.inner.remove_by_device_code(device_code).await
+    }
+    async fn remove_expired(
+        &self,
+        now: chrono::DateTime<Utc>,
+        batch: usize,
+    ) -> Result<u64, rustid_core::stores::StoreError> {
+        self.inner.remove_expired(now, batch).await
+    }
+}
+
+#[tokio::test]
+async fn a_user_code_taken_meanwhile_is_replaced() {
+    let mut f = fixture();
+    f.stores.device_flow = std::sync::Arc::new(TakenOnce {
+        inner: f.stores.device_flow.clone(),
+        taken: Default::default(),
+    });
+    let r = authorize(&f, &DEVICE).await.unwrap();
+    assert!(
+        f.stores
+            .device_flow
+            .find_by_user_code(&device_flow::hash(&r.user_code))
+            .await
+            .unwrap()
+            .is_some()
+    );
+}

@@ -41,7 +41,8 @@ impl ReplayCache for PgStore {
     async fn remove_expired(&self, now: i64, batch: usize) -> Result<u64, StoreError> {
         let removed = sqlx::query(
             "DELETE FROM replay_cache WHERE key IN
-                 (SELECT key FROM replay_cache WHERE expires <= $1 LIMIT $2)",
+                 (SELECT key FROM replay_cache WHERE expires <= $1
+                  ORDER BY key LIMIT $2 FOR UPDATE SKIP LOCKED)",
         )
         .bind(at(now)?)
         .bind(i64::try_from(batch).unwrap_or(i64::MAX))

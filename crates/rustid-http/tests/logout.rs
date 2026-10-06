@@ -522,3 +522,34 @@ globalThis.document = {
         ])
     );
 }
+
+#[tokio::test]
+async fn signing_out_drops_the_users_pending_sign_ins() {
+    let app = state();
+    let mut browser = Browser::new(&app);
+    sign_in(&mut browser, "1").await;
+    // Another sign-in of the same user, not yet collected by its browser.
+    let mut other = Browser::new(&app);
+    let login = other.get(&authorize_uri("")).await;
+    let pending = login_call(&mut other, &return_url(&login.location()), "1").await;
+    assert_eq!(pending.status, StatusCode::OK, "{}", pending.body);
+    let continuations = || async {
+        app.0
+            .stores
+            .grants
+            .get_all(&rustid_core::grants::GrantFilter {
+                subject_id: Some("1".into()),
+                grant_type: Some(rustid_core::authorize::login::CONTINUATION.into()),
+                ..Default::default()
+            })
+            .await
+            .unwrap()
+            .len()
+    };
+    assert_eq!(continuations().await, 1);
+    let path = continue_path(
+        &logout_call(&browser, serde_json::json!({ "returnUrl": "/signed-out" })).await,
+    );
+    assert_eq!(browser.get(&path).await.status, StatusCode::FOUND);
+    assert_eq!(continuations().await, 0);
+}

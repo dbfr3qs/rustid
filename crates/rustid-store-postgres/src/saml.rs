@@ -183,7 +183,8 @@ impl SigninStateStore for PgStore {
     async fn remove_expired(&self, now: DateTime<Utc>, batch: usize) -> Result<u64, StoreError> {
         let removed = sqlx::query(
             "DELETE FROM saml_signin_states WHERE id IN
-               (SELECT id FROM saml_signin_states WHERE expires_at < $1 LIMIT $2)",
+               (SELECT id FROM saml_signin_states WHERE expires_at < $1
+                ORDER BY id LIMIT $2 FOR UPDATE SKIP LOCKED)",
         )
         .bind(now)
         .bind(i64::try_from(batch).unwrap_or(i64::MAX))
@@ -317,7 +318,8 @@ impl LogoutSessionStore for PgStore {
     async fn remove_expired(&self, now: DateTime<Utc>, batch: usize) -> Result<u64, StoreError> {
         let removed = sqlx::query(
             "DELETE FROM saml_logout_sessions WHERE logout_id IN
-               (SELECT logout_id FROM saml_logout_sessions WHERE expires_at <= $1 LIMIT $2)",
+               (SELECT logout_id FROM saml_logout_sessions WHERE expires_at <= $1
+                ORDER BY logout_id LIMIT $2 FOR UPDATE SKIP LOCKED)",
         )
         .bind(now)
         .bind(i64::try_from(batch).unwrap_or(i64::MAX))

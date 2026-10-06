@@ -59,7 +59,8 @@ impl DeviceFlowThrottling for PgStore {
     async fn remove_expired(&self, now: DateTime<Utc>, batch: usize) -> Result<u64, StoreError> {
         let removed = sqlx::query(
             "DELETE FROM throttling WHERE key IN
-                 (SELECT key FROM throttling WHERE forget <= $1 LIMIT $2)",
+                 (SELECT key FROM throttling WHERE forget <= $1
+                  ORDER BY key LIMIT $2 FOR UPDATE SKIP LOCKED)",
         )
         .bind(now)
         .bind(i64::try_from(batch).unwrap_or(i64::MAX))

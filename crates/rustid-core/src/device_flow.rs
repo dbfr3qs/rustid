@@ -235,33 +235,12 @@ async fn respond(
         .unwrap_or(&ctx.options.device_flow.default_user_code_type);
     let (generate, retries) = user_code_generator(code_type)
         .ok_or_else(|| TokenFailure::Server(format!("no user code generator for {code_type}")))?;
-    let mut user_code = None;
-    for _ in 0..retries {
-        let candidate = generate();
-        if ctx
-            .stores
-            .device_flow
-            .find_by_user_code(&hash(&candidate))
-            .await?
-            .is_none()
-        {
-            user_code = Some(candidate);
-            break;
-        }
-    }
-    let user_code = user_code.ok_or_else(|| {
-        TokenFailure::Server("Unable to create unique device flow user code".into())
-    })?;
     let interaction = &ctx.options.user_interaction;
     let mut verification_uri = interaction.device_verification_url.clone();
     if verification_uri.starts_with('/') && !verification_uri.starts_with("//") {
         verification_uri = format!("{}{verification_uri}", ctx.base_url.trim_end_matches('/'));
     }
-    let parameter = &interaction.device_verification_user_code_parameter;
-    let verification_uri_complete = (!parameter.trim().is_empty())
-        .then(|| format!("{verification_uri}?{parameter}={user_code}"));
     let lifetime = client.device_code_lifetime;
-    let device_code = new_device_code();
     let data = DeviceCode {
         creation_time: ctx.now,
         lifetime,
@@ -274,17 +253,49 @@ async fn respond(
         subject: None,
         session_id: None,
     };
-    ctx.stores
-        .device_flow
-        .store_device_authorization(
-            &hash(&device_code),
-            &hash(&user_code),
-            &client.client_id,
-            ctx.now,
-            ctx.now + Duration::seconds(i64::from(lifetime)),
-            &serde_json::to_string(&data).expect("a device code serialises"),
-        )
-        .await?;
+    let data = serde_json::to_string(&data).expect("a device code serialises");
+    // A free user code; another request may take the same one between the
+    // check and the write, and then the next one is tried.
+    let mut stored = None;
+    for _ in 0..retries {
+        let candidate = generate();
+        if ctx
+            .stores
+            .device_flow
+            .find_by_user_code(&hash(&candidate))
+            .await?
+            .is_some()
+        {
+            continue;
+        }
+        let device_code = new_device_code();
+        match ctx
+            .stores
+            .device_flow
+            .store_device_authorization(
+                &hash(&device_code),
+                &hash(&candidate),
+                &client.client_id,
+                ctx.now,
+                ctx.now + Duration::seconds(i64::from(lifetime)),
+                &data,
+            )
+            .await
+        {
+            Ok(()) => {
+                stored = Some((device_code, candidate));
+                break;
+            }
+            Err(crate::stores::StoreError::DuplicateDeviceCode) => continue,
+            Err(e) => return Err(e.into()),
+        }
+    }
+    let (device_code, user_code) = stored.ok_or_else(|| {
+        TokenFailure::Server("Unable to create unique device flow user code".into())
+    })?;
+    let parameter = &interaction.device_verification_user_code_parameter;
+    let verification_uri_complete = (!parameter.trim().is_empty())
+        .then(|| format!("{verification_uri}?{parameter}={user_code}"));
     Ok(DeviceAuthorizationResponse {
         device_code,
         user_code,

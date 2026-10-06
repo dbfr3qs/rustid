@@ -100,7 +100,26 @@ pub fn hashed_key(handle: &str, grant_type: &str) -> String {
 
 /// One value and a list of the same criterion, as one set.
 fn merged(one: &Option<String>, many: &[String]) -> Option<Vec<String>> {
-    let mut set: Vec<String> = one.iter().chain(many).cloned().collect();
-    set.dedup();
+    let mut set: Vec<String> = Vec::new();
+    for value in one.iter().chain(many) {
+        if !set.contains(value) {
+            set.push(value.clone());
+        }
+    }
     (!set.is_empty()).then_some(set)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn filter_sets_hold_each_value_once() {
+        let filter = GrantFilter {
+            client_id: Some("a".into()),
+            client_ids: vec!["b".into(), "a".into(), "b".into()],
+            ..Default::default()
+        };
+        assert_eq!(filter.client_set(), Some(vec!["a".into(), "b".into()]));
+    }
 }

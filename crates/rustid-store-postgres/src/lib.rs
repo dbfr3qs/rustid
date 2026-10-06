@@ -466,7 +466,7 @@ impl PersistedGrantStore for PgStore {
             "DELETE FROM persisted_grants WHERE key IN
                  (SELECT key FROM persisted_grants
                   WHERE expiration < $1 OR consumed_time < $2
-                  LIMIT $3)",
+                  ORDER BY key LIMIT $3 FOR UPDATE SKIP LOCKED)",
         )
         .bind(now)
         .bind(consumed_before)

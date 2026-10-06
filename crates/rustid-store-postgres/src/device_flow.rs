@@ -85,7 +85,8 @@ impl DeviceFlowStore for PgStore {
     async fn remove_expired(&self, now: DateTime<Utc>, batch: usize) -> Result<u64, StoreError> {
         let removed = sqlx::query(
             "DELETE FROM device_codes WHERE device_code IN
-                 (SELECT device_code FROM device_codes WHERE expiration < $1 LIMIT $2)",
+                 (SELECT device_code FROM device_codes WHERE expiration < $1
+                  ORDER BY device_code LIMIT $2 FOR UPDATE SKIP LOCKED)",
         )
         .bind(now)
         .bind(i64::try_from(batch).unwrap_or(i64::MAX))

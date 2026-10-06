@@ -88,12 +88,22 @@ pub(crate) async fn write(
     ))
 }
 
-/// The session's record goes.
+/// The session's record goes, with the user's pending sign-ins.
 pub(crate) async fn remove(state: &ProtocolState, session: &UserSession) -> Result<(), StoreError> {
     if let (Some(sessions), Some(key)) = (&state.stores.sessions, &session.key) {
         sessions.store.delete_session(key).await?;
     }
-    Ok(())
+    // A sign-in of the user that no browser has collected yet must not
+    // sign them in again after they signed out.
+    state
+        .stores
+        .grants
+        .remove_all(&rustid_core::grants::GrantFilter {
+            subject_id: Some(session.subject_id.clone()),
+            grant_type: Some(rustid_core::authorize::login::CONTINUATION.to_owned()),
+            ..Default::default()
+        })
+        .await
 }
 
 /// Sliding expiration: renews the session when more

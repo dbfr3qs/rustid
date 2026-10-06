@@ -66,6 +66,22 @@ fn parse<T: DeserializeOwned>(entities: Option<&Vec<StoredEntity>>) -> Result<Ve
         .collect()
 }
 
+/// As [`parse`], leaving out (with a warning) entities that won't decode:
+/// one broken client must not stop every other client signing in.
+fn parse_each<T: DeserializeOwned>(entities: Option<&Vec<StoredEntity>>) -> Vec<T> {
+    entities
+        .into_iter()
+        .flatten()
+        .filter_map(|e| match serde_json::from_value(e.data.clone()) {
+            Ok(item) => Some(item),
+            Err(error) => {
+                tracing::warn!(key = %e.key, %error, "a stored entity can't be read; it's left out");
+                None
+            }
+        })
+        .collect()
+}
+
 impl InMemoryConfiguration {
     /// The clients and resources, each with a fresh id at version 1.
     pub fn new(clients: &Clients, resources: &Resources) -> Self {
@@ -145,7 +161,7 @@ impl InMemoryConfiguration {
             return Ok(built.clone());
         }
         let built = Arc::new(crate::InMemoryClientStore::new(Clients {
-            clients: parse(state.entities.get(&EntityKind::Client))?,
+            clients: parse_each(state.entities.get(&EntityKind::Client)),
         }));
         state.clients = Some(built.clone());
         Ok(built)

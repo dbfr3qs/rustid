@@ -622,6 +622,32 @@ pub async fn persisted_grant_purge(store: Arc<dyn PersistedGrantStore>) {
     }
     assert_eq!(store.remove_expired(now, 2, None).await.unwrap(), 2);
     assert_eq!(store.remove_expired(now, 2, None).await.unwrap(), 1);
+    // Instances purging at once each take their own rows, and between them
+    // remove everything.
+    for i in 0..60 {
+        store
+            .store(make(&format!("p-conc-{i}"), Some(-1), None))
+            .await
+            .unwrap();
+    }
+    let purgers = (0..6).map(|_| {
+        let store = store.clone();
+        async move {
+            let mut removed = 0;
+            loop {
+                let n = store.remove_expired(now, 5, None).await.unwrap();
+                if n == 0 {
+                    return removed;
+                }
+                removed += n;
+            }
+        }
+    });
+    let removed: u64 = futures::future::join_all(purgers).await.into_iter().sum();
+    assert!(removed >= 60, "{removed}");
+    for i in 0..60 {
+        assert!(store.get(&format!("p-conc-{i}")).await.unwrap().is_none());
+    }
     for key in ["p-live", "p-forever", "p-used-new"] {
         store.remove(key).await.unwrap();
     }

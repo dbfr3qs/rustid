@@ -100,7 +100,7 @@ One provider entry can use Entra ID's shared `organizations` (or `common`) endpo
 }
 ```
 
-The shared endpoint's discovery document names its issuer as `https://login.microsoftonline.com/{tenantid}/v2.0`. With `multiTenant`, rustid accepts that issuer: the authority with one path segment replaced by `{tenantid}`. For each sign-in:
+The shared endpoint's discovery document names its issuer as `https://login.microsoftonline.com/{tenantid}/v2.0`. With `multiTenant`, rustid accepts that issuer: the authority with one path segment (never the scheme or host) replaced by `{tenantid}`. Each tenant is listed once. For each sign-in:
 1. the id token's `tid` must be one of `tenants`, otherwise the sign-in fails as `tenant_not_allowed`;
 2. the token's `iss` must be the template with that tenant id, so `https://login.microsoftonline.com/<tid>/v2.0`.
 
@@ -164,8 +164,8 @@ An upstream `access_denied` (the user refused, or the provider did) goes back to
 | `state_mismatch` | The callback's `state` isn't the cookie's |
 | `issuer_mismatch` | The callback's `iss` isn't the authority |
 | `access_denied` | The provider answered `access_denied` |
-| `upstream_error` | The provider answered another error, or no code |
-| `metadata_unavailable` | Discovery or the key set couldn't be read, or failed the checks |
+| `upstream_error` | The provider answered another error (`Detail` has its `error` and `error_description`, each cut to 256 characters), or no code |
+| `metadata_unavailable` | Discovery or the key set couldn't be read, or failed the checks. A failed discovery is remembered for a minute, so a provider that is down doesn't slow every sign-in |
 | `token_request_failed` | The token endpoint refused the code, or answered without an id token |
 | `id_token_invalid` | The id token failed a check (named in `Detail`) |
 | `userinfo_failed` | The userinfo call failed, or its `sub` didn't match |
@@ -215,7 +215,7 @@ The provider posts a `logout_token`. rustid checks it as the specification requi
 - `events` has the back-channel logout event;
 - `sub` or `sid` is present, and there is no `nonce`.
 
-A token with `sub` ends the user's rustid sessions from this provider; with `sid` as well, only those that started from that provider session. A token with only `sid` is matched through a record rustid keeps of each provider session, which lasts as long as the rustid session's first lifetime; a session renewed past that is not found. Keycloak, Okta and rustid send `sub` with `sid`. rustid answers 200, also when no session matched, or 400 with `{"error":"invalid_request"}` for a token that fails a check.
+A token with `sub` ends the user's rustid sessions from this provider; with `sid` as well, only those that started from that provider session. A token with only `sid` is matched through a record rustid keeps of each provider session, which lasts as long as the rustid session's first lifetime; a session renewed past that is not found. Keycloak, Okta and rustid send `sub` with `sid`. That record is kept only for providers with `backChannelLogout`, and goes when the session ends through either channel. rustid answers 200, also when no session matched, or 400 with `{"error":"invalid_request"}` for a token that fails a check. When the token was valid but rustid couldn't finish (the store failed, say), it answers 500 and the token isn't counted as used, so the provider's retry works.
 
 ### Front channel
 
@@ -231,7 +231,7 @@ Front-channel logout depends on the browser sending rustid's cookies inside the 
 
 ### Events
 
-A logout from the provider that ends a session raises `User Logout Success` (id 1002), with `Provider`, `Channel` (`back` or `front`), and the provider's `Sub` and `Sid` where it named them. A back-channel logout token that fails a check raises `User Logout Failure` (id 1003), with `Provider`, `Channel`, `Reason` (`logout_token_missing`, `logout_token_invalid` or `metadata_unavailable`) and `Detail`.
+Each rustid session a logout from the provider ends raises `User Logout Success` (id 1002), with `Provider`, `Channel` (`back` or `front`), the session's `SubjectId` and `SessionId`, and the provider's `Sub` and `Sid` where it named them. A back-channel logout token that fails a check raises `User Logout Failure` (id 1003), with `Provider`, `Channel`, `Reason` (`logout_token_missing`, `logout_token_invalid` or `metadata_unavailable`) and `Detail`.
 
 ## Limitations
 

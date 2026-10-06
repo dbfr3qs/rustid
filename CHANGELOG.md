@@ -7,6 +7,24 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-06
+
+### Fixed
+
+- Upstream logout: a back-channel logout that fails after its token was accepted answers 500 and leaves the token unused, so the provider's retry works; a replay cache failure is a 500, not a 400. A failed write of the upstream session record no longer fails the sign-in.
+- A failed discovery is remembered for a minute, and a stored provider that can't be resolved is logged once a minute, instead of on every sign-in or sign-out.
+- Admin: one unreadable stored provider no longer makes `GET /admin/identity-providers` fail; malformed provider JSON is reported without repeating the values sent; an import racing another instance is retried.
+- Multi-tenant: `{tenantid}` is accepted only as a path segment of the discovery issuer, and only that segment is filled in.
+- The federation cookies' path follows the issuer, so callbacks work behind a proxy that strips a path prefix the issuer has. The signout callback answers only for a configured provider. Federation pages are never cached, and an upstream `access_denied` for a request that can't be answered any more shows the error page.
+
+### Changed
+
+- `User Logout Success` is raised once per ended session, with its `SubjectId` and `SessionId`.
+- Upstream session records are kept only for providers with `backChannelLogout`.
+- On Postgres, providers from `identity_providers_file` are listed in the file's order on every start, then those made through admin, as on the memory store.
+- A provider listing a tenant twice is refused.
+- `upstream_error` events include the provider's `error_description`.
+
 ## [0.6.0] - 2026-10-06
 
 ### Added

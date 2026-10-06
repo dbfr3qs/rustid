@@ -108,5 +108,11 @@ pub fn sign_in(
         persistent: false,
         allow_refresh: None,
         upstream_id_token: None,
+        upstream_sid: token
+            .payload
+            .get("sid")
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned),
     }
 }

@@ -21,6 +21,8 @@ pub enum EventType {
 pub mod ids {
     pub const USER_LOGIN_SUCCESS: i32 = 1000;
     pub const USER_LOGIN_FAILURE: i32 = 1001;
+    pub const USER_LOGOUT_SUCCESS: i32 = 1002;
+    pub const USER_LOGOUT_FAILURE: i32 = 1003;
     pub const CLIENT_AUTHENTICATION_SUCCESS: i32 = 1010;
     pub const CLIENT_AUTHENTICATION_FAILURE: i32 = 1011;
     pub const API_AUTHENTICATION_SUCCESS: i32 = 1020;
@@ -84,6 +86,21 @@ pub enum EventDetails {
         subject_id: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         client_id: Option<String>,
+    },
+    UserLogoutSuccess {
+        provider: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        sub: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        sid: Option<String>,
+        channel: &'static str,
+    },
+    UserLogoutFailure {
+        provider: String,
+        reason: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        detail: Option<String>,
+        channel: &'static str,
     },
     UserLoginFailure {
         provider: String,
@@ -344,6 +361,30 @@ impl Event {
             "User Login Failure",
             EventType::Failure,
             ids::USER_LOGIN_FAILURE,
+            None,
+            details,
+        )
+    }
+
+    /// An upstream provider signed the user out of rustid.
+    pub fn user_logout_success(details: EventDetails) -> Self {
+        Event::new(
+            "Authentication",
+            "User Logout Success",
+            EventType::Success,
+            ids::USER_LOGOUT_SUCCESS,
+            None,
+            details,
+        )
+    }
+
+    /// An upstream provider's logout request was refused.
+    pub fn user_logout_failure(details: EventDetails) -> Self {
+        Event::new(
+            "Authentication",
+            "User Logout Failure",
+            EventType::Failure,
+            ids::USER_LOGOUT_FAILURE,
             None,
             details,
         )

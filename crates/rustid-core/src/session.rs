@@ -52,6 +52,10 @@ pub struct UserSession {
     /// out there (kept only with server-side sessions).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub upstream_id_token: Option<String>,
+    /// The upstream provider's session id (`sid`), matched when the
+    /// provider signs the user out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub upstream_sid: Option<String>,
 }
 
 /// A service provider's session within the user's.
@@ -79,6 +83,8 @@ pub struct SignIn {
     pub allow_refresh: Option<bool>,
     /// The upstream provider's id token, kept for signing out there.
     pub upstream_id_token: Option<String>,
+    /// The upstream provider's session id (`sid`), for its logout.
+    pub upstream_sid: Option<String>,
 }
 
 impl UserSession {
@@ -128,6 +134,7 @@ impl UserSession {
             issuer: None,
             key,
             upstream_id_token: sign_in.upstream_id_token,
+            upstream_sid: sign_in.upstream_sid,
         }
     }
 

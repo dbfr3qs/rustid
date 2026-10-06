@@ -41,6 +41,14 @@ pub struct IdentityProvider {
     /// (OpenID Connect RP-Initiated Logout 1.0).
     #[serde(default)]
     pub sign_out: bool,
+    /// The provider's back channel may end rustid sessions (OpenID
+    /// Connect Back-Channel Logout 1.0).
+    #[serde(default)]
+    pub back_channel_logout: bool,
+    /// The provider's front channel may end rustid sessions (OpenID
+    /// Connect Front-Channel Logout 1.0).
+    #[serde(default)]
+    pub front_channel_logout: bool,
     /// One entry for a shared multi-tenant endpoint (Entra ID's
     /// `organizations` or `common`), accepting the tenants listed.
     #[serde(default)]

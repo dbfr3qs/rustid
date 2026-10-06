@@ -468,3 +468,107 @@ impl Federation {
         Ok(token)
     }
 }
+
+/// Why a logout token was refused.
+#[derive(Debug, Clone, PartialEq)]
+pub enum LogoutFailure {
+    MetadataUnavailable(String),
+    Invalid(super::logout::LogoutTokenCheck),
+}
+
+impl LogoutFailure {
+    /// The failed check, for an invalid token.
+    pub fn check(&self) -> Option<super::logout::LogoutTokenCheck> {
+        match self {
+            LogoutFailure::Invalid(check) => Some(*check),
+            LogoutFailure::MetadataUnavailable(_) => None,
+        }
+    }
+
+    pub fn reason(&self) -> &'static str {
+        match self {
+            LogoutFailure::MetadataUnavailable(_) => "metadata_unavailable",
+            LogoutFailure::Invalid(_) => "logout_token_invalid",
+        }
+    }
+
+    pub fn detail(&self) -> String {
+        match self {
+            LogoutFailure::MetadataUnavailable(d) => d.clone(),
+            LogoutFailure::Invalid(check) => {
+                format!("the logout token failed the {} check", check.as_str())
+            }
+        }
+    }
+}
+
+impl Federation {
+    /// A logout token from `provider`'s back channel, checked as
+    /// Back-Channel Logout 1.0 §2.6 requires, with the key set refetched
+    /// as for id tokens, and its `jti` recorded so a replay is refused.
+    pub async fn verify_logout_token(
+        &self,
+        provider: &Provider,
+        token: &str,
+        replay: &dyn crate::replay::ReplayCache,
+        skew: i64,
+        now: i64,
+    ) -> Result<super::logout::LogoutToken, LogoutFailure> {
+        use super::logout::{
+            LOGOUT_TOKEN_REPLAY_PURPOSE, LOGOUT_TOKEN_REPLAY_SECONDS, LogoutExpectations,
+            LogoutTokenCheck, validate_logout_token,
+        };
+        let invalid = LogoutFailure::Invalid;
+        let metadata = self
+            .metadata(provider, now)
+            .await
+            .map_err(|f| LogoutFailure::MetadataUnavailable(f.detail()))?;
+        let algorithms = metadata.id_token_algorithms();
+        let issuer = match &provider.config.multi_tenant {
+            None => provider.config.authority.clone(),
+            Some(multi) => tenant_issuer(multi, &metadata, token)
+                .map_err(|_| invalid(LogoutTokenCheck::Issuer))?,
+        };
+        let expect = LogoutExpectations {
+            issuer: &issuer,
+            client_id: &provider.config.client_id,
+            algorithms: &algorithms,
+            now,
+            skew,
+        };
+        let keys = match self.cached(provider).and_then(|e| e.keys) {
+            Some(keys) => keys,
+            None => self
+                .fetch_keys(provider, &metadata)
+                .await
+                .map_err(|f| LogoutFailure::MetadataUnavailable(f.detail()))?,
+        };
+        let no_kid =
+            crate::jwt::Jws::decode(token).is_some_and(|jws| jws.header_str("kid").is_none());
+        let checked = match validate_logout_token(token, &keys, &expect) {
+            Err(check @ (LogoutTokenCheck::UnknownKey | LogoutTokenCheck::Signature))
+                if check == LogoutTokenCheck::UnknownKey || no_kid =>
+            {
+                if !self.may_refetch(provider, now) {
+                    return Err(invalid(check));
+                }
+                let keys = self
+                    .fetch_keys(provider, &metadata)
+                    .await
+                    .map_err(|f| LogoutFailure::MetadataUnavailable(f.detail()))?;
+                validate_logout_token(token, &keys, &expect).map_err(invalid)?
+            }
+            other => other.map_err(invalid)?,
+        };
+        let handle = format!("{}\0{}", provider.config.scheme, checked.jti);
+        let expires = checked.iat.max(now) + LOGOUT_TOKEN_REPLAY_SECONDS + skew;
+        match replay
+            .add_if_absent(LOGOUT_TOKEN_REPLAY_PURPOSE, &handle, expires, now)
+            .await
+        {
+            Ok(true) => Ok(checked),
+            Ok(false) => Err(invalid(LogoutTokenCheck::Replayed)),
+            Err(e) => Err(LogoutFailure::MetadataUnavailable(e.to_string())),
+        }
+    }
+}

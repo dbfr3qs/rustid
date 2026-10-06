@@ -5,6 +5,7 @@
 pub mod challenge;
 pub mod flow;
 pub mod id_token;
+pub mod logout;
 pub mod provider;
 pub mod session;
 pub mod upstream;

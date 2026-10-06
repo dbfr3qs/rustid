@@ -948,3 +948,169 @@ fn the_tenant_template_is_accepted_only_for_multi_tenant_providers() {
     m.issuer = "https://other.example/{tenantid}/v2.0".into();
     assert!(m.check(authority, false, true).is_err());
 }
+
+fn logout_claims() -> Value {
+    json!({
+        "iss": AUTHORITY, "aud": "abc", "iat": NOW, "jti": "jti-1",
+        "sub": "upstream-user", "sid": "upstream-sid",
+        "events": { "http://schemas.openid.net/event/backchannel-logout": {} },
+    })
+}
+
+#[tokio::test]
+async fn logout_tokens_are_checked_as_back_channel_logout_requires() {
+    use rustid_core::federation::logout::LogoutTokenCheck;
+    use rustid_core::replay::InMemoryReplayCache;
+    let k = key("k1", "RS256");
+    let fake = Fake::new(&[&k]);
+    let fed = federation(fake.clone());
+    let p = fed.find("up").await.unwrap().unwrap();
+    let replay = InMemoryReplayCache::default();
+    let ok = verify(&fed, &p, token(&k, &logout_claims()), &replay)
+        .await
+        .unwrap();
+    assert_eq!(ok.sub.as_deref(), Some("upstream-user"));
+    assert_eq!(ok.sid.as_deref(), Some("upstream-sid"));
+    assert_eq!(ok.issuer, AUTHORITY);
+    // The same jti again: a replay.
+    assert_eq!(
+        verify(&fed, &p, token(&k, &logout_claims()), &replay)
+            .await
+            .unwrap_err()
+            .check(),
+        Some(LogoutTokenCheck::Replayed)
+    );
+    let with = |edit: &dyn Fn(&mut Value)| {
+        let mut c = logout_claims();
+        c["jti"] = format!("jti-{}", rand_suffix()).into();
+        edit(&mut c);
+        token(&k, &c)
+    };
+    for (edit, expected) in [
+        (
+            Box::new(|c: &mut Value| c["iss"] = "https://evil".into()) as Box<dyn Fn(&mut Value)>,
+            LogoutTokenCheck::Issuer,
+        ),
+        (
+            Box::new(|c: &mut Value| c["aud"] = "other".into()),
+            LogoutTokenCheck::Audience,
+        ),
+        (
+            Box::new(|c: &mut Value| {
+                c.as_object_mut().unwrap().remove("iat");
+            }),
+            LogoutTokenCheck::IssuedAt,
+        ),
+        (
+            Box::new(|c: &mut Value| c["iat"] = (NOW + 301).into()),
+            LogoutTokenCheck::IssuedAt,
+        ),
+        (
+            Box::new(|c: &mut Value| c["exp"] = (NOW - 301).into()),
+            LogoutTokenCheck::Expired,
+        ),
+        (
+            Box::new(|c: &mut Value| {
+                c.as_object_mut().unwrap().remove("jti");
+            }),
+            LogoutTokenCheck::Jti,
+        ),
+        (
+            Box::new(|c: &mut Value| {
+                c.as_object_mut().unwrap().remove("events");
+            }),
+            LogoutTokenCheck::Events,
+        ),
+        (
+            Box::new(|c: &mut Value| {
+                c["events"] = json!({ "http://schemas.openid.net/event/backchannel-logout": "x" })
+            }),
+            LogoutTokenCheck::Events,
+        ),
+        (
+            Box::new(|c: &mut Value| {
+                let o = c.as_object_mut().unwrap();
+                o.remove("sub");
+                o.remove("sid");
+            }),
+            LogoutTokenCheck::SubjectOrSession,
+        ),
+        (
+            Box::new(|c: &mut Value| c["nonce"] = "n".into()),
+            LogoutTokenCheck::Nonce,
+        ),
+    ] {
+        assert_eq!(
+            verify(&fed, &p, with(&*edit), &replay)
+                .await
+                .unwrap_err()
+                .check(),
+            Some(expected)
+        );
+    }
+    // sid alone, or sub alone, is enough.
+    verify(
+        &fed,
+        &p,
+        with(&|c| {
+            c.as_object_mut().unwrap().remove("sub");
+        }),
+        &replay,
+    )
+    .await
+    .unwrap();
+    verify(
+        &fed,
+        &p,
+        with(&|c| {
+            c.as_object_mut().unwrap().remove("sid");
+        }),
+        &replay,
+    )
+    .await
+    .unwrap();
+    // alg none and a symmetric algorithm are refused.
+    let none = raw_token(None, &json!({ "alg": "none" }), &logout_claims());
+    assert_eq!(
+        verify(&fed, &p, none, &replay).await.unwrap_err().check(),
+        Some(LogoutTokenCheck::Algorithm)
+    );
+    // A key rotated in since: refetched once.
+    let k2 = key("k2", "RS256");
+    fake.0.lock().unwrap().jwks.push(jwk(&k2));
+    let mut c = logout_claims();
+    c["jti"] = "jti-rotated".into();
+    verify(&fed, &p, token(&k2, &c), &replay).await.unwrap();
+}
+
+async fn verify(
+    fed: &Federation,
+    p: &Provider,
+    token: String,
+    replay: &rustid_core::replay::InMemoryReplayCache,
+) -> Result<
+    rustid_core::federation::logout::LogoutToken,
+    rustid_core::federation::flow::LogoutFailure,
+> {
+    fed.verify_logout_token(p, &token, replay, 300, NOW).await
+}
+
+fn rand_suffix() -> String {
+    rustid_core::federation::challenge::random_value()
+}
+
+#[test]
+fn sign_in_keeps_the_upstream_session_id() {
+    let mut payload = baseline("n");
+    payload["sid"] = "upstream-sid".into();
+    let token = ValidatedIdToken {
+        raw: String::new(),
+        issuer: AUTHORITY.into(),
+        subject: "upstream-user".into(),
+        payload: payload.as_object().unwrap().clone(),
+    };
+    assert_eq!(
+        sign_in(&config(), &token, NOW).upstream_sid.as_deref(),
+        Some("upstream-sid")
+    );
+}

@@ -92,6 +92,7 @@ fn subject(answer: crate::grant_validation::GrantSubject, now: DateTime<Utc>) ->
         issuer: None,
         key: None,
         upstream_id_token: None,
+        upstream_sid: None,
     }
 }
 

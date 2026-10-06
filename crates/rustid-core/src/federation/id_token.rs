@@ -81,14 +81,17 @@ fn suits(key: &PublicJwk, alg: &str) -> bool {
 
 /// The checks, in order: format, algorithm, key, signature, issuer,
 /// audience, authorized party, expiry, issue time, nonce, subject.
-pub fn validate(
+/// The token decoded and its signature checked: an asymmetric algorithm
+/// from `algorithms`, and the key named by `kid` (or the only suitable
+/// key when there is no `kid`).
+pub(crate) fn verified(
     token: &str,
     keys: &[PublicJwk],
-    expect: &Expectations<'_>,
-) -> Result<ValidatedIdToken, IdTokenCheck> {
+    algorithms: &[String],
+) -> Result<Jws, IdTokenCheck> {
     let jws = Jws::decode(token).ok_or(IdTokenCheck::Malformed)?;
     let alg = jws.header_str("alg").ok_or(IdTokenCheck::Algorithm)?;
-    if !ASYMMETRIC_ALGORITHMS.contains(&alg) || !expect.algorithms.iter().any(|a| a == alg) {
+    if !ASYMMETRIC_ALGORITHMS.contains(&alg) || !algorithms.iter().any(|a| a == alg) {
         return Err(IdTokenCheck::Algorithm);
     }
     let key = match jws.header_str("kid") {
@@ -114,6 +117,15 @@ pub fn validate(
     if !jws.verify(key) {
         return Err(IdTokenCheck::Signature);
     }
+    Ok(jws)
+}
+
+pub fn validate(
+    token: &str,
+    keys: &[PublicJwk],
+    expect: &Expectations<'_>,
+) -> Result<ValidatedIdToken, IdTokenCheck> {
+    let jws = verified(token, keys, expect.algorithms)?;
     if jws.claim_str("iss") != Some(expect.issuer) {
         return Err(IdTokenCheck::Issuer);
     }

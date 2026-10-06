@@ -259,6 +259,7 @@ fn user_session(
         issuer: None,
         key: None,
         upstream_id_token: None,
+        upstream_sid: None,
     })
 }
 

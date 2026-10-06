@@ -687,6 +687,7 @@ fn subject(subject_id: String, claims: Vec<Claim>, now: DateTime<Utc>) -> UserSe
         issuer: None,
         key: None,
         upstream_id_token: None,
+        upstream_sid: None,
     }
 }
 

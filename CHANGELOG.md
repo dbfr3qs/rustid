@@ -7,6 +7,33 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-10-07
+
+### Fixed
+
+- Reloading the end-session callback page after a SAML-initiated logout answers again instead of 500, without sending the SPs' logout requests twice.
+- SAML signatures with two `Signature`, `SignedInfo` or `SignatureValue` elements are refused.
+- Core endpoints are matched before SAML paths, so a SAML entity id path never shadows one.
+- One stored client that can't be read no longer makes every client lookup fail on the memory store; it is left out with a warning.
+- Postgres purges no longer deadlock when instances run them at once.
+- A device user code taken by a concurrent request is replaced instead of answering 500.
+- Signing out drops the user's sign-ins that no browser has collected yet.
+- An outbox processor delay too large to add to the clock no longer panics: out-of-range delays are refused at start.
+- The migration import writes nothing to `--out-dir` when the bundle fails validation, and validates in a temporary directory.
+- The readiness probe's https retry works whatever the case of the URL's scheme.
+- SAML certificate subjects show BMPString values as text, not as a byte list.
+
+### Changed
+
+- Configuration: `protocol.outbox_processor` delays must be between 0 seconds and a year (`process_interval` at least 1 second), and `[protected_resource].path` must be a path.
+- Other methods on the protected resource are 405 with `Allow: GET`; the read-only schema 405 has `Allow: GET`.
+- Admin: `hashAlgorithm` is read without regard to case; blank schema group codes are refused; the IdP-initiated SSO call refuses unknown members; the API resource secret call names `PlaintextValue` as the others do; entity ids with a sign are refused.
+- A certificate-bound token used without a certificate gets its own error description.
+- Failures to make a SAML signing certificate say why.
+- The migration import warns when a key lacks the certificate its algorithm's `use_x509_certificate` needs.
+- The load test labels its throughput ops/s.
+- `docs/operations.md`: a trusted proxy's own client certificate without `forwarded_certificate_header`.
+
 ## [0.6.1] - 2026-10-06
 
 ### Fixed

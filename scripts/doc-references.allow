@@ -60,3 +60,4 @@ IsActive
 ProviderUserId
 SubjectId
 SessionId
+PlaintextValue

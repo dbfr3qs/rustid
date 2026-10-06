@@ -226,71 +226,10 @@ fn location(r: &reqwest::Response) -> String {
     r.headers()["location"].to_str().unwrap().to_owned()
 }
 
-#[tokio::test]
-async fn signing_in_through_a_second_rustid() {
-    let dir = tempfile::tempdir().unwrap();
-    let up_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let down_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    // The upstream is reached as localhost and the downstream as 127.0.0.1:
-    // cookies aren't kept apart by port, and both servers set
-    // `idsrv.interaction`.
-    let up = format!(
-        "http://localhost:{}",
-        up_listener.local_addr().unwrap().port()
-    );
-    let down = format!("http://{}", down_listener.local_addr().unwrap());
-    let key = json!([{ "kid": "k1", "alg": "RS256", "key_file": fixture("signing-key.pem") }]);
-
-    let up_clients = write(
-        dir.path(),
-        "up-clients.json",
-        &json!([{
-            "clientId": "downstream",
-            "clientSecrets": [{ "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=" }],
-            "allowedGrantTypes": ["authorization_code"],
-            "redirectUris": [format!("{down}/federation/up/callback")],
-            "postLogoutRedirectUris": [format!("{down}/federation/up/signout-callback")],
-            "allowedScopes": ["openid", "profile"],
-            "requireConsent": false,
-            "alwaysIncludeUserClaimsInIdToken": true,
-        }]),
-    );
-    let _up = serve(dir.path(), "up.json", up_listener, json!({
-        "signing_keys": key,
-        "clients_file": up_clients,
-        "resources_file": fixture("resources.json"),
-        "protocol": { "key_management": { "enabled": false } },
-        "reference_ui": { "enabled": true, "interactive": true, "users_file": fixture("users.json") },
-    }))
-    .await;
-
-    let providers = write(
-        dir.path(),
-        "providers.json",
-        &json!([{
-            "scheme": "up", "displayName": "Upstream IdP", "authority": up,
-            "clientId": "downstream", "clientAuthentication": { "secret": "secret" },
-            "scopes": ["openid", "profile"],
-            "signOut": true,
-        }]),
-    );
-    let _down = serve(dir.path(), "down.json", down_listener, json!({
-        "signing_keys": key,
-        "clients_file": fixture("clients.json"),
-        "resources_file": fixture("resources.json"),
-        "identity_providers_file": providers,
-        "federation": { "allow_insecure_loopback": true },
-        "server_side_sessions": { "enabled": true },
-        "protocol": { "key_management": { "enabled": false } },
-        "reference_ui": { "enabled": true, "interactive": true, "users_file": fixture("users.json") },
-    }))
-    .await;
-
-    let browser = reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .cookie_store(true)
-        .build()
-        .unwrap();
+/// Signs in at the downstream rustid through the upstream one (the login
+/// page's button, then alice at the upstream), and returns the code the
+/// client got and the upstream authorize URL.
+async fn sign_in_via_upstream(browser: &reqwest::Client, up: &str, down: &str) -> (String, String) {
     let authorize = browser
         .get(format!("{down}/connect/authorize?client_id=logout.front&redirect_uri=https%3A%2F%2Fclient.test%2Fcallback&response_type=code&scope=openid%20profile&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"))
         .send()
@@ -374,6 +313,77 @@ async fn signing_in_through_a_second_rustid() {
         .unwrap()
         .1
         .into_owned();
+    (code, upstream_authorize)
+}
+
+#[tokio::test]
+async fn signing_in_through_a_second_rustid() {
+    let dir = tempfile::tempdir().unwrap();
+    let up_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let down_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    // The upstream is reached as localhost and the downstream as 127.0.0.1:
+    // cookies aren't kept apart by port, and both servers set
+    // `idsrv.interaction`.
+    let up = format!(
+        "http://localhost:{}",
+        up_listener.local_addr().unwrap().port()
+    );
+    let down = format!("http://{}", down_listener.local_addr().unwrap());
+    let key = json!([{ "kid": "k1", "alg": "RS256", "key_file": fixture("signing-key.pem") }]);
+
+    let up_clients = write(
+        dir.path(),
+        "up-clients.json",
+        &json!([{
+            "clientId": "downstream",
+            "clientSecrets": [{ "value": "K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=" }],
+            "allowedGrantTypes": ["authorization_code"],
+            "redirectUris": [format!("{down}/federation/up/callback")],
+            "postLogoutRedirectUris": [format!("{down}/federation/up/signout-callback")],
+            "backChannelLogoutUri": format!("{down}/federation/up/backchannel-logout"),
+            "allowedScopes": ["openid", "profile"],
+            "requireConsent": false,
+            "alwaysIncludeUserClaimsInIdToken": true,
+        }]),
+    );
+    let _up = serve(dir.path(), "up.json", up_listener, json!({
+        "signing_keys": key,
+        "clients_file": up_clients,
+        "resources_file": fixture("resources.json"),
+        "protocol": { "key_management": { "enabled": false } },
+        "reference_ui": { "enabled": true, "interactive": true, "users_file": fixture("users.json") },
+    }))
+    .await;
+
+    let providers = write(
+        dir.path(),
+        "providers.json",
+        &json!([{
+            "scheme": "up", "displayName": "Upstream IdP", "authority": up,
+            "clientId": "downstream", "clientAuthentication": { "secret": "secret" },
+            "scopes": ["openid", "profile"],
+            "signOut": true,
+            "backChannelLogout": true,
+        }]),
+    );
+    let _down = serve(dir.path(), "down.json", down_listener, json!({
+        "signing_keys": key,
+        "clients_file": fixture("clients.json"),
+        "resources_file": fixture("resources.json"),
+        "identity_providers_file": providers,
+        "federation": { "allow_insecure_loopback": true },
+        "server_side_sessions": { "enabled": true },
+        "protocol": { "key_management": { "enabled": false } },
+        "reference_ui": { "enabled": true, "interactive": true, "users_file": fixture("users.json") },
+    }))
+    .await;
+
+    let browser = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .cookie_store(true)
+        .build()
+        .unwrap();
+    let (code, upstream_authorize) = sign_in_via_upstream(&browser, &up, &down).await;
     let tokens: serde_json::Value = browser
         .post(format!("{down}/connect/token"))
         .form(&[
@@ -485,5 +495,52 @@ async fn signing_in_through_a_second_rustid() {
         location(&again).contains("/Account/Login"),
         "{}",
         location(&again)
+    );
+
+    // Signing out at the upstream itself: its back-channel logout ends the
+    // downstream session too.
+    sign_in_via_upstream(&browser, &up, &down).await;
+    let end = browser
+        .get(format!("{up}/connect/endsession"))
+        .send()
+        .await
+        .unwrap();
+    let up_logout = url::Url::parse(&up).unwrap().join(&location(&end)).unwrap();
+    let prompt = browser.get(up_logout.as_str()).send().await.unwrap();
+    assert_eq!(prompt.status(), 200);
+    let logout_id = up_logout
+        .query_pairs()
+        .find(|(k, _)| k == "logoutId")
+        .map(|(_, v)| v.into_owned())
+        .unwrap_or_default();
+    let signed_out_up = browser
+        .post(format!("{up}/account/logout"))
+        .form(&[("logoutId", logout_id.as_str())])
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(
+        signed_out_up.status(),
+        200,
+        "{}",
+        signed_out_up.text().await.unwrap()
+    );
+    // Delivery is in the background: wait for the downstream session to go.
+    let mut ended = false;
+    for _ in 0..50 {
+        let again = browser
+            .get(format!("{down}/connect/authorize?client_id=logout.front&redirect_uri=https%3A%2F%2Fclient.test%2Fcallback&response_type=code&scope=openid%20profile&state=s&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256"))
+            .send()
+            .await
+            .unwrap();
+        if location(&again).contains("/Account/Login") {
+            ended = true;
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+    assert!(
+        ended,
+        "the upstream's back-channel logout ended the downstream session"
     );
 }

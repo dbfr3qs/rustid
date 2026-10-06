@@ -961,6 +961,19 @@ pub(crate) async fn front_channel_logouts(
 ) -> Result<Vec<FrontChannelLogout>, String> {
     use rustid_saml::bindings::{MessageName, redirect};
     use rustid_saml::logout::{LogoutRequestOut, slo_redirect_endpoint, write_logout_request};
+    // A reload of the page: the requests went out with the first load,
+    // and the logout session tracking their answers is kept.
+    if let Some(logout_id) = &context.saml_logout_id
+        && saml
+            .stores
+            .logout_sessions
+            .get(logout_id, chrono::Utc::now())
+            .await
+            .map_err(|e| e.to_string())?
+            .is_some()
+    {
+        return Ok(Vec::new());
+    }
     let mut out = Vec::new();
     let mut expected = std::collections::BTreeMap::new();
     let mut skipped = 0;

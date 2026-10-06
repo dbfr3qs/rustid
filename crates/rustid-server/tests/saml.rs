@@ -233,6 +233,27 @@ async fn metadata_is_served_at_saml2() {
 }
 
 #[tokio::test]
+async fn core_endpoints_win_over_a_saml_path_that_names_them() {
+    let dir = tempfile::tempdir().unwrap();
+    let (base, _stop) = start_saml(
+        dir.path(),
+        serde_json::json!({ "enabled": true,
+            "entity_id": "https://idp.example.com/.well-known/openid-configuration" }),
+        true,
+    )
+    .await;
+    let discovery = reqwest::get(format!("{base}/.well-known/openid-configuration"))
+        .await
+        .unwrap();
+    assert_eq!(discovery.status(), 200);
+    let body: serde_json::Value = discovery
+        .json()
+        .await
+        .expect("discovery, not SAML metadata");
+    assert!(body["issuer"].is_string());
+}
+
+#[tokio::test]
 async fn metadata_follows_the_entity_id_path() {
     let dir = tempfile::tempdir().unwrap();
     let (base, _stop) = start_saml(
@@ -893,6 +914,9 @@ async fn slo_signs_out_notifies_the_other_sps_and_answers() {
         request_xml.contains("<samlp:SessionIndex>"),
         "{request_xml}"
     );
+    // Reloading the page answers again, and keeps the logout under way.
+    let reloaded = browser.get(&iframe).send().await.unwrap();
+    assert_eq!(reloaded.status(), 200);
 
     // Before unsigned.example answers, the callback would report PartialLogout;
     // its (unsigned, allowed) LogoutResponse is recorded.

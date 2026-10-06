@@ -495,6 +495,19 @@ fn text_of(element: Option<&Element>) -> String {
         .unwrap_or_default()
 }
 
+/// The `DSIG` child named `local`, refusing two: a second Signature,
+/// SignedInfo or SignatureValue could be the one another reader acts on.
+fn only_child<'d>(parent: &'d Element, local: &str) -> Result<Option<&'d Element>, String> {
+    let mut found = parent
+        .elements()
+        .filter(|e| e.ns == DSIG && e.local == local);
+    let first = found.next();
+    if found.next().is_some() {
+        return Err(format!("There is more than one {local}."));
+    }
+    Ok(first)
+}
+
 /// Verifies the signature that is a direct child of `signed` against the
 /// trusted certificates (DER) and allowed algorithms, as
 /// the signed xml helper does. Returns `signed` itself, so a
@@ -505,12 +518,12 @@ pub fn verify<'d>(
     trusted: &[Vec<u8>],
     allowed: &[&str],
 ) -> Result<&'d Element, String> {
-    let signature = signed
-        .child(DSIG, "Signature")
-        .ok_or_else(|| "The element is not signed.".to_owned())?;
-    let signed_info = signature
-        .child(DSIG, "SignedInfo")
+    let signature =
+        only_child(signed, "Signature")?.ok_or_else(|| "The element is not signed.".to_owned())?;
+    let signed_info = only_child(signature, "SignedInfo")?
         .ok_or_else(|| "The Signature has no SignedInfo.".to_owned())?;
+    // One value: a second one is never what was checked.
+    only_child(signature, "SignatureValue")?;
     let references: Vec<&Element> = signed_info
         .elements()
         .filter(|e| e.ns == DSIG && e.local == "Reference")

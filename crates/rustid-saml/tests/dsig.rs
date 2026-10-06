@@ -246,3 +246,36 @@ fn content_canonicalized_differently_is_not_signed() {
     let lf = unsigned.replace("alice &amp; co", "alice\nco");
     assert!(sign(&lf, "_assert1", &credential, &Limits::default()).is_ok());
 }
+
+#[test]
+fn a_signature_with_two_of_anything_is_refused() {
+    let unsigned = strip_signatures(&read("signed-rsa.xml"));
+    let signed = sign(
+        &unsigned,
+        "_assert1",
+        &credential("rsa"),
+        &Limits::default(),
+    )
+    .unwrap();
+    assert_eq!(check(&signed, "_assert1", "rsa"), Ok(()));
+    let doubled = |open: &str, close: &str| {
+        let start = signed.find(open).unwrap();
+        let end = signed[start..].find(close).unwrap() + start + close.len();
+        format!(
+            "{}{}{}",
+            &signed[..end],
+            &signed[start..end],
+            &signed[end..]
+        )
+    };
+    for (what, text) in [
+        ("SignedInfo", doubled("<SignedInfo>", "</SignedInfo>")),
+        (
+            "SignatureValue",
+            doubled("<SignatureValue>", "</SignatureValue>"),
+        ),
+        ("Signature", doubled("<Signature ", "</Signature>")),
+    ] {
+        assert!(check(&text, "_assert1", "rsa").is_err(), "two {what}");
+    }
+}

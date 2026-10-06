@@ -491,8 +491,14 @@ enum Endpoint<'a> {
 }
 
 impl<'a> Endpoint<'a> {
+    /// The core endpoints first: a SAML path configured onto one of
+    /// theirs never shadows it.
     fn find(state: &'a ProtocolState, route: &'a request::Route) -> Option<Self> {
-        let e = &state.options.endpoints;
+        Self::find_core(state, route).or_else(|| Self::find_saml(state, route))
+    }
+
+    #[cfg_attr(not(feature = "saml"), allow(unused_variables))]
+    fn find_saml(state: &'a ProtocolState, route: &'a request::Route) -> Option<Self> {
         let lower = route.path.to_ascii_lowercase();
         #[cfg(feature = "saml")]
         if let Some(saml) = state.saml.get()
@@ -532,6 +538,12 @@ impl<'a> Endpoint<'a> {
                 return Some(Endpoint::SamlSingleLogoutCallback(saml));
             }
         }
+        None
+    }
+
+    fn find_core(state: &'a ProtocolState, route: &'a request::Route) -> Option<Self> {
+        let e = &state.options.endpoints;
+        let lower = route.path.to_ascii_lowercase();
         if lower == "/.well-known/openid-configuration/jwks" {
             Some(Endpoint::DiscoveryKey)
         } else if lower == "/.well-known/openid-configuration" {

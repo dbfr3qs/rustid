@@ -103,12 +103,23 @@ pub async fn logout_token(
         },
     ];
     if let Some(sub) = &request.subject_id {
-        // A pairwise client knows the user by its own subject.
-        let client = find_enabled_client(ctx.stores.clients.as_ref(), &request.client_id).await?;
-        let sub = match &client {
-            Some(client) => crate::pairwise::subject_for(ctx.options, client, sub),
-            None => sub.clone(),
+        // A pairwise client knows the user by its own subject. A client gone
+        // meanwhile gets nothing; one whose subject can't be made gets
+        // nothing rather than the user's own.
+        let Some(client) =
+            find_enabled_client(ctx.stores.clients.as_ref(), &request.client_id).await?
+        else {
+            return Ok(None);
         };
+        if crate::pairwise::unavailable(ctx.options, &client) {
+            tracing::warn!(
+                client = %client.client_id,
+                "{}; no logout token sent",
+                crate::pairwise::unavailable_message(&client)
+            );
+            return Ok(None);
+        }
+        let sub = crate::pairwise::subject_for(ctx.options, &client, sub);
         claims.push(Claim::string("sub", &sub));
     }
     if let Some(sid) = &request.session_id {

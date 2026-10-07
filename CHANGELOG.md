@@ -11,7 +11,7 @@ minor version may change configuration or APIs.
 
 ### Added
 
-- Pairwise subject identifiers (OpenID Connect Core 1.0 §8): `[pairwise] salt` turns them on, and clients ask for them with `subjectType: "pairwise"` (and `sectorIdentifierUri` when their redirect URIs span hosts). A pairwise client's id tokens, userinfo answers and back-channel logout tokens carry its pairwise subject; access tokens keep the user's own ([docs/pairwise-subjects.md](docs/pairwise-subjects.md)).
+- Pairwise subject identifiers (OpenID Connect Core 1.0 §8): `[pairwise] salt` turns them on, and clients ask for them with `subjectType: "pairwise"` (and `sectorIdentifierUri` when their redirect URIs span hosts). A pairwise client's id tokens, userinfo answers and back-channel logout tokens carry its pairwise subject; access tokens and introspection keep the user's own. An instance without the salt fails closed for pairwise clients ([docs/pairwise-subjects.md](docs/pairwise-subjects.md)).
 - Dynamic client registration accepts `subject_type` and `sector_identifier_uri`, fetching and checking the sector identifier document.
 - The conformance run's dynamic plan includes the sector identifier modules.
 

@@ -102,3 +102,47 @@ async fn userinfo_needs_a_valid_token_with_the_openid_scope() {
         Err("expired_token")
     );
 }
+
+/// A pairwise client on a server whose salt has gone (one instance deployed
+/// without it): its subjects can't be made, and nothing falls back to the
+/// user's own.
+#[tokio::test]
+async fn a_pairwise_client_without_a_salt_fails_closed() {
+    let mut f = Fixture::new();
+    f.edit_clients(|clients| {
+        for c in clients.iter_mut().filter(|c| c.client_id == "web") {
+            c.subject_type = rustid_core::clients::SubjectType::Pairwise;
+        }
+    });
+    // An access token issued while there was no salt either; the id token
+    // and userinfo answer are refused.
+    let t = token(&f, &["openid", "api1"], chrono::Utc::now()).await;
+    assert!(
+        userinfo(&ctx(&f), &t).await.is_err(),
+        "userinfo is a server error"
+    );
+
+    let client = f
+        .clients
+        .clients
+        .iter()
+        .find(|c| c.client_id == "web")
+        .unwrap()
+        .clone();
+    let resources =
+        validate_requested_resources(&client, &f.resources.enabled(), &["openid".to_owned()], &[])
+            .unwrap();
+    let issued = Issuer {
+        options: &f.options,
+        stores: &f.stores,
+        keys: &f.keys,
+        issuer: ISSUER,
+        now: chrono::Utc::now(),
+    }
+    .identity_token(&client, &resources, &session(), &Default::default())
+    .await;
+    assert!(
+        matches!(issued, Err(rustid_core::token::TokenFailure::Server(_))),
+        "{issued:?}"
+    );
+}

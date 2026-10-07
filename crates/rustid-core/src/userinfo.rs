@@ -72,6 +72,11 @@ pub async fn userinfo(
     let Some(client) = find_enabled_client(ctx.stores.clients.as_ref(), client_id).await? else {
         return Ok(Err(INVALID_TOKEN));
     };
+    if crate::pairwise::unavailable(ctx.options, &client) {
+        return Err(StoreError::Backend(crate::pairwise::unavailable_message(
+            &client,
+        )));
+    }
     let profile = ctx.stores.profile.as_ref();
     let active = profile
         .is_active(&ActiveRequest {

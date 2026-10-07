@@ -14,6 +14,8 @@ Prefer the environment variable `RUSTID_PAIRWISE__SALT`. With a salt set, discov
 
 Changing the salt changes every pairwise subject, and clients then see their users as new users.
 
+An instance without the salt never hands a pairwise client the user's own subject instead: its id tokens and userinfo answers fail with a server error, and no logout token is sent to it.
+
 ## Clients
 
 ```json
@@ -31,7 +33,7 @@ Changing the salt changes every pairwise subject, and clients then see their use
 | `sectorIdentifierUri` | An `https` URL whose host is the client's sector. Required for a pairwise client whose redirect URIs name more than one host. rustid doesn't fetch it for clients from `clients_file` or the admin API; dynamic registration does (see [dynamic-client-registration.md](dynamic-client-registration.md)) |
 | `pairWiseSubjectSalt` | Optional; joins the server's salt for this client's subjects. Changing it changes the subjects this client sees |
 
-The sector is the host of `sectorIdentifierUri`, or else the host the client's redirect URIs share. A client without redirect URIs (device flow, CIBA, password grant only) is a sector of its own, named by its client id. Clients in the same sector see the same pairwise subject for a user.
+The sector is the host of `sectorIdentifierUri`, or else the host the client's redirect URIs share. A client without redirect URIs (device flow, CIBA, password grant only) is a sector of its own, named by its client id. Clients in the same sector see the same pairwise subject for a user. Changing a client's sector changes the subjects it sees: moving its redirect URIs to another host, setting a `sectorIdentifierUri` on another host, or giving redirect URIs to a client that had none.
 
 The subject is `base64url(SHA-256(sector ‖ 0x00 ‖ subject ‖ 0x00 ‖ salt))`, with `‖ 0x00 ‖ pairWiseSubjectSalt` added when the client has one.
 
@@ -42,7 +44,7 @@ For a pairwise client:
 - the `sub` in userinfo responses to its access tokens;
 - the back-channel logout tokens rustid sends it.
 
-Its access tokens keep the user's own subject, and so does introspection. rustid reads the user back from an access token's `sub`, so a client that decodes its JWT access tokens can see the user's own subject. Use reference access tokens (`accessTokenType: "Reference"`) for clients that mustn't.
+Its access tokens keep the user's own subject, and so does introspection: rustid reads the user back from an access token's `sub`. A client can therefore still learn the user's own subject, by decoding its JWT access tokens or by introspecting its own access and refresh tokens. Pairwise subjects keep the user's own subject out of what the client is handed in id tokens, userinfo and logout tokens, not out of what it can look up.
 
 Everything inside rustid keeps the user's own subject: sessions, grants, consents, events, logs and hooks.
 

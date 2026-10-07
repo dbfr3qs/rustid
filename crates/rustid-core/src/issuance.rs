@@ -210,6 +210,11 @@ impl Issuer<'_> {
         } else {
             Vec::new()
         };
+        if crate::pairwise::unavailable(self.options, client) {
+            return Err(TokenFailure::Server(crate::pairwise::unavailable_message(
+                client,
+            )));
+        }
         let pairwise = crate::pairwise::subject(self.options, client, &session.subject_id);
         let request = IdentityTokenRequest {
             subject: pairwise.as_deref(),

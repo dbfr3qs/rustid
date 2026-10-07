@@ -63,6 +63,21 @@ pub fn subject(options: &ProtocolOptions, client: &Client, local: &str) -> Optio
     Some(URL_SAFE_NO_PAD.encode(digest::digest(&digest::SHA256, &input)))
 }
 
+/// Whether the client wants pairwise subjects the server can't make (no
+/// salt here: a deployment that lost it). Callers fail closed rather than
+/// hand such a client the user's own subject.
+pub fn unavailable(options: &ProtocolOptions, client: &Client) -> bool {
+    client.subject_type == SubjectType::Pairwise && options.pairwise.salt.is_none()
+}
+
+/// The error for [`unavailable`].
+pub fn unavailable_message(client: &Client) -> String {
+    format!(
+        "client {} is pairwise, but the server has no pairwise salt",
+        client.client_id
+    )
+}
+
 /// The subject the client sees for the user `local`: pairwise when it asks
 /// for that, the user's own otherwise.
 pub fn subject_for(options: &ProtocolOptions, client: &Client, local: &str) -> String {

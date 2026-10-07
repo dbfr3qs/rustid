@@ -77,6 +77,7 @@ emit_state_hash = false
 # logout_token_jwt_type = "logout+jwt"
 # jwt_validation_clock_skew = "00:05:00"             # client assertions, request objects
 # strict_client_assertion_audience_validation = false   # typ client-authentication+jwt, issuer-only aud
+# issuer_only_client_assertion_audience = false      # issuer-only aud, typed or not (FAPI 2.0 final)
 # strict_jar_validation = false                      # request objects typed oauth-authz-req+jwt
 # supported_client_assertion_signing_algorithms = ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]
 # supported_request_object_signing_algorithms = ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]

@@ -7,6 +7,21 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-07
+
+### Added
+
+- `issuer_only_client_assertion_audience`: the issuer is a client assertion's only accepted audience, typed or not (FAPI 2.0 final 5.3.2.1-8). `strict_client_assertion_audience_validation` still also requires the `client-authentication+jwt` type.
+- Clients can require certificate-bound tokens (`requireCertificateBoundTokens`): a token request without a client certificate is `invalid_request`, and tokens are bound to the certificate presented.
+
+### Changed
+
+- Redirect URIs with a fragment are refused, in client validation (a static or admin client with one is treated as invalid) and at dynamic registration (`invalid_redirect_uri`), as RFC 6749 3.1.2 requires.
+- Dynamic registration refuses a non-https `initiate_login_uri`.
+- The CIBA endpoint answers `invalid_request` for a bad request object, instead of `invalid_request_object` (the authorize endpoint's error, which it keeps).
+- With mTLS on, the mTLS token endpoint is also accepted as a client assertion's audience.
+- Conformance: FAPI 2.0 final runs against its own instance; FAPI-CIBA runs with mTLS-bound tokens and the 60-minute request object cap. Seven plans' recorded failures drop from 27 to 6.
+
 ## [0.8.0] - 2026-10-07
 
 ### Changed

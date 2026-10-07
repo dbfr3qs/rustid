@@ -36,12 +36,12 @@ Every run used the suite image `sha256:df0385890213…` (pinned by digest in `co
 | `oidcc-formpost-implicit-certification-test-plan` | discovery, static client | 54 | 35 passed, 9 review, 6 warnings and 4 skips expected |
 | `oidcc-formpost-hybrid-certification-test-plan` | discovery, static client | 96 | 66 passed, 12 review, 12 warnings and 6 skips expected |
 | `oidcc-config-certification-test-plan` | (fixed by the plan) | 1 | 1 passed |
-| `oidcc-dynamic-certification-test-plan` | code; discovery, dynamic registration, `private_key_jwt` (fixed by the plan) | 23 | 5 passed, 6 review, 1 warning, 5 skips and 6 failures expected |
-| `oidcc-3rdparty-init-login-certification-test-plan` | code; dynamic registration, `client_secret_basic` | 2 | 1 passed, 1 failure expected |
+| `oidcc-dynamic-certification-test-plan` | code; discovery, dynamic registration, `private_key_jwt` (fixed by the plan) | 23 | 8 passed, 6 review, 1 warning, 3 skips and 5 failures expected |
+| `oidcc-3rdparty-init-login-certification-test-plan` | code; dynamic registration, `client_secret_basic` | 2 | 2 passed |
 | `fapi2-security-profile-id2-test-plan` | plain FAPI, PAR (`simple`), OpenID Connect, `private_key_jwt`, DPoP | 58 | 51 passed, 4 review, 2 warnings and 1 skip expected |
-| `fapi2-security-profile-final-test-plan` | as ID2 | 52 | 44 passed, 4 review, 2 warnings, 1 skip and 1 failure expected |
-| `fapi2-message-signing-final-test-plan` | as final, signed requests (`signed_non_repudiation`), JARM responses | 67 | 58 passed, 4 review, 2 warnings, 1 skip and 1 failure expected |
-| `fapi-ciba-id1-test-plan` | plain FAPI, `private_key_jwt`, poll, static client | 34 | 16 passed, 18 failures expected |
+| `fapi2-security-profile-final-test-plan` | as ID2, issuer-only client assertion audiences | 52 | 45 passed, 4 review, 2 warnings and 1 skip expected |
+| `fapi2-message-signing-final-test-plan` | as final, signed requests (`signed_non_repudiation`), JARM responses | 67 | 59 passed, 4 review, 2 warnings and 1 skip expected |
+| `fapi-ciba-id1-test-plan` | plain FAPI, `private_key_jwt`, poll, static client, mTLS-bound tokens | 34 | 33 passed, 1 failure expected |
 | `oidcc-client-basic-certification-test-plan` (rp) | static client | 14 | 13 passed, 1 skip expected |
 | `oidcc-client-back-channel-logout-rp-basic` (rp) | code, static client, `client_secret_basic` | 8 | 8 passed |
 | `oidcc-client-front-channel-logout-rp-basic` (rp) | code, static client, `client_secret_basic` | 1 | 1 review |
@@ -64,8 +64,9 @@ The OIDC plans use `conformance/rustid.toml`. The others each have an instance o
   - the protected resource `/fapi2/resource` (`[protected_resource]`), which the plan calls with its DPoP-bound tokens.
 
   Its two `private_key_jwt` clients require PAR, PKCE and DPoP, with 60-second codes; `conformance/fapi2/make-keys.py` made their keys. The committed private JWKs (and the FAPI-CIBA client certificates) are test-only keys, made for these runs. The browser scripts for the modules that need a person to drive them are in `conformance/make-plans.py`: error pages, a reused or expired `request_uri`, and cancelling at login.
-- **FAPI 2.0 Message Signing** (`conformance/fapi2-ms/rustid.toml`, `https://localhost:9446`): the FAPI 2 instance plus JARM (`[protocol.jarm]`), `request_object_max_lifetime = "01:00:00"` and PS256/ES256 request objects. Its clients require request objects.
-- **FAPI-CIBA** (`conformance/fapi-ciba/`, `https://localhost:9445`): poll mode. The suite approves and refuses through `automated_ciba_approval_url`, served by `conformance/fapi-ciba/approver.py` (conformance only). The approver serves rustid's CIBA user and notification hooks, signs alice in at the reference UI, and completes the pending request through the interaction API.
+- **FAPI 2.0 final** (`conformance/fapi2-final/rustid.toml`, `https://localhost:9449`): the FAPI 2 instance and clients, with `issuer_only_client_assertion_audience` (final 5.3.2.1-8). ID2 must also accept the token and PAR endpoint URLs, so the two profiles run against separate instances.
+- **FAPI 2.0 Message Signing** (`conformance/fapi2-ms/rustid.toml`, `https://localhost:9446`): the FAPI 2 instance plus issuer-only client assertion audiences, JARM (`[protocol.jarm]`), `request_object_max_lifetime = "01:00:00"` and PS256/ES256 request objects. Its clients require request objects.
+- **FAPI-CIBA** (`conformance/fapi-ciba/`, `https://localhost:9445`): poll mode, mTLS with certificate-bound tokens (its clients set `requireCertificateBoundTokens`), and a 60-minute `request_object_max_lifetime`. The suite approves and refuses through `automated_ciba_approval_url`, served by `conformance/fapi-ciba/approver.py` (conformance only). The approver serves rustid's CIBA user and notification hooks, signs alice in at the reference UI, and completes the pending request through the interaction API.
 - **Dynamic registration** (`conformance/dynamic/rustid.toml`, `https://localhost:9447`):
   - dynamic client registration open, with RFC 7592 read and delete (`client_management`), for this run only;
   - `registration_endpoint` in discovery (`Inferred`);
@@ -85,11 +86,9 @@ Each is listed with its reason in `conformance/expected/`:
   - `happy-flow` warns about `idp` in the id token;
   - `attempt-reuse-authorization-code-after-one-second` warns that reusing a code doesn't revoke its tokens;
   - `test-claims-parameter-identity-claims` is skipped: the `claims` parameter isn't supported.
-- **FAPI 2.0 final:** the same, and `ensure-invalid-client-assertions-fail` fails its three audience cases. The final profile (5.3.2.1-8) wants the issuer as the only client assertion audience. rustid also accepts the token, PAR and CIBA endpoint URLs (FAPI 2 ID2 required the PAR endpoint). It checks issuer-only audiences when an assertion is typed `client-authentication+jwt` (RFC 7523bis), or when `strict_client_assertion_audience_validation` is on; the suite's assertions aren't typed.
-- **FAPI 2.0 Message Signing:** the same four as the final profile (its modules are the final plan's, run with signed requests and JARM).
+- **FAPI 2.0 final and Message Signing:** the same three as FAPI 2 (the Message Signing plan's modules are the final plan's, run with signed requests and JARM).
 - **Dynamic registration:**
   - `userinfo-rs256` fails: `userinfo_signed_response_alg` is ignored and userinfo answers JSON;
-  - `redirect-uri-regfrag` fails: a redirect URI with a fragment is accepted (redirect URIs only need to be absolute);
   - `registration-jwks-uri` and `refresh-token-rp-key-rotation` fail: `jwks_uri` is accepted but never fetched, and `private_key_jwt` needs `jwks`;
   - `request-uri-signed-rs256` fails: the suite's request object has no `exp`, which request objects require;
   - `server-rotate-keys` fails: it needs the signing key rotated by hand during the test;
@@ -97,12 +96,7 @@ Each is listed with its reason in `conformance/expected/`:
   - skipped: unsigned id tokens and unsigned request objects.
 
   The `registration-logo-uri`, `policy-uri` and `tos-uri` modules are review: the reference UI's login page doesn't show the client's logo or links.
-- **3rd-party-initiated login:** `nohttps` fails: a non-https `initiate_login_uri` is accepted.
-- **FAPI-CIBA:** 18 modules fail, for these reasons:
-  - **16 request-object modules:** an invalid request object is refused with `invalid_request_object`, where FAPI-CIBA wants `invalid_request`.
-  - **4 of those 16:** request objects need `exp` but not `iat` or `nbf`, and have no 60-minute lifetime cap, so the request is accepted. The opt-in `request_object_max_lifetime` would refuse them; the FAPI-CIBA instance leaves it unset.
-  - **`ensure-mtls-holder-of-key-required`:** a `private_key_jwt` client's token request without a certificate gets an unbound token. Nothing requires certificate binding.
-  - **`discovery-end-point-verification`:** the FAPI-CIBA instance leaves mTLS client authentication off, so `tls_client_certificate_bound_access_tokens` isn't advertised. With it on, the suite would authenticate at the `/connect/mtls/token` alias, with that URL as the assertion's audience, which rustid refuses. Tokens are still bound to the presented certificate (`always_emit_confirmation_claim`).
+- **FAPI-CIBA:** `ensure-request-object-missing-iat-fails` fails: request objects don't need `iat` (RFC 9101 doesn't require it); `request_object_max_lifetime` caps `exp` - `nbf`.
 
 ## Notes on the setup
 

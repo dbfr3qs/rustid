@@ -2068,7 +2068,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-admin"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "aws-lc-rs",
  "axum",
@@ -2081,7 +2081,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-core"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "aws-lc-rs",
@@ -2107,7 +2107,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-fuzz"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -2128,7 +2128,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-hooks"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2144,7 +2144,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-http"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "aws-lc-rs",
@@ -2165,7 +2165,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-saml"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "aws-lc-rs",
@@ -2185,7 +2185,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-server"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2222,7 +2222,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-store-memory"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2237,7 +2237,7 @@ dependencies = [
 
 [[package]]
 name = "rustid-store-postgres"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "chrono",

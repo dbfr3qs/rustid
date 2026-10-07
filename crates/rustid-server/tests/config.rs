@@ -769,3 +769,49 @@ fuzz_startup = false
         Ok(())
     });
 }
+
+#[test]
+fn the_pairwise_salt_is_read_checked_and_hidden() {
+    figment::Jail::expect_with(|jail| {
+        jail.create_file("p.toml", "[pairwise]\nsalt = \"server-salt-0123456789\"\n")?;
+        let cfg = ServerConfig::load(Some(Path::new("p.toml"))).unwrap();
+        assert_eq!(cfg.pairwise.salt.as_deref(), Some("server-salt-0123456789"));
+        assert_eq!(
+            cfg.protocol.pairwise.salt.as_deref(),
+            Some("server-salt-0123456789"),
+            "handed to the protocol options"
+        );
+        assert!(!format!("{cfg:?}").contains("server-salt-0123456789"));
+
+        jail.create_file("empty.toml", "")?;
+        jail.set_env("RUSTID_PAIRWISE__SALT", "from-the-environment-0123");
+        let cfg = ServerConfig::load(Some(Path::new("empty.toml"))).unwrap();
+        assert_eq!(
+            cfg.protocol.pairwise.salt.as_deref(),
+            Some("from-the-environment-0123")
+        );
+
+        jail.clear_env();
+        jail.create_file("short.toml", "[pairwise]\nsalt = \"short\"\n")?;
+        let err = ServerConfig::load(Some(Path::new("short.toml"))).unwrap_err();
+        assert!(err.to_string().contains("pairwise.salt"), "{err}");
+        Ok(())
+    });
+}
+
+#[test]
+fn a_pairwise_client_without_a_salt_refuses_to_start() {
+    figment::Jail::expect_with(|jail| {
+        jail.create_file(
+            "clients.json",
+            r#"[{ "clientId": "pw", "allowedGrantTypes": ["authorization_code"],
+                 "redirectUris": ["https://pw.example/cb"], "requireClientSecret": false,
+                 "subjectType": "pairwise" }]"#,
+        )?;
+        jail.create_file("p.json", r#"{ "clients_file": "clients.json" }"#)?;
+        let cfg = ServerConfig::load(Some(Path::new("p.json"))).unwrap();
+        let err = format!("{:#}", build(&cfg).unwrap_err());
+        assert!(err.contains("pw") && err.contains("pairwise"), "{err}");
+        Ok(())
+    });
+}

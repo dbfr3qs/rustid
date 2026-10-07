@@ -297,6 +297,7 @@ pub async fn build(config: &ServerConfig) -> anyhow::Result<App> {
                     .protocol
                     .pushed_authorization
                     .allow_unregistered_pushed_redirect_uris,
+                pairwise_supported: config.pairwise.salt.is_some(),
             },
             schemas_read_only: config.admin.schemas_file.is_some(),
             identity_providers: Arc::new(
@@ -490,9 +491,31 @@ async fn build_federation(
     Ok(federation)
 }
 
+/// A pairwise client in `clients_file` needs the server's salt.
+fn check_pairwise_clients(config: &ServerConfig) -> anyhow::Result<()> {
+    if config.pairwise.salt.is_some() {
+        return Ok(());
+    }
+    if let Some(path) = &config.clients_file {
+        let clients = rustid_core::clients::Clients::load(path)?;
+        if let Some(client) = clients
+            .clients
+            .iter()
+            .find(|c| c.subject_type == rustid_core::clients::SubjectType::Pairwise)
+        {
+            anyhow::bail!(
+                "client {} is pairwise, but [pairwise] salt isn't set",
+                client.client_id
+            );
+        }
+    }
+    Ok(())
+}
+
 async fn build_state_and_saml(
     config: &ServerConfig,
 ) -> anyhow::Result<(AppState, Option<rustid_saml::Saml>)> {
+    check_pairwise_clients(config)?;
     let jarm = &config.protocol.jarm;
     if jarm.enabled && jarm.lifetime.0 <= 0 {
         anyhow::bail!("protocol.jarm.lifetime must be positive");

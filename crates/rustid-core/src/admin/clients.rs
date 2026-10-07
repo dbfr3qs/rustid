@@ -208,6 +208,8 @@ const EXCLUSIVE_GRANTS: [(&str, &str); 3] = [
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ClientAdmin {
     pub allow_unregistered_pushed_redirect_uris: bool,
+    /// The server has a pairwise salt, so pairwise clients are possible.
+    pub pairwise_supported: bool,
 }
 
 impl ClientAdmin {
@@ -325,6 +327,13 @@ impl ClientAdmin {
             validate_client(&candidate, self.allow_unregistered_pushed_redirect_uris)
         {
             return Ok(Err(AdminError::validation_failed(problem)));
+        }
+        if candidate.subject_type == crate::clients::SubjectType::Pairwise
+            && !self.pairwise_supported
+        {
+            return Ok(Err(AdminError::validation_failed(
+                "A pairwise client needs the server's pairwise salt ([pairwise] salt).",
+            )));
         }
         schemas::check_extended_properties(store, schemas::CLIENT_SCHEMA, extended_properties).await
     }

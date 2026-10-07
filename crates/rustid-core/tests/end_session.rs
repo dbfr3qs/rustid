@@ -207,11 +207,18 @@ async fn a_pairwise_hint_without_sid_matches_the_current_user() {
         issuer: ISSUER,
         now: Utc::now() - chrono::Duration::hours(2),
     }
-    .identity_token(&client, &resources, &alice, &IdentityTokenRequest::default())
+    .identity_token(
+        &client,
+        &resources,
+        &alice,
+        &IdentityTokenRequest::default(),
+    )
     .await
     .unwrap();
     assert_ne!(
-        rustid_core::jwt::Jws::decode(&hint).unwrap().claim_str("sub"),
+        rustid_core::jwt::Jws::decode(&hint)
+            .unwrap()
+            .claim_str("sub"),
         Some("1"),
         "the hint carries the pairwise subject"
     );

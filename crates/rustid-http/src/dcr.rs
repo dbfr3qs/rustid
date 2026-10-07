@@ -148,6 +148,7 @@ pub(crate) async fn handle(
             .options
             .pushed_authorization
             .allow_unregistered_pushed_redirect_uris,
+        pairwise_supported: state.options.pairwise.salt.is_some(),
     };
     let options = rustid_core::dcr::DcrOptions {
         management: dcr

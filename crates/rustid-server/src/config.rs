@@ -83,6 +83,9 @@ pub struct ServerConfig {
     /// How upstream providers are reached.
     #[serde(default)]
     pub federation: FederationConfig,
+    /// Pairwise subjects: the salt, shared by every instance.
+    #[serde(default)]
+    pub pairwise: PairwiseConfig,
     #[serde(default)]
     pub client_authentication: ClientAuthenticationConfig,
     #[serde(default)]
@@ -353,6 +356,24 @@ pub const MIN_ADMIN_KEY_LENGTH: usize = 32;
 pub struct ProtectedResourceConfig {
     /// The resource's path, such as `/fapi2/resource`.
     pub path: String,
+}
+
+/// `[pairwise]`: pairwise subject identifiers. Without a salt only public
+/// subjects are offered.
+#[derive(Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct PairwiseConfig {
+    /// At least 16 characters; the same on every instance. Changing it
+    /// changes every pairwise subject.
+    pub salt: Option<String>,
+}
+
+impl std::fmt::Debug for PairwiseConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PairwiseConfig")
+            .field("salt", &self.salt.as_ref().map(|_| "<redacted>"))
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
@@ -698,6 +719,14 @@ impl ServerConfig {
                 resource.path
             )));
         }
+        if let Some(salt) = &self.pairwise.salt
+            && salt.chars().count() < 16
+        {
+            return Err(ConfigError::Setting(
+                "pairwise.salt must be at least 16 characters".into(),
+            ));
+        }
+        self.protocol.pairwise.salt = self.pairwise.salt.clone();
         // Durations a timer adds to now: past a year they are mistakes, and
         // large enough ones overflow.
         const YEAR: i64 = 366 * 86_400;

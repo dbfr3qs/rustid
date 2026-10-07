@@ -134,9 +134,8 @@ pub(crate) async fn handle(
     let error = |e: rustid_core::dcr::RegistrationError| {
         json_response(
             StatusCode::BAD_REQUEST,
-            // The error body's members are spelled `Error` and
-            // `ErrorDescription`.
-            &json!({ "Error": e.error, "ErrorDescription": e.error_description }),
+            // RFC 7591 §3.2.2.
+            &json!({ "error": e.error, "error_description": e.error_description }),
         )
     };
     let request = match rustid_core::dcr::parse(&bytes) {

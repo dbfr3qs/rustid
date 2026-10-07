@@ -89,7 +89,7 @@ async fn method_content_type_and_body_errors() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST);
     assert_eq!(
         r.body,
-        r#"{"Error":"invalid_client_metadata","ErrorDescription":"malformed metadata document"}"#
+        r#"{"error":"invalid_client_metadata","error_description":"malformed metadata document"}"#
     );
     let r = b
         .send(
@@ -102,7 +102,7 @@ async fn method_content_type_and_body_errors() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST);
     assert_eq!(
         r.body,
-        r#"{"Error":"invalid_client_metadata","ErrorDescription":"grant type is required"}"#
+        r#"{"error":"invalid_client_metadata","error_description":"grant type is required"}"#
     );
 }
 

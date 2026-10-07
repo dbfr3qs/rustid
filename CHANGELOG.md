@@ -7,6 +7,12 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-07
+
+### Changed
+
+- Dynamic client registration errors use RFC 7591's member names: `{"error": …, "error_description": …}`, instead of `Error` and `ErrorDescription`. Clients that read the old names must change.
+
 ## [0.7.0] - 2026-10-07
 
 ### Added

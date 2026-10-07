@@ -61,10 +61,10 @@ The request must be `application/json`; anything else is 415. A body that isn't 
 
 Members it doesn't know are kept and echoed back in the response. That covers `contacts`, `policy_uri`, `id_token_signed_response_alg` and others, which have no effect.
 
-A refusal is 400 with an error body whose members are spelled `Error` and `ErrorDescription`:
+A refusal is 400 with an RFC 7591 error body:
 
 ```json
-{"Error":"invalid_redirect_uri","ErrorDescription":"redirect URI required for authorization_code grant type"}
+{"error":"invalid_redirect_uri","error_description":"redirect URI required for authorization_code grant type"}
 ```
 
 ### The response

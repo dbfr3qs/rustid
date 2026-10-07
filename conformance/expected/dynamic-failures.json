@@ -117,12 +117,21 @@
     "comment": "idp (the identity provider that signed the user in) is in every id token"
   },
   {
-    "test-name": "oidcc-registration-sector-bad",
+    "test-name": "oidcc-registration-jwks-uri",
     "variant": "*",
     "configuration-filename": "*/dynamic.json",
     "current-block": "*",
-    "condition": "CheckErrorFromDynamicRegistrationEndpointIsInvalidClientMetadata",
-    "expected-result": "warning",
-    "comment": "the registration error body spells its members Error and ErrorDescription (docs/dynamic-client-registration.md), so the suite doesn't find 'error'; the status is 400 invalid_client_metadata"
+    "condition": "CheckNoErrorFromDynamicRegistrationEndpoint",
+    "expected-result": "failure",
+    "comment": "jwks_uri isn't fetched, and private_key_jwt needs jwks: registration answers invalid_client_metadata, which the suite reads now that errors use RFC 7591 member names"
+  },
+  {
+    "test-name": "oidcc-refresh-token-rp-key-rotation",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "CheckNoErrorFromDynamicRegistrationEndpoint",
+    "expected-result": "failure",
+    "comment": "jwks_uri isn't fetched, and private_key_jwt needs jwks: registration answers invalid_client_metadata, which the suite reads now that errors use RFC 7591 member names"
   }
 ]

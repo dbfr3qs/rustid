@@ -47,6 +47,11 @@ pub struct RegistrationRequest {
     pub identity_provider_restrictions: Option<Vec<String>>,
     pub coordinate_lifetime_with_user_session: Option<bool>,
     pub allowed_identity_token_signing_algorithms: Option<Vec<String>>,
+    /// `public` or `pairwise` (OpenID Connect Core 1.0 §8).
+    pub subject_type: Option<String>,
+    /// A document listing the client's redirect URIs; its host is the
+    /// client's sector.
+    pub sector_identifier_uri: Option<String>,
     #[serde(flatten)]
     pub extensions: IndexMap<String, Value>,
 }

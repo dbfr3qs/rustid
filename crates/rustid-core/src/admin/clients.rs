@@ -396,6 +396,12 @@ impl ClientAdmin {
         if let Some(error) = Self::structure(&client) {
             return Ok(Err(vec![error]));
         }
+        if client.subject_type == crate::clients::SubjectType::Pairwise && !self.pairwise_supported
+        {
+            return Ok(Err(vec![AdminError::validation_failed(
+                "pairwise subjects aren't offered: the server has no pairwise salt",
+            )]));
+        }
         let secrets: Vec<Value> = client
             .client_secrets
             .iter()

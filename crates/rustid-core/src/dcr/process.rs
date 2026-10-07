@@ -53,11 +53,39 @@ pub(crate) fn unique_id() -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
+/// The sector identifier document (OpenID Connect Registration 1.0 §5):
+/// a JSON array of URIs that contains every redirect URI.
+async fn check_sector_document(
+    fetcher: &dyn crate::request_uri::RequestUriFetcher,
+    uri: &str,
+    redirect_uris: &[String],
+) -> Result<(), RegistrationError> {
+    let fail = |why: &str| {
+        Err(RegistrationError::metadata(&format!(
+            "sector_identifier_uri {why}"
+        )))
+    };
+    let Some(fetched) = fetcher.fetch(uri).await else {
+        return fail("could not be fetched");
+    };
+    if fetched.status != 200 {
+        return fail(&format!("answered {}", fetched.status));
+    }
+    let Ok(listed) = serde_json::from_str::<Vec<String>>(&fetched.body) else {
+        return fail("is not a JSON array of strings");
+    };
+    if let Some(missing) = redirect_uris.iter().find(|r| !listed.contains(r)) {
+        return fail(&format!("does not list the redirect URI {missing}"));
+    }
+    Ok(())
+}
+
 /// Validates, then registers: the 201 body, or the 400 error.
 pub async fn register(
     store: &dyn ConfigurationStore,
     admin: &ClientAdmin,
     options: &DcrOptions,
+    fetcher: &dyn crate::request_uri::RequestUriFetcher,
     mut request: RegistrationRequest,
     now: DateTime<Utc>,
 ) -> Result<Result<Map<String, Value>, RegistrationError>, StoreError> {
@@ -65,6 +93,11 @@ pub async fn register(
         Ok(client) => client,
         Err(e) => return Ok(Err(e)),
     };
+    if let Some(uri) = &client.sector_identifier_uri
+        && let Err(e) = check_sector_document(fetcher, uri, &client.redirect_uris).await
+    {
+        return Ok(Err(e));
+    }
     client.client_id = unique_id();
     if let Some(require) = options.require_pkce {
         client.require_pkce = require;

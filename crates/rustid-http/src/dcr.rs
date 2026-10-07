@@ -162,6 +162,7 @@ pub(crate) async fn handle(
         state.stores.configuration.as_ref(),
         &admin,
         &options,
+        state.stores.request_uri.as_ref(),
         request,
         chrono::Utc::now(),
     )

@@ -279,6 +279,7 @@ async fn register_in(
         stores.configuration.as_ref(),
         &Default::default(),
         options,
+        &rustid_core::request_uri::NoRequestUriFetcher,
         request,
         chrono::Utc::now(),
     )
@@ -413,6 +414,7 @@ async fn secret_lifetime_sets_client_secret_expires_at() {
         stores.configuration.as_ref(),
         &Default::default(),
         &options,
+        &rustid_core::request_uri::NoRequestUriFetcher,
         request,
         now,
     )
@@ -691,4 +693,138 @@ async fn stored_dcr_secrets_name_their_hash_algorithm() {
         .unwrap()
         .unwrap();
     assert_eq!(entity.data["clientSecrets"][0]["hashAlgorithm"], "SHA256");
+}
+
+/// Answers the sector identifier document at one URL.
+struct Sector(&'static str, Option<rustid_core::request_uri::Fetched>);
+
+#[async_trait::async_trait]
+impl rustid_core::request_uri::RequestUriFetcher for Sector {
+    async fn fetch(&self, uri: &str) -> Option<rustid_core::request_uri::Fetched> {
+        (uri == self.0).then(|| self.1.clone()).flatten()
+    }
+}
+
+const SECTOR: &str = "https://sector.example/uris.json";
+
+fn document(status: u16, body: &str) -> Option<rustid_core::request_uri::Fetched> {
+    Some(rustid_core::request_uri::Fetched {
+        status,
+        content_type: Some("application/json".into()),
+        body: body.into(),
+    })
+}
+
+async fn register_pairwise(
+    stores: &rustid_core::stores::Stores,
+    pairwise_supported: bool,
+    fetched: Option<rustid_core::request_uri::Fetched>,
+    body: serde_json::Value,
+) -> Result<serde_json::Map<String, serde_json::Value>, dcr::RegistrationError> {
+    let request = dcr::parse(body.to_string().as_bytes()).unwrap();
+    dcr::register(
+        stores.configuration.as_ref(),
+        &rustid_core::admin::clients::ClientAdmin {
+            pairwise_supported,
+            ..Default::default()
+        },
+        &Default::default(),
+        &Sector(SECTOR, fetched),
+        request,
+        chrono::Utc::now(),
+    )
+    .await
+    .unwrap()
+}
+
+#[tokio::test]
+async fn a_pairwise_client_registers_with_its_sector_document() {
+    let stores = memory();
+    let body = register_pairwise(
+        &stores,
+        true,
+        document(200, &format!(r#"["{CB}", "https://other.example/cb"]"#)),
+        json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "subject_type": "pairwise", "sector_identifier_uri": SECTOR }),
+    )
+    .await
+    .unwrap();
+    assert_eq!(body["subject_type"], "pairwise");
+    assert_eq!(body["sector_identifier_uri"], SECTOR);
+    let client = stored(&stores, &body).await;
+    assert_eq!(
+        client.subject_type,
+        rustid_core::clients::SubjectType::Pairwise
+    );
+    assert_eq!(client.sector_identifier_uri.as_deref(), Some(SECTOR));
+}
+
+#[tokio::test]
+async fn bad_pairwise_registrations_are_invalid_client_metadata() {
+    let pairwise = |uri: &str| json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "subject_type": "pairwise", "sector_identifier_uri": uri });
+    let missing = r#"["https://other.example/cb"]"#.to_string();
+    for (label, supported, fetched, body) in [
+        ("unreachable", true, None, pairwise(SECTOR)),
+        ("not 200", true, document(404, "[]"), pairwise(SECTOR)),
+        ("not JSON", true, document(200, "<html>"), pairwise(SECTOR)),
+        (
+            "not an array",
+            true,
+            document(200, r#"{"a":1}"#),
+            pairwise(SECTOR),
+        ),
+        (
+            "not strings",
+            true,
+            document(200, "[1, 2]"),
+            pairwise(SECTOR),
+        ),
+        (
+            "missing the redirect",
+            true,
+            document(200, &missing),
+            pairwise(SECTOR),
+        ),
+        (
+            "http",
+            true,
+            document(200, "[]"),
+            pairwise("http://sector.example/uris.json"),
+        ),
+        (
+            "no salt",
+            false,
+            document(200, &format!(r#"["{CB}"]"#)),
+            pairwise(SECTOR),
+        ),
+        (
+            "unknown type",
+            true,
+            None,
+            json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "subject_type": "secret" }),
+        ),
+    ] {
+        let error = register_pairwise(&memory(), supported, fetched, body)
+            .await
+            .expect_err(label);
+        assert_eq!(error.error, "invalid_client_metadata", "{label}");
+    }
+}
+
+#[tokio::test]
+async fn a_public_registration_is_unchanged() {
+    let stores = memory();
+    let body = register_pairwise(
+        &stores,
+        false,
+        None,
+        json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "subject_type": "public" }),
+    )
+    .await
+    .unwrap();
+    assert_eq!(body["subject_type"], "public");
+    let client = stored(&stores, &body).await;
+    assert_eq!(
+        client.subject_type,
+        rustid_core::clients::SubjectType::Public
+    );
 }

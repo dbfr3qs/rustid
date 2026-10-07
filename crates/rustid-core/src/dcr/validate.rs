@@ -46,7 +46,39 @@ pub fn validate_with(
     if let Some(coordinate) = request.coordinate_lifetime_with_user_session {
         client.coordinate_lifetime_with_user_session = Some(coordinate);
     }
+    subject(request, &mut client)?;
     Ok(client)
+}
+
+/// `subject_type` and `sector_identifier_uri`; the sector document itself
+/// is checked when the client is registered.
+fn subject(request: &RegistrationRequest, client: &mut Client) -> Result<(), RegistrationError> {
+    client.subject_type = match request.subject_type.as_deref() {
+        None | Some("public") => crate::clients::SubjectType::Public,
+        Some("pairwise") => crate::clients::SubjectType::Pairwise,
+        Some(other) => {
+            return Err(RegistrationError::metadata(&format!(
+                "subject_type {other} is not supported"
+            )));
+        }
+    };
+    if let Some(uri) = &request.sector_identifier_uri {
+        if !url::Url::parse(uri).is_ok_and(|u| u.scheme() == "https" && u.host().is_some()) {
+            return Err(RegistrationError::metadata(
+                "sector_identifier_uri must be an https URL",
+            ));
+        }
+        client.sector_identifier_uri = Some(uri.clone());
+    }
+    if client.subject_type == crate::clients::SubjectType::Pairwise
+        && client.sector_identifier_uri.is_none()
+        && crate::pairwise::redirect_hosts(client).len() > 1
+    {
+        return Err(RegistrationError::metadata(
+            "a pairwise client whose redirect URIs name more than one host needs a sector_identifier_uri",
+        ));
+    }
+    Ok(())
 }
 
 /// Insertion order, no duplicates.

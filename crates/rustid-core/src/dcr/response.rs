@@ -210,6 +210,23 @@ pub fn build(
             .then(|| json!(client.allowed_identity_token_signing_algorithms)),
     );
 
+    // Said back when asked about, or when not the default.
+    if request.subject_type.is_some()
+        || client.subject_type == crate::clients::SubjectType::Pairwise
+    {
+        put(
+            "subject_type",
+            Some(json!(match client.subject_type {
+                crate::clients::SubjectType::Public => "public",
+                crate::clients::SubjectType::Pairwise => "pairwise",
+            })),
+        );
+    }
+    put(
+        "sector_identifier_uri",
+        client.sector_identifier_uri.as_ref().map(|u| json!(u)),
+    );
+
     for (key, value) in &request.extensions {
         if matches!(
             key.as_str(),

@@ -4386,6 +4386,7 @@ pub async fn dcr_registered_client(
         configuration.as_ref(),
         &Default::default(),
         &Default::default(),
+        &rustid_core::request_uri::NoRequestUriFetcher,
         request,
         Utc::now(),
     )

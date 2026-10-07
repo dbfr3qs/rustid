@@ -215,6 +215,13 @@ fn redirect_uris(request: &RegistrationRequest, client: &mut Client) -> Step {
             ));
         };
         for uri in uris {
+            // RFC 6749 §3.1.2: a redirect URI has no fragment.
+            if uri.contains('#') {
+                return Err(RegistrationError::new(
+                    INVALID_REDIRECT_URI,
+                    "a redirect URI must not contain a fragment",
+                ));
+            }
             match absolute_uri(uri) {
                 Some(uri) => add(&mut client.redirect_uris, &uri),
                 None => {
@@ -359,6 +366,14 @@ fn max_age(request: &RegistrationRequest, client: &mut Client) -> Step {
 
 fn user_interface(request: &RegistrationRequest, client: &mut Client) -> Step {
     client.logo_uri = request.logo_uri.as_deref().map(uri_string);
+    // OpenID Connect Registration §2: login initiation is over https.
+    if let Some(uri) = &request.initiate_login_uri
+        && !url::Url::parse(uri).is_ok_and(|u| u.scheme() == "https")
+    {
+        return Err(RegistrationError::metadata(
+            "initiate_login_uri must be an https URL",
+        ));
+    }
     client.initiate_login_uri = request.initiate_login_uri.as_deref().map(uri_string);
     if let Some(enable) = request.enable_local_login {
         client.enable_local_login = enable;

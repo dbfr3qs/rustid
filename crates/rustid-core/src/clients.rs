@@ -527,6 +527,10 @@ pub fn validate_client(
     if let Some(uri) = client.redirect_uris.iter().find(|u| invalid_scheme(u)) {
         return Err(format!("RedirectUri '{uri}' uses invalid scheme."));
     }
+    // RFC 6749 §3.1.2: a redirect URI has no fragment.
+    if let Some(uri) = client.redirect_uris.iter().find(|u| u.contains('#')) {
+        return Err(format!("RedirectUri '{uri}' must not contain a fragment."));
+    }
     if let Some(uri) = client
         .post_logout_redirect_uris
         .iter()

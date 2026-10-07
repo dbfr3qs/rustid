@@ -27,15 +27,6 @@
     "comment": "signed userinfo isn't supported: registration ignores userinfo_signed_response_alg and userinfo answers JSON"
   },
   {
-    "test-name": "oidcc-redirect-uri-regfrag",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "EnsureHttpStatusCodeIs400",
-    "expected-result": "failure",
-    "comment": "a redirect URI with a fragment is registered: registration only requires redirect URIs to be absolute"
-  },
-  {
     "test-name": "oidcc-registration-jwks-uri",
     "variant": "*",
     "configuration-filename": "*/dynamic.json",
@@ -97,15 +88,6 @@
     "condition": "oidcc-request-uri-signed-rs256",
     "expected-result": "failure",
     "comment": "the suite's request object has no exp, which request objects require"
-  },
-  {
-    "test-name": "oidcc-redirect-uri-regfrag",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "CheckErrorFromDynamicRegistrationEndpointIsInvalidRedirectUriOrInvalidClientMetadata",
-    "expected-result": "warning",
-    "comment": "a redirect URI with a fragment is registered: registration only requires redirect URIs to be absolute"
   },
   {
     "test-name": "oidcc-server",

@@ -828,3 +828,21 @@ async fn a_public_registration_is_unchanged() {
         rustid_core::clients::SubjectType::Public
     );
 }
+
+#[test]
+fn redirect_uris_never_carry_a_fragment_and_login_initiation_is_https() {
+    assert_eq!(
+        error(json!({ "redirect_uris": ["https://example.com/cb#frag"], "grant_types": ["authorization_code"] })).0,
+        "invalid_redirect_uri"
+    );
+    assert_eq!(
+        error(
+            json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "initiate_login_uri": "http://example.com/login" })
+        ),
+        metadata("initiate_login_uri must be an https URL")
+    );
+    let mut ok = request(
+        json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "initiate_login_uri": "https://example.com/login" }),
+    );
+    assert!(dcr::validate(&mut ok).is_ok());
+}

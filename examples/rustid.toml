@@ -44,14 +44,14 @@ resources_file = "../fixtures/resources.json"
 # ca_file = "upstream-ca.pem"
 # allow_insecure_loopback = false
 
-# Fetching request objects by reference (protocol.endpoints.enable_jwt_request_uri):
-# CA certificates to trust besides the system's.
 # Pairwise subject identifiers for clients with "subjectType": "pairwise"
 # (docs/pairwise-subjects.md). The same salt on every instance; changing it
 # changes every pairwise subject. Prefer RUSTID_PAIRWISE__SALT.
 # [pairwise]
 # salt = "at least 16 characters, secret"
 
+# Fetching request objects by reference (protocol.endpoints.enable_jwt_request_uri):
+# CA certificates to trust besides the system's.
 # [request_uri]
 # ca_file = "request-object-hosts-ca.pem"
 

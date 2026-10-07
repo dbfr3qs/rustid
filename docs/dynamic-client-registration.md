@@ -52,6 +52,7 @@ The request must be `application/json`; anything else is 415. A body that isn't 
 
   Keys sent in `jwks` are also used for signed request objects (`require_signed_request_object`).
 - **Other metadata:** `client_name`, `client_uri`, `logo_uri`, `initiate_login_uri`, the logout URIs and their session flags, and `default_max_age`.
+- **Subject type:** `subject_type` is `public` (the default) or `pairwise`, which needs the server's `[pairwise] salt` ([pairwise-subjects.md](pairwise-subjects.md)). `sector_identifier_uri` must be `https`. rustid fetches it (through `[request_uri] ca_file`), and it must be a JSON array listing every redirect URI. A pairwise client whose redirect URIs name more than one host needs one. Problems are `invalid_client_metadata`.
 - **rustid's own members:**
   - token lifetimes and types: `access_token_lifetime`, `identity_token_lifetime`, `authorization_code_lifetime`, `access_token_type`;
   - refresh token settings: `absolute_refresh_token_lifetime`, `sliding_refresh_token_lifetime`, `refresh_token_expiration`, `refresh_token_usage`, `update_access_token_claims_on_refresh`;
@@ -97,7 +98,6 @@ There is no update (PUT). Initial access tokens don't grant management.
 
 - fetching `jwks_uri`;
 - software statements (accepted and echoed, not checked);
-- pairwise subjects (`sector_identifier_uri`);
 - signed userinfo (`userinfo_signed_response_alg`);
 - implicit and hybrid clients.
 

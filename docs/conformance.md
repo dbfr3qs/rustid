@@ -94,7 +94,8 @@ Each is listed with its reason in `conformance/expected/`:
   - `request-uri-signed-rs256` fails: the suite's request object has no `exp`, which request objects require;
   - `server-rotate-keys` fails: it needs the signing key rotated by hand during the test;
   - `server` warns about `idp` in the id token;
-  - skipped: unsigned id tokens, sector identifiers (pairwise), and unsigned request objects.
+  - `registration-sector-bad` warns: the registration error body spells its members `Error` and `ErrorDescription`, so the suite doesn't find `error` (the answer is 400 `invalid_client_metadata`);
+  - skipped: unsigned id tokens and unsigned request objects.
 
   The `registration-logo-uri`, `policy-uri` and `tos-uri` modules are review: the reference UI's login page doesn't show the client's logo or links.
 - **3rd-party-initiated login:** `nohttps` fails: a non-https `initiate_login_uri` is accepted.

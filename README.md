@@ -20,7 +20,7 @@ The OpenID Foundation conformance plans in scope pass, FAPI 2.0 (with Message Si
 
 With Docker (x86_64 or arm64):
 
-    docker run --rm -p 8080:8080 -e RUSTID_PROTOCOL__ISSUER_URI=http://localhost:8080 ghcr.io/dbfr3qs/rustid:0.6.2
+    docker run --rm -p 8080:8080 -e RUSTID_PROTOCOL__ISSUER_URI=http://localhost:8080 ghcr.io/dbfr3qs/rustid:0.7.0
     curl http://localhost:8080/.well-known/openid-configuration
 
 Or download the binary for your architecture (`x86_64` or `aarch64`, static, any Linux) from the [releases page](https://github.com/dbfr3qs/rustid/releases), with `SHA256SUMS`:
@@ -71,6 +71,7 @@ Then try:
 | [docs/hooks.md](docs/hooks.md) | The hooks your services answer: profile claims, grants, CIBA |
 | [docs/admin-api.md](docs/admin-api.md) | The admin API: clients, resources, SAML service providers, schemas |
 | [docs/dynamic-client-registration.md](docs/dynamic-client-registration.md) | Clients registering themselves (RFC 7591), and RFC 7592 read and delete |
+| [docs/pairwise-subjects.md](docs/pairwise-subjects.md) | Pairwise subject identifiers for clients that ask for them |
 | [docs/migration.md](docs/migration.md) | Importing a migration bundle |
 | [docs/conformance.md](docs/conformance.md) | OpenID Foundation conformance runs |
 | [docs/fuzzing.md](docs/fuzzing.md) | Fuzz targets and campaigns |

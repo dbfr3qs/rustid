@@ -167,6 +167,7 @@ pub(super) async fn issue_for_ciba(
         None
     };
     let identity_request = IdentityTokenRequest {
+        subject: None,
         nonce: None,
         access_token: Some(&access_token),
         authorization_code: None,

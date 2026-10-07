@@ -166,3 +166,31 @@ async fn a_session_without_clients_notifies_nobody() {
         .unwrap();
     assert!(recorder.0.lock().unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn a_pairwise_client_gets_its_own_subject_in_the_logout_token() {
+    let mut f = Fixture::new();
+    let recorder = with_recorder(&mut f);
+    f.options.pairwise.salt = Some("server-salt-0123456789".into());
+    f.edit_clients(|clients| {
+        for c in clients.iter_mut().filter(|c| c.client_id == "logout.back") {
+            c.subject_type = rustid_core::clients::SubjectType::Pairwise;
+        }
+    });
+    let client = f
+        .clients
+        .clients
+        .iter()
+        .find(|c| c.client_id == "logout.back")
+        .unwrap()
+        .clone();
+    let s = session(&["logout.back"]);
+    process_logout(&f.validation_ctx(Utc::now()), &s)
+        .await
+        .unwrap();
+    let sent = recorder.0.lock().unwrap().clone();
+    let jws = Jws::decode(&sent[0].1).unwrap();
+    let expected = rustid_core::pairwise::subject_for(&f.options, &client, "1");
+    assert_ne!(expected, "1");
+    assert_eq!(jws.payload["sub"], expected.as_str());
+}

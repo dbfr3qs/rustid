@@ -155,6 +155,7 @@ pub(super) async fn issue_for_device(
     };
     let id_token = if code.is_open_id {
         let request = IdentityTokenRequest {
+            subject: None,
             nonce: None,
             access_token: Some(&access_token),
             authorization_code: None,

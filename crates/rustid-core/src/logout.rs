@@ -103,7 +103,13 @@ pub async fn logout_token(
         },
     ];
     if let Some(sub) = &request.subject_id {
-        claims.push(Claim::string("sub", sub));
+        // A pairwise client knows the user by its own subject.
+        let client = find_enabled_client(ctx.stores.clients.as_ref(), &request.client_id).await?;
+        let sub = match &client {
+            Some(client) => crate::pairwise::subject_for(ctx.options, client, sub),
+            None => sub.clone(),
+        };
+        claims.push(Claim::string("sub", &sub));
     }
     if let Some(sid) = &request.session_id {
         claims.push(Claim::string("sid", sid));

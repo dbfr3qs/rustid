@@ -300,9 +300,9 @@ pub fn includes_identity_claims(client: &Client, request: &IdentityTokenRequest<
 
 /// `sub`, `auth_time`,
 /// `idp`, each `amr`, then `acr` when the session has one.
-fn subject_claims(session: &UserSession) -> Vec<Claim> {
+fn subject_claims(session: &UserSession, sub: &str) -> Vec<Claim> {
     let mut claims = vec![
-        Claim::string("sub", &session.subject_id),
+        Claim::string("sub", sub),
         Claim {
             claim_type: "auth_time".into(),
             value: session.auth_time.to_string(),
@@ -363,7 +363,7 @@ pub fn user_access_token(
     if resources.offline_access {
         claims.push(Claim::string("scope", OFFLINE_ACCESS));
     }
-    claims.extend(subject_claims(session));
+    claims.extend(subject_claims(session, &session.subject_id));
     claims.extend(without_protocol_claims(profile_claims));
     if let Some(sid) = session_id.filter(|s| !s.trim().is_empty()) {
         claims.push(Claim::string("sid", sid));
@@ -394,6 +394,9 @@ pub struct IdentityTokenRequest<'a> {
     pub session_id: Option<&'a str>,
     /// Issue every requested identity claim (no access token was issued).
     pub include_all_identity_claims: bool,
+    /// The `sub` the client sees, when it isn't the session's own (a
+    /// pairwise subject).
+    pub subject: Option<&'a str>,
 }
 
 /// `nonce`, `at_hash`,
@@ -427,7 +430,10 @@ pub fn identity_token(
     if let Some(sid) = request.session_id.filter(|s| !s.trim().is_empty()) {
         claims.push(Claim::string("sid", sid));
     }
-    claims.extend(subject_claims(session));
+    claims.extend(subject_claims(
+        session,
+        request.subject.unwrap_or(&session.subject_id),
+    ));
     claims.extend(without_protocol_claims(profile_claims));
     AccessToken {
         issuer: issuer.to_owned(),

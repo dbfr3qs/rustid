@@ -179,3 +179,49 @@ async fn without_a_hint_the_session_is_the_payload_and_long_locales_are_ignored(
     assert_eq!(r.ui_locales.as_deref(), Some("nb-NO"));
     assert!(!LogoutMessage::from_request(&r).contains_payload());
 }
+
+#[tokio::test]
+async fn a_pairwise_hint_without_sid_matches_the_current_user() {
+    let mut f = Fixture::new();
+    f.options.pairwise.salt = Some("server-salt-0123456789".into());
+    f.edit_clients(|clients| {
+        for c in clients.iter_mut().filter(|c| c.client_id == "web") {
+            c.subject_type = rustid_core::clients::SubjectType::Pairwise;
+        }
+    });
+    let client = f
+        .clients
+        .clients
+        .iter()
+        .find(|c| c.client_id == "web")
+        .unwrap()
+        .clone();
+    let resources =
+        validate_requested_resources(&client, &f.resources.enabled(), &["openid".to_owned()], &[])
+            .unwrap();
+    let alice = session("1");
+    let hint = Issuer {
+        options: &f.options,
+        stores: &f.stores,
+        keys: &f.keys,
+        issuer: ISSUER,
+        now: Utc::now() - chrono::Duration::hours(2),
+    }
+    .identity_token(&client, &resources, &alice, &IdentityTokenRequest::default())
+    .await
+    .unwrap();
+    assert_ne!(
+        rustid_core::jwt::Jws::decode(&hint).unwrap().claim_str("sub"),
+        Some("1"),
+        "the hint carries the pairwise subject"
+    );
+    validate(&f, &format!("id_token_hint={hint}"), Some(&session("1")))
+        .await
+        .expect("the current user's pairwise hint");
+    assert_eq!(
+        validate(&f, &format!("id_token_hint={hint}"), Some(&session("2")))
+            .await
+            .unwrap_err(),
+        "Current user does not match identity token"
+    );
+}

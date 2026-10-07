@@ -154,6 +154,7 @@ fn identity_tokens_hash_the_access_token_and_add_identity_claims_on_request() {
         ..Default::default()
     });
     let request = IdentityTokenRequest {
+        subject: None,
         nonce: Some("n"),
         access_token: Some("token"),
         authorization_code: Some("code"),
@@ -188,6 +189,7 @@ fn identity_tokens_hash_the_access_token_and_add_identity_claims_on_request() {
         (&["web".to_owned()][..], 120)
     );
     let all = IdentityTokenRequest {
+        subject: None,
         include_all_identity_claims: true,
         ..request
     };

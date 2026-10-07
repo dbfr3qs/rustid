@@ -123,5 +123,12 @@ pub async fn userinfo(
         }
         Some(_) => {}
     }
+    // A pairwise client sees its own subject; the lookups above used the
+    // user's.
+    if let Some(pairwise) = crate::pairwise::subject(ctx.options, &client, &sub.value) {
+        for claim in outgoing.iter_mut().filter(|c| c.claim_type == "sub") {
+            claim.value = pairwise.clone();
+        }
+    }
     Ok(Ok(claims::to_dictionary(&outgoing)))
 }

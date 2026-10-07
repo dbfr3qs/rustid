@@ -130,7 +130,7 @@ pub async fn validate(
                 ));
             }
         } else if let Some(sub) = claim("sub")
-            && sub != session.subject_id
+            && sub != crate::pairwise::subject_for(ctx.options, &client, &session.subject_id)
         {
             return Ok(Err("Current user does not match identity token".to_owned()));
         }

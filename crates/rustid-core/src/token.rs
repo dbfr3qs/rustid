@@ -970,6 +970,7 @@ async fn issue_for_code(
     };
     let id_token = if code.is_open_id {
         let request = IdentityTokenRequest {
+            subject: None,
             nonce: code.nonce.as_deref(),
             access_token: Some(&access_token),
             authorization_code: None,
@@ -1177,6 +1178,7 @@ async fn issue_for_refresh(
     .ok_or(TokenError::new(INVALID_GRANT))?;
     let id_token = if token.authorized_scopes.iter().any(|s| s == "openid") {
         let request = IdentityTokenRequest {
+            subject: None,
             nonce: None,
             access_token: Some(&access_token),
             authorization_code: None,

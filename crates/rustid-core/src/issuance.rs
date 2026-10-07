@@ -210,7 +210,12 @@ impl Issuer<'_> {
         } else {
             Vec::new()
         };
-        let token = identity_token(self.issuer, client, session, request, &key.alg, profile);
+        let pairwise = crate::pairwise::subject(self.options, client, &session.subject_id);
+        let request = IdentityTokenRequest {
+            subject: pairwise.as_deref(),
+            ..request.clone()
+        };
+        let token = identity_token(self.issuer, client, session, &request, &key.alg, profile);
         let payload = jwt_payload(self.options, &token, self.now.timestamp(), None)
             .map_err(|e| TokenFailure::Server(e.to_string()))?;
         jwt::encode(&key, &[("typ", "JWT")], &payload)

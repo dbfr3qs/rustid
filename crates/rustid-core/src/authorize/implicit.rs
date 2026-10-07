@@ -61,6 +61,7 @@ pub async fn browser_tokens(
         };
         let nonce = request.raw.get("nonce");
         let token_request = IdentityTokenRequest {
+            subject: None,
             nonce: nonce.as_deref().filter(|n| !n.is_empty()),
             access_token: access_token.as_deref(),
             authorization_code: code,

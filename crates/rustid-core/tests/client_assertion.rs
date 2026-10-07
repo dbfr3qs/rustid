@@ -163,6 +163,49 @@ fn strict_mode_by_typ_or_option_needs_the_issuer_as_sole_audience() {
 }
 
 #[test]
+fn issuer_only_audience_accepts_untyped_assertions_for_the_issuer_alone() {
+    let issuer_only = Setup {
+        options: ProtocolOptions {
+            issuer_only_client_assertion_audience: true,
+            ..options()
+        },
+        ..Setup::new()
+    };
+    assert!(issuer_only.check(
+        "JWT",
+        &claims(|c| {
+            c.insert("jti".into(), json!("i1"));
+        })
+    ));
+    assert!(issuer_only.check(
+        "JWT",
+        &claims(|c| {
+            c.insert("aud".into(), json!([ISSUER]));
+            c.insert("jti".into(), json!("i2"));
+        })
+    ));
+    for (i, aud) in [
+        json!(format!("{ISSUER}/connect/token")),
+        json!(format!("{ISSUER}/connect/par")),
+        json!([ISSUER, "x"]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        assert!(
+            !issuer_only.check(
+                "JWT",
+                &claims(|c| {
+                    c.insert("aud".into(), aud.clone());
+                    c.insert("jti".into(), json!(format!("i3-{i}")));
+                })
+            ),
+            "{aud}"
+        );
+    }
+}
+
+#[test]
 fn lifetime_uses_clock_skew() {
     let s = Setup::new();
     assert!(s.check(

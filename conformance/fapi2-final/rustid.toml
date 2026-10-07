@@ -1,10 +1,11 @@
-# rustid-server for the OpenID Foundation FAPI 2.0 Message Signing plan
-# (scripts/conformance.sh fapi2-ms): HTTPS on https://localhost:9446, the
-# FAPI 2 instance (../fapi2/rustid.toml) plus signed requests and JARM
-# responses.
+# rustid-server for the OpenID Foundation FAPI 2.0 Security Profile final
+# plan (scripts/conformance.sh fapi2-final): HTTPS on https://localhost:9449.
+# The FAPI 2 instance (conformance/fapi2) and its clients, except that the
+# issuer is a client assertion's only audience (final 5.3.2.1-8), which ID2
+# forbids: it must also accept the token and PAR endpoint URLs.
 # Relative paths are resolved against this file's directory.
-listen = "127.0.0.1:9446"
-clients_file = "clients.json"
+listen = "127.0.0.1:9449"
+clients_file = "../fapi2/clients.json"
 resources_file = "../resources.json"
 
 [log]
@@ -17,17 +18,7 @@ emit_scopes_as_space_delimited_string_in_jwt = true
 # seconds ahead: a 60-second skew rather than five minutes.
 supported_client_assertion_signing_algorithms = ["PS256"]
 jwt_validation_clock_skew = 60
-# FAPI 2.0 final 5.3.2.1-8: the issuer is a client assertion's only
-# audience.
 issuer_only_client_assertion_audience = true
-# FAPI 2 Message Signing 5.3.1: request objects carry nbf, live at most an
-# hour, and are signed with PS256 or ES256.
-request_object_max_lifetime = "01:00:00"
-supported_request_object_signing_algorithms = ["PS256", "ES256"]
-
-# Signed authorization responses (response_mode=jwt and friends).
-[protocol.jarm]
-enabled = true
 
 [protocol.key_management]
 enabled = false

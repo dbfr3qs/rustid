@@ -89,10 +89,12 @@ fn check(
         || jws
             .header_str("typ")
             .is_some_and(|t| t.eq_ignore_ascii_case(CLIENT_AUTHENTICATION_JWT_TYPE));
-    let audience_ok = if strict {
-        let typ_ok = jws
-            .header_str("typ")
-            .is_some_and(|t| t.eq_ignore_ascii_case(CLIENT_AUTHENTICATION_JWT_TYPE));
+    let audience_ok = if strict || ctx.options.issuer_only_client_assertion_audience {
+        // Strict mode wants the type too; issuer-only doesn't.
+        let typ_ok = !strict
+            || jws
+                .header_str("typ")
+                .is_some_and(|t| t.eq_ignore_ascii_case(CLIENT_AUTHENTICATION_JWT_TYPE));
         let single = match jws.payload.get("aud") {
             Some(Value::String(aud)) => Some(aud.as_str()),
             Some(Value::Array(auds)) if auds.len() == 1 => auds[0].as_str(),

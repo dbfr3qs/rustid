@@ -6,9 +6,11 @@
 #
 # Plans: oidcc-basic, implicit, hybrid, formpost-basic, formpost-implicit,
 # formpost-hybrid, config, logout, frontchannel, backchannel,
-# session-management (the default run); fapi2 and fapi2-final (the FAPI 2.0
-# Security Profile ID2 and final, against a second rustid on
-# https://localhost:9444, conformance/fapi2/rustid.toml); fapi-ciba
+# session-management (the default run); fapi2 (the FAPI 2.0 Security
+# Profile ID2, against a second rustid on https://localhost:9444,
+# conformance/fapi2/rustid.toml); fapi2-final (the final profile, against a
+# seventh on https://localhost:9449, conformance/fapi2-final/rustid.toml:
+# the same clients, issuer-only client assertion audiences); fapi-ciba
 # (FAPI-CIBA ID1 in poll mode, against a third on https://localhost:9445,
 # conformance/fapi-ciba/, with approver.py approving for the suite);
 # fapi2-ms (FAPI 2.0 Message Signing: signed requests and JARM, against a
@@ -40,7 +42,7 @@ stop() {
     return
   fi
   "${COMPOSE[@]}" down >/dev/null 2>&1 || true
-  for pid in "$OUT/rustid.pid" "$OUT/rustid-fapi2.pid" "$OUT/rustid-fapi-ciba.pid" "$OUT/rustid-fapi2-ms.pid" "$OUT/rustid-dynamic.pid" "$OUT/rustid-rp.pid" "$OUT/approver.pid"; do
+  for pid in "$OUT/rustid.pid" "$OUT/rustid-fapi2.pid" "$OUT/rustid-fapi2-final.pid" "$OUT/rustid-fapi-ciba.pid" "$OUT/rustid-fapi2-ms.pid" "$OUT/rustid-dynamic.pid" "$OUT/rustid-rp.pid" "$OUT/approver.pid"; do
     if [ -f "$pid" ]; then
       kill "$(cat "$pid")" 2>/dev/null || true
       rm -f "$pid"
@@ -92,16 +94,21 @@ cargo build -q -p rustid-server -p rustid-demo
 ./target/debug/rustid-server --config conformance/rustid.toml >"$OUT/rustid.log" 2>&1 &
 echo $! >"$OUT/rustid.pid"
 FAPI2=0
+FAPI2_FINAL=0
 CIBA=0
 FAPI2_MS=0
 DYNAMIC=0
 RP=0
 for plan in "${PLANS[@]}"; do
-  case "$plan" in fapi2|fapi2-final) FAPI2=1 ;; fapi-ciba) CIBA=1 ;; fapi2-ms) FAPI2_MS=1 ;; dynamic|3rdparty) DYNAMIC=1 ;; rp) RP=1 ;; esac
+  case "$plan" in fapi2) FAPI2=1 ;; fapi2-final) FAPI2_FINAL=1 ;; fapi-ciba) CIBA=1 ;; fapi2-ms) FAPI2_MS=1 ;; dynamic|3rdparty) DYNAMIC=1 ;; rp) RP=1 ;; esac
 done
 if [ "$FAPI2" = 1 ]; then
   ./target/debug/rustid-server --config conformance/fapi2/rustid.toml >"$OUT/rustid-fapi2.log" 2>&1 &
   echo $! >"$OUT/rustid-fapi2.pid"
+fi
+if [ "$FAPI2_FINAL" = 1 ]; then
+  ./target/debug/rustid-server --config conformance/fapi2-final/rustid.toml >"$OUT/rustid-fapi2-final.log" 2>&1 &
+  echo $! >"$OUT/rustid-fapi2-final.pid"
 fi
 if [ "$CIBA" = 1 ]; then
   python3 conformance/fapi-ciba/approver.py >"$OUT/approver.log" 2>&1 &
@@ -145,6 +152,9 @@ wait_for() {
 wait_for https://localhost:9443/.well-known/openid-configuration
 if [ "$FAPI2" = 1 ]; then
   wait_for https://localhost:9444/.well-known/openid-configuration
+fi
+if [ "$FAPI2_FINAL" = 1 ]; then
+  wait_for https://localhost:9449/.well-known/openid-configuration
 fi
 if [ "$CIBA" = 1 ]; then
   wait_for https://localhost:9445/.well-known/openid-configuration

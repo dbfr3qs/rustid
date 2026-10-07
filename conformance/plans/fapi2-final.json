@@ -2,7 +2,7 @@
   "alias": "rustid-fapi2",
   "description": "rustid FAPI 2.0 Security Profile (final)",
   "server": {
-    "discoveryUrl": "https://localhost:9444/.well-known/openid-configuration"
+    "discoveryUrl": "https://localhost:9449/.well-known/openid-configuration"
   },
   "client": {
     "client_name": "OIDF Conformance Suite",
@@ -30,12 +30,12 @@
   },
   "browser": [
     {
-      "match": "https://localhost:9444/connect/authorize*",
+      "match": "https://localhost:9449/connect/authorize*",
       "tasks": [
         {
           "task": "Login",
           "optional": true,
-          "match": "https://localhost:9444/Account/Login*",
+          "match": "https://localhost:9449/Account/Login*",
           "commands": [
             [
               "text",
@@ -61,7 +61,7 @@
         {
           "task": "Consent",
           "optional": true,
-          "match": "https://localhost:9444/consent*",
+          "match": "https://localhost:9449/consent*",
           "commands": [
             [
               "click",
@@ -90,11 +90,11 @@
       "browser": [
         {
           "comment": "expect an error page",
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Expect error page",
-              "match": "https://localhost:9444/home/error*",
+              "match": "https://localhost:9449/home/error*",
               "commands": [
                 [
                   "wait",
@@ -114,11 +114,11 @@
       "browser": [
         {
           "comment": "expect an error page",
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Expect error page",
-              "match": "https://localhost:9444/home/error*",
+              "match": "https://localhost:9449/home/error*",
               "commands": [
                 [
                   "wait",
@@ -138,11 +138,11 @@
       "browser": [
         {
           "comment": "expect an error page",
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Expect error page",
-              "match": "https://localhost:9444/home/error*",
+              "match": "https://localhost:9449/home/error*",
               "commands": [
                 [
                   "wait",
@@ -161,12 +161,12 @@
     "fapi2-security-profile-final-par-attempt-reuse-request_uri": {
       "browser": [
         {
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Login",
               "optional": true,
-              "match": "https://localhost:9444/Account/Login*",
+              "match": "https://localhost:9449/Account/Login*",
               "commands": [
                 [
                   "text",
@@ -192,7 +192,7 @@
             {
               "task": "Consent",
               "optional": true,
-              "match": "https://localhost:9444/consent*",
+              "match": "https://localhost:9449/consent*",
               "commands": [
                 [
                   "click",
@@ -218,11 +218,11 @@
         },
         {
           "comment": "expect an error page",
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Expect error page",
-              "match": "https://localhost:9444/home/error*",
+              "match": "https://localhost:9449/home/error*",
               "commands": [
                 [
                   "wait",
@@ -241,11 +241,11 @@
     "fapi2-security-profile-final-par-ensure-reused-request-uri-prior-to-auth-completion-succeeds": {
       "browser": [
         {
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Show the login page without signing in",
-              "match": "https://localhost:9444/Account/Login*",
+              "match": "https://localhost:9449/Account/Login*",
               "commands": [
                 [
                   "wait",
@@ -259,12 +259,12 @@
           "match-limit": 1
         },
         {
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Login",
               "optional": true,
-              "match": "https://localhost:9444/Account/Login*",
+              "match": "https://localhost:9449/Account/Login*",
               "commands": [
                 [
                   "text",
@@ -290,7 +290,7 @@
             {
               "task": "Consent",
               "optional": true,
-              "match": "https://localhost:9444/consent*",
+              "match": "https://localhost:9449/consent*",
               "commands": [
                 [
                   "click",
@@ -318,11 +318,11 @@
     "fapi2-security-profile-final-user-rejects-authentication": {
       "browser": [
         {
-          "match": "https://localhost:9444/connect/authorize*",
+          "match": "https://localhost:9449/connect/authorize*",
           "tasks": [
             {
               "task": "Cancel",
-              "match": "https://localhost:9444/Account/Login*",
+              "match": "https://localhost:9449/Account/Login*",
               "commands": [
                 [
                   "click",
@@ -373,7 +373,7 @@
     }
   },
   "resource": {
-    "resourceUrl": "https://localhost:9444/fapi2/resource"
+    "resourceUrl": "https://localhost:9449/fapi2/resource"
   },
   "waitTimeoutSeconds": 30
 }

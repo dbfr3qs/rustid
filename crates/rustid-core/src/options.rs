@@ -68,6 +68,10 @@ pub struct ProtocolOptions {
     /// Requires client assertions to use `typ: client-authentication+jwt`
     /// and the issuer as their only audience.
     pub strict_client_assertion_audience_validation: bool,
+    /// Requires the issuer as client assertions' only audience, typed or
+    /// not (FAPI 2.0 final 5.3.2.1-8), instead of also accepting the token,
+    /// PAR and CIBA endpoint URLs.
+    pub issuer_only_client_assertion_audience: bool,
     /// JWT Secured Authorization Responses (JARM); off by default.
     pub jarm: JarmOptions,
     /// FAPI 2 Message Signing (5.3.1): request objects need `nbf`, may live
@@ -134,6 +138,7 @@ impl Default for ProtocolOptions {
             emit_scopes_as_space_delimited_string_in_jwt: false,
             jwt_validation_clock_skew: TimeSpan(300),
             strict_client_assertion_audience_validation: false,
+            issuer_only_client_assertion_audience: false,
             jarm: JarmOptions::default(),
             request_object_max_lifetime: None,
             caching: CachingOptions::default(),

@@ -13,6 +13,8 @@ import pathlib
 RUSTID = "https://localhost:9443"
 # The FAPI 2 instance (conformance/fapi2/rustid.toml).
 RUSTID_FAPI2 = "https://localhost:9444"
+# FAPI 2.0 final: issuer-only client assertion audiences, which ID2 forbids.
+RUSTID_FAPI2_FINAL = "https://localhost:9449"
 # The FAPI-CIBA instance (conformance/fapi-ciba/rustid.toml).
 RUSTID_CIBA = "https://localhost:9445"
 # The FAPI 2 message signing instance (conformance/fapi2-ms/rustid.toml).
@@ -276,7 +278,9 @@ def fapi2_browser(base: str, prefix: str) -> tuple:
 
 FAPI2_AUTHORIZE, FAPI2_OVERRIDES = fapi2_browser(RUSTID_FAPI2, FAPI2)
 # The same modules in the final profile's plan.
-_, FAPI2_FINAL_OVERRIDES = fapi2_browser(RUSTID_FAPI2, "fapi2-security-profile-final-")
+FAPI2_FINAL_AUTHORIZE, FAPI2_FINAL_OVERRIDES = fapi2_browser(
+    RUSTID_FAPI2_FINAL, "fapi2-security-profile-final-"
+)
 # The message signing plan reuses the final profile's modules.
 FAPI2_MS_AUTHORIZE, FAPI2_MS_OVERRIDES = fapi2_browser(
     RUSTID_FAPI2_MS, "fapi2-security-profile-final-"
@@ -430,10 +434,10 @@ PLANS = {
         "rustid FAPI 2.0 Security Profile (final)",
         fapi2_client("client1", "fapi2-conformance-client", "OIDF Conformance Suite"),
         FAPI2_FINAL_OVERRIDES,
-        browser=[FAPI2_AUTHORIZE],
-        base=RUSTID_FAPI2,
+        browser=[FAPI2_FINAL_AUTHORIZE],
+        base=RUSTID_FAPI2_FINAL,
         client2=fapi2_client("client2", "fapi2-conformance-client-2", "OIDF Conformance Suite 2"),
-        resource={"resourceUrl": f"{RUSTID_FAPI2}/fapi2/resource"},
+        resource={"resourceUrl": f"{RUSTID_FAPI2_FINAL}/fapi2/resource"},
         waitTimeoutSeconds=30,
     ),
     "fapi2-ms": plan(

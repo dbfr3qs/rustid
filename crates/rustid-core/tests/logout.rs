@@ -207,5 +207,8 @@ async fn a_pairwise_client_on_a_server_without_salt_gets_no_logout_token() {
     process_logout(&f.validation_ctx(Utc::now()), &session(&["logout.back"]))
         .await
         .unwrap();
-    assert!(recorder.0.lock().unwrap().is_empty(), "never the user's own subject");
+    assert!(
+        recorder.0.lock().unwrap().is_empty(),
+        "never the user's own subject"
+    );
 }

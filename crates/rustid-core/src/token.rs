@@ -594,12 +594,22 @@ async fn validate_proof(
     client: &Client,
     confirmation: Option<String>,
 ) -> Result<RequestProof, TokenFailure> {
-    if client.require_certificate_bound_tokens && ctx.client_certificate.is_none() {
-        return Err(TokenError::described(
-            INVALID_REQUEST,
-            "Client requires certificate-bound tokens and no client certificate was presented.",
-        )
-        .into());
+    if client.require_certificate_bound_tokens {
+        if ctx.client_certificate.is_none() {
+            return Err(TokenError::described(
+                INVALID_REQUEST,
+                "Client requires certificate-bound tokens and no client certificate was presented.",
+            )
+            .into());
+        }
+        // A DPoP proof would bind the tokens to its key instead.
+        if !ctx.dpop_proofs.is_empty() {
+            return Err(TokenError::described(
+                INVALID_REQUEST,
+                "Client requires certificate-bound tokens; DPoP proofs aren't accepted.",
+            )
+            .into());
+        }
     }
     let mut proof = RequestProof {
         confirmation,

@@ -77,3 +77,25 @@ async fn a_client_that_doesnt_require_it_is_unchanged() {
             .is_ok()
     );
 }
+
+#[tokio::test]
+async fn a_dpop_proof_is_refused_for_a_client_requiring_certificate_bound_tokens() {
+    let f = fixture(true);
+    let cert = certificate();
+    let mut ctx = f.ctx(Utc::now());
+    ctx.client_certificate = Some(&cert);
+    let proofs = ["a.dpop.proof"];
+    ctx.dpop_proofs = &proofs;
+    match process(&ctx, None, &Form::from_pairs(&REQUEST)).await {
+        Err(TokenFailure::Protocol(TokenError {
+            error, description, ..
+        })) => {
+            assert_eq!(error, "invalid_request");
+            assert!(
+                description.as_deref().unwrap_or_default().contains("DPoP"),
+                "{description:?}"
+            );
+        }
+        other => panic!("{other:?}"),
+    }
+}

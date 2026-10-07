@@ -815,3 +815,30 @@ fn a_pairwise_client_without_a_salt_refuses_to_start() {
         Ok(())
     });
 }
+
+#[test]
+fn clients_that_will_be_refused_are_warned_about_at_start() {
+    figment::Jail::expect_with(|jail| {
+        jail.create_file(
+            "clients.json",
+            r#"[{ "clientId": "fragment", "allowedGrantTypes": ["authorization_code"],
+                 "redirectUris": ["https://app.example/cb#x"], "requireClientSecret": false },
+               { "clientId": "fine", "allowedGrantTypes": ["authorization_code"],
+                 "redirectUris": ["https://app.example/cb"], "requireClientSecret": false }]"#,
+        )?;
+        jail.create_file("c.json", r#"{ "clients_file": "clients.json" }"#)?;
+        let cfg = ServerConfig::load(Some(Path::new("c.json"))).unwrap();
+        let warnings = rustid_server::config_warnings(&cfg);
+        assert!(
+            warnings
+                .iter()
+                .any(|w| w.contains("fragment") && w.contains("refused")),
+            "{warnings:?}"
+        );
+        assert!(
+            !warnings.iter().any(|w| w.contains("client fine")),
+            "{warnings:?}"
+        );
+        Ok(())
+    });
+}

@@ -69,6 +69,24 @@ impl App {
 /// silently do nothing (or do something other than they seem to).
 pub fn config_warnings(config: &ServerConfig) -> Vec<String> {
     let mut warnings = Vec::new();
+    // A client the runtime treats as unknown: every request it makes fails,
+    // with only a per-request log line otherwise.
+    if let Some(path) = &config.clients_file
+        && let Ok(clients) = rustid_core::clients::Clients::load(path)
+    {
+        let par = config
+            .protocol
+            .pushed_authorization
+            .allow_unregistered_pushed_redirect_uris;
+        for client in &clients.clients {
+            if let Err(problem) = rustid_core::clients::validate_client(client, par) {
+                warnings.push(format!(
+                    "client {} in clients_file will be refused (treated as unknown): {problem}",
+                    client.client_id
+                ));
+            }
+        }
+    }
     if config.admin.schemas_file.is_some() && !config.admin.enabled {
         warnings.push(
             "admin.schemas_file is set but the admin API is disabled: the schemas aren't loaded"

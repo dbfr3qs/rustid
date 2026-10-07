@@ -7,6 +7,22 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-07
+
+Fixes from 0.9.0's final review, which 0.9.0 was released without.
+
+### Fixed
+
+- A client with `requireCertificateBoundTokens` that sent a DPoP proof got tokens bound to the DPoP key instead of its certificate. Such a request is now `invalid_request`, so its tokens from the token endpoint are always certificate-bound. (Tokens issued at the authorize endpoint, implicit and hybrid, aren't bound.)
+
+### Added
+
+- At start, rustid warns about each client in `clients_file` that validation will refuse.
+
+### Upgrading from before 0.9.0
+
+- 0.9.0 refuses redirect URIs with a fragment. Clients registered dynamically or imported earlier may have one; such a client is refused on every request (at authorize, and `invalid_client` at the token endpoint). Remove the fragment through the admin API, or register again.
+
 ## [0.9.0] - 2026-10-07
 
 ### Added

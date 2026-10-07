@@ -20,7 +20,7 @@ minor version may change configuration or APIs.
 - Dynamic registration refuses a non-https `initiate_login_uri`.
 - The CIBA endpoint answers `invalid_request` for a bad request object, instead of `invalid_request_object` (the authorize endpoint's error, which it keeps).
 - With mTLS on, the mTLS token endpoint is also accepted as a client assertion's audience.
-- Conformance: FAPI 2.0 final runs against its own instance; FAPI-CIBA runs with mTLS-bound tokens and the 60-minute request object cap. Seven plans' recorded failures drop from 27 to 6.
+- Conformance: FAPI 2.0 final runs against its own instance; FAPI-CIBA runs with mTLS-bound tokens and the 60-minute request object cap. Recorded failures across all the plans drop from 27 to 6.
 
 ## [0.8.0] - 2026-10-07
 

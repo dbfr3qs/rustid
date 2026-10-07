@@ -65,3 +65,8 @@ ca_file = "../../target/conformance/ca.pem"
 # The suite serves request objects over HTTPS from the same CA.
 [request_uri]
 ca_file = "../../target/conformance/ca.pem"
+
+# Pairwise subjects (oidcc-registration-sector-uri and -sector-bad); the
+# sector identifier documents come from the suite through [request_uri].
+[pairwise]
+salt = "conformance-pairwise-salt-not-for-real-use"

@@ -115,5 +115,14 @@
     "condition": "EnsureIdTokenDoesNotContainNonRequestedClaims",
     "expected-result": "warning",
     "comment": "idp (the identity provider that signed the user in) is in every id token"
+  },
+  {
+    "test-name": "oidcc-registration-sector-bad",
+    "variant": "*",
+    "configuration-filename": "*/dynamic.json",
+    "current-block": "*",
+    "condition": "CheckErrorFromDynamicRegistrationEndpointIsInvalidClientMetadata",
+    "expected-result": "warning",
+    "comment": "the registration error body spells its members Error and ErrorDescription (docs/dynamic-client-registration.md), so the suite doesn't find 'error'; the status is 400 invalid_client_metadata"
   }
 ]

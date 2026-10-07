@@ -354,7 +354,12 @@ pub fn discovery_document(ctx: &DiscoveryContext<'_>) -> Map<String, Value> {
         }
     }
 
-    m.insert("subject_types_supported".into(), strs(&["public"]));
+    let subject_types: &[&str] = if o.pairwise.salt.is_some() {
+        &["public", "pairwise"]
+    } else {
+        &["public"]
+    };
+    m.insert("subject_types_supported".into(), strs(subject_types));
     m.insert(
         "code_challenge_methods_supported".into(),
         strs(&["plain", "S256"]),

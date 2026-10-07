@@ -33,6 +33,7 @@ pub mod keys;
 pub mod logout;
 pub mod options;
 pub mod outbox;
+pub mod pairwise;
 pub mod params;
 pub mod profile;
 pub mod protected_resource;

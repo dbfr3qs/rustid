@@ -43,6 +43,10 @@ pub struct ProtocolOptions {
     pub ciba: CibaOptions,
     pub storage_purge: StoragePurgeOptions,
     pub outbox_processor: OutboxProcessorOptions,
+    /// Pairwise subjects; set by the host from its own configuration
+    /// (`[pairwise]`), never read from the protocol section.
+    #[serde(skip)]
+    pub pairwise: PairwiseOptions,
     pub supported_client_assertion_signing_algorithms: Vec<String>,
     pub supported_request_object_signing_algorithms: Vec<String>,
     /// Request objects must be typed `oauth-authz-req+jwt`, and fetched ones
@@ -118,6 +122,7 @@ impl Default for ProtocolOptions {
             ciba: CibaOptions::default(),
             storage_purge: StoragePurgeOptions::default(),
             outbox_processor: OutboxProcessorOptions::default(),
+            pairwise: PairwiseOptions::default(),
             supported_client_assertion_signing_algorithms: owned(DEFAULT_SIGNING_ALGORITHMS),
             supported_request_object_signing_algorithms: owned(DEFAULT_SIGNING_ALGORITHMS),
             strict_jar_validation: false,
@@ -944,4 +949,20 @@ fn parse_timespan(text: &str) -> Option<i64> {
         return None;
     };
     Some(days * 86_400 + h * 3_600 + m * 60 + s)
+}
+
+/// Pairwise subjects: the server's salt, shared by every instance. Without
+/// one, only public subjects are offered.
+#[derive(Clone, Default, PartialEq, Eq)]
+pub struct PairwiseOptions {
+    pub salt: Option<String>,
+}
+
+/// Never the salt.
+impl std::fmt::Debug for PairwiseOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PairwiseOptions")
+            .field("salt", &self.salt.as_ref().map(|_| "<redacted>"))
+            .finish()
+    }
 }

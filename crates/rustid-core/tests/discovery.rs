@@ -417,3 +417,19 @@ fn registration_endpoint_is_absent_by_default_and_static_without_url() {
             .is_none()
     );
 }
+
+#[test]
+fn pairwise_is_listed_only_with_a_salt() {
+    let keys = fixture_keys();
+    let features = reference_features();
+    let mut options = ProtocolOptions::default();
+    assert_eq!(
+        doc(&options, &keys, &features)["subject_types_supported"],
+        json!(["public"])
+    );
+    options.pairwise.salt = Some("server-salt-0123456789".into());
+    assert_eq!(
+        doc(&options, &keys, &features)["subject_types_supported"],
+        json!(["public", "pairwise"])
+    );
+}

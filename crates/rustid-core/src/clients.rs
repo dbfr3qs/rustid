@@ -15,6 +15,17 @@ pub const SECRET_TYPE_X509_THUMBPRINT: &str = "X509Thumbprint";
 /// A certificate's subject name.
 pub const SECRET_TYPE_X509_NAME: &str = "X509Name";
 
+/// Which subject identifiers a client sees.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SubjectType {
+    /// The user's own subject id.
+    #[default]
+    Public,
+    /// A subject made for the client's sector.
+    Pairwise,
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, serde::Serialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Client {
@@ -101,8 +112,13 @@ pub struct Client {
     /// Seconds between device flow (and CIBA) polls; the options' when
     /// absent.
     pub polling_interval: Option<i32>,
-    /// Stored; nothing derives
-    /// pairwise subjects from it.
+    /// The subject this client sees: the user's own, or one made for its
+    /// sector (OpenID Connect Core 1.0 §8, [`crate::pairwise`]).
+    pub subject_type: SubjectType,
+    /// Names the client's sector (its host) for pairwise subjects; required
+    /// when its redirect URIs name more than one host.
+    pub sector_identifier_uri: Option<String>,
+    /// Joins the server's salt in this client's pairwise subjects.
     pub pair_wise_subject_salt: Option<String>,
     /// Token requests must carry a DPoP proof.
     #[serde(rename = "requireDPoP", alias = "requireDpop")]
@@ -171,6 +187,8 @@ impl Default for Client {
             ciba_lifetime: None,
             user_code_type: None,
             polling_interval: None,
+            subject_type: SubjectType::Public,
+            sector_identifier_uri: None,
             pair_wise_subject_salt: None,
             require_dpop: false,
             dpop_validation_mode: crate::dpop::DPoPValidationMode::Iat,
@@ -517,6 +535,20 @@ pub fn validate_client(
         return Err(format!(
             "PostLogoutRedirectUri '{uri}' uses invalid scheme."
         ));
+    }
+    if let Some(uri) = &client.sector_identifier_uri
+        && !url::Url::parse(uri).is_ok_and(|u| u.scheme() == "https" && u.host().is_some())
+    {
+        return Err(format!("sectorIdentifierUri '{uri}' must be an https URL."));
+    }
+    if client.subject_type == SubjectType::Pairwise
+        && client.sector_identifier_uri.is_none()
+        && crate::pairwise::redirect_hosts(client).len() > 1
+    {
+        return Err(
+            "A pairwise client whose redirect URIs name more than one host needs a sectorIdentifierUri."
+                .into(),
+        );
     }
     for grant in grants {
         if grant != "implicit" && client.require_client_secret && client.client_secrets.is_empty() {

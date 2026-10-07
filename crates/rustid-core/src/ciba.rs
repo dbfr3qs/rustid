@@ -27,7 +27,9 @@ pub const GRANT_TYPE: &str = "urn:openid:params:grant-type:ciba";
 pub const CIBA_GRANT: &str = "ciba";
 
 const INVALID_REQUEST: &str = "invalid_request";
-const INVALID_REQUEST_OBJECT: &str = "invalid_request_object";
+/// A request object's error at this endpoint: CIBA Core §13 has no
+/// `invalid_request_object` (the authorize endpoint's, RFC 9101).
+const REQUEST_OBJECT_ERROR: &str = "invalid_request";
 const UNAUTHORIZED_CLIENT: &str = "unauthorized_client";
 const INVALID_TARGET: &str = "invalid_target";
 const INVALID_SCOPE: &str = "invalid_scope";
@@ -347,11 +349,11 @@ async fn validate(
     if let Some(object) = param(draft, "request") {
         if utf16_len(&object) >= limits.jwt {
             return Ok(Err(fail(
-                INVALID_REQUEST_OBJECT,
+                REQUEST_OBJECT_ERROR,
                 Some("Invalid request value"),
             )));
         }
-        let invalid = |d| Ok(Err(fail(INVALID_REQUEST_OBJECT, Some(d))));
+        let invalid = |d| Ok(Err(fail(REQUEST_OBJECT_ERROR, Some(d))));
         let Some(claims) = crate::authorize::request_object::validate_with(
             ctx.options,
             ctx.issuer,

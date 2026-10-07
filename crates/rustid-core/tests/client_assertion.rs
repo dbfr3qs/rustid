@@ -206,6 +206,29 @@ fn issuer_only_audience_accepts_untyped_assertions_for_the_issuer_alone() {
 }
 
 #[test]
+fn the_mtls_token_alias_is_an_audience_when_mtls_is_on() {
+    let alias = "http://host:1/base/connect/mtls/token";
+    let with = |mtls: bool, issuer_only: bool| {
+        let mut options = options();
+        options.mutual_tls.enabled = mtls;
+        options.issuer_only_client_assertion_audience = issuer_only;
+        Setup {
+            options,
+            ..Setup::new()
+        }
+    };
+    let assertion = |jti: &str| {
+        claims(|c| {
+            c.insert("aud".into(), json!(alias));
+            c.insert("jti".into(), json!(jti));
+        })
+    };
+    assert!(with(true, false).check("JWT", &assertion("m1")));
+    assert!(!with(false, false).check("JWT", &assertion("m2")));
+    assert!(!with(true, true).check("JWT", &assertion("m3")));
+}
+
+#[test]
 fn lifetime_uses_clock_skew() {
     let s = Setup::new();
     assert!(s.check(

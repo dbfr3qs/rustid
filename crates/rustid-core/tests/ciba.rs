@@ -372,7 +372,7 @@ async fn request_objects() {
         Some("alice")
     );
 
-    let invalid = |d: &str| ("invalid_request_object".to_owned(), Some(d.to_owned()));
+    let invalid = |d: &str| ("invalid_request".to_owned(), Some(d.to_owned()));
     assert_eq!(
         error(run(with(request_object(signed(json!({ "jti": null }))))).await),
         invalid("Missing jti in JWT request object")

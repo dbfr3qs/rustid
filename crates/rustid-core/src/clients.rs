@@ -120,6 +120,9 @@ pub struct Client {
     pub sector_identifier_uri: Option<String>,
     /// Joins the server's salt in this client's pairwise subjects.
     pub pair_wise_subject_salt: Option<String>,
+    /// Token requests must present a client certificate, which the tokens
+    /// are bound to (RFC 8705).
+    pub require_certificate_bound_tokens: bool,
     /// Token requests must carry a DPoP proof.
     #[serde(rename = "requireDPoP", alias = "requireDpop")]
     pub require_dpop: bool,
@@ -190,6 +193,7 @@ impl Default for Client {
             subject_type: SubjectType::Public,
             sector_identifier_uri: None,
             pair_wise_subject_salt: None,
+            require_certificate_bound_tokens: false,
             require_dpop: false,
             dpop_validation_mode: crate::dpop::DPoPValidationMode::Iat,
             dpop_clock_skew: crate::options::TimeSpan(300),

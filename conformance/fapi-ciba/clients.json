@@ -21,7 +21,8 @@
     ],
     "requireRequestObject": true,
     "allowOfflineAccess": true,
-    "requireConsent": false
+    "requireConsent": false,
+    "requireCertificateBoundTokens": true
   },
   {
     "clientId": "fapi-ciba-conformance-client-2",
@@ -45,7 +46,8 @@
     ],
     "requireRequestObject": true,
     "allowOfflineAccess": true,
-    "requireConsent": false
+    "requireConsent": false,
+    "requireCertificateBoundTokens": true
   },
   {
     "clientId": "fapi-ciba-approver",

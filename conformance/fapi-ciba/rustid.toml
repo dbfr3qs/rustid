@@ -16,17 +16,18 @@ level = "info"
 emit_scopes_as_space_delimited_string_in_jwt = true
 supported_client_assertion_signing_algorithms = ["PS256", "ES256"]
 supported_request_object_signing_algorithms = ["PS256", "ES256"]
+# FAPI-CIBA: request objects carry nbf and exp at most 60 minutes apart.
+request_object_max_lifetime = "01:00:00"
 jwt_validation_clock_skew = 60
 
 [protocol.key_management]
 enabled = false
 
-# Tokens bound to the client certificate the connection presents. mTLS
-# client authentication (and so the /connect/mtls/* aliases) stays off: a
-# client assertion whose aud is the alias token URL isn't accepted,
-# so the suite uses the token endpoint itself.
+# mTLS: discovery advertises certificate-bound tokens and the
+# /connect/mtls/* aliases, and the conformance clients require
+# certificate-bound tokens (requireCertificateBoundTokens).
 [protocol.mutual_tls]
-enabled = false
+enabled = true
 always_emit_confirmation_claim = true
 
 [[signing_keys]]

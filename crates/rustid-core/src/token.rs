@@ -585,14 +585,22 @@ pub(crate) struct RequestProof {
 }
 
 /// A client certificate (binding the token when it
-/// authenticated the client, or always with `always_emit_confirmation_claim`),
-/// then a DPoP proof, which takes precedence; a client that requires DPoP
-/// must send one.
+/// authenticated the client, always with `always_emit_confirmation_claim`,
+/// or when the client requires certificate-bound tokens, which also needs
+/// a certificate), then a DPoP proof, which takes precedence; a client that
+/// requires DPoP must send one.
 async fn validate_proof(
     ctx: &TokenContext<'_>,
     client: &Client,
     confirmation: Option<String>,
 ) -> Result<RequestProof, TokenFailure> {
+    if client.require_certificate_bound_tokens && ctx.client_certificate.is_none() {
+        return Err(TokenError::described(
+            INVALID_REQUEST,
+            "Client requires certificate-bound tokens and no client certificate was presented.",
+        )
+        .into());
+    }
     let mut proof = RequestProof {
         confirmation,
         ..Default::default()
@@ -600,7 +608,9 @@ async fn validate_proof(
     if let Some(cert) = ctx.client_certificate
         && ctx.dpop_proofs.is_empty()
     {
-        if ctx.options.mutual_tls.always_emit_confirmation_claim && proof.confirmation.is_none() {
+        let bind = ctx.options.mutual_tls.always_emit_confirmation_claim
+            || client.require_certificate_bound_tokens;
+        if bind && proof.confirmation.is_none() {
             proof.confirmation = Some(cert.cnf());
         }
         proof.proof_type = ProofType::ClientCertificate;

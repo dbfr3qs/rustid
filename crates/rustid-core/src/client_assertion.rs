@@ -104,13 +104,22 @@ fn check(
     } else {
         let base = format!("{}/", ctx.base_url.trim_end_matches('/'));
         let issuer_slash = format!("{}/", ctx.issuer.trim_end_matches('/'));
-        let valid = [
+        let mut valid = vec![
             format!("{base}connect/token"),
             format!("{issuer_slash}connect/token"),
             ctx.issuer.to_owned(),
             format!("{base}connect/ciba"),
             format!("{base}connect/par"),
         ];
+        // With mTLS, discovery names the alias as the token endpoint, so
+        // clients address their assertions to it.
+        if ctx.options.mutual_tls.enabled {
+            valid.push(crate::client_certificate::mtls_endpoint(
+                &ctx.options.mutual_tls,
+                ctx.base_url,
+                "connect/token",
+            ));
+        }
         let audiences: Vec<&str> = match jws.payload.get("aud") {
             Some(Value::String(aud)) => vec![aud.as_str()],
             Some(Value::Array(auds)) => auds.iter().filter_map(Value::as_str).collect(),

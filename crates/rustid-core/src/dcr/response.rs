@@ -226,6 +226,13 @@ pub fn build(
         "sector_identifier_uri",
         client.sector_identifier_uri.as_ref().map(|u| json!(u)),
     );
+    put(
+        "userinfo_signed_response_alg",
+        client
+            .userinfo_signed_response_alg
+            .as_ref()
+            .map(|a| json!(a)),
+    );
 
     for (key, value) in &request.extensions {
         if matches!(

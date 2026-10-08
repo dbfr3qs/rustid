@@ -210,6 +210,8 @@ fn dcr_settings(
             management: None,
             default_scopes: config.default_scopes.clone(),
             require_pkce: config.require_pkce,
+            // Read from the keys for each registration.
+            userinfo_signing_algorithms: Vec::new(),
         },
         client_management: config.client_management,
     }))

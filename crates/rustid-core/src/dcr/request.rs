@@ -52,6 +52,10 @@ pub struct RegistrationRequest {
     /// A document listing the client's redirect URIs; its host is the
     /// client's sector.
     pub sector_identifier_uri: Option<String>,
+    /// The algorithm userinfo answers are signed with.
+    pub userinfo_signed_response_alg: Option<String>,
+    /// Refused: encrypted userinfo isn't offered.
+    pub userinfo_encrypted_response_alg: Option<String>,
     #[serde(flatten)]
     pub extensions: IndexMap<String, Value>,
 }

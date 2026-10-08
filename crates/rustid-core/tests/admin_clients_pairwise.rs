@@ -49,3 +49,20 @@ async fn pairwise_clients_need_a_pairwise_salt_and_round_trip() {
     assert_eq!(json["subjectType"], "pairwise");
     assert_eq!(json["sectorIdentifierUri"], "https://a.example/uris.json");
 }
+
+#[tokio::test]
+async fn the_userinfo_signing_algorithm_round_trips() {
+    let store = InMemoryConfiguration::default();
+    let admin = ClientAdmin::default();
+    let mut input = pairwise();
+    input.client.subject_type = SubjectType::Public;
+    input.client.sector_identifier_uri = None;
+    input.client.redirect_uris = vec!["https://a.example/cb".into()];
+    input.client.userinfo_signed_response_alg = Some("PS256".into());
+    let saved = admin.create(&store, input).await.unwrap().unwrap();
+    let read = admin.get(&store, &saved.id).await.unwrap().unwrap();
+    assert_eq!(
+        serde_json::to_value(&read.item).unwrap()["userinfoSignedResponseAlg"],
+        "PS256"
+    );
+}

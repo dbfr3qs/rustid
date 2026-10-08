@@ -149,12 +149,29 @@ pub(crate) async fn handle(
             .allow_unregistered_pushed_redirect_uris,
         pairwise_supported: state.options.pairwise.salt.is_some(),
     };
+    // As discovery advertises them.
+    let userinfo_signing_algorithms = if state.options.endpoints.enable_user_info_endpoint {
+        match state.keys.signing_algorithms().await {
+            Ok(algorithms) => algorithms,
+            Err(e) => {
+                return crate::response::internal_error(
+                    state,
+                    info,
+                    "DynamicClientRegistration",
+                    &e.to_string(),
+                );
+            }
+        }
+    } else {
+        Vec::new()
+    };
     let options = rustid_core::dcr::DcrOptions {
         management: dcr
             .client_management
             .then(|| rustid_core::dcr::ManagementUri {
                 base: endpoint_url(dcr, route),
             }),
+        userinfo_signing_algorithms,
         ..dcr.options.clone()
     };
     match rustid_core::dcr::register(

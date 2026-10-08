@@ -846,3 +846,59 @@ fn redirect_uris_never_carry_a_fragment_and_login_initiation_is_https() {
     );
     assert!(dcr::validate(&mut ok).is_ok());
 }
+
+async fn register_userinfo(
+    body: serde_json::Value,
+) -> (
+    rustid_core::stores::Stores,
+    Result<serde_json::Map<String, serde_json::Value>, dcr::RegistrationError>,
+) {
+    let stores = memory();
+    let options = dcr::DcrOptions {
+        userinfo_signing_algorithms: vec!["RS256".into(), "PS256".into()],
+        ..Default::default()
+    };
+    let request = dcr::parse(body.to_string().as_bytes()).unwrap();
+    let result = dcr::register(
+        stores.configuration.as_ref(),
+        &Default::default(),
+        &options,
+        &rustid_core::request_uri::NoRequestUriFetcher,
+        request,
+        chrono::Utc::now(),
+    )
+    .await
+    .unwrap();
+    (stores, result)
+}
+
+#[tokio::test]
+async fn signed_userinfo_is_registered_with_an_advertised_algorithm() {
+    let (stores, result) = register_userinfo(json!({
+        "redirect_uris": [CB], "grant_types": ["authorization_code"],
+        "userinfo_signed_response_alg": "RS256",
+    }))
+    .await;
+    let body = result.unwrap();
+    assert_eq!(body["userinfo_signed_response_alg"], "RS256");
+    let client = stored(&stores, &body).await;
+    assert_eq!(
+        client.userinfo_signed_response_alg.as_deref(),
+        Some("RS256")
+    );
+}
+
+#[tokio::test]
+async fn unadvertised_or_encrypted_userinfo_is_invalid_client_metadata() {
+    for body in [
+        json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "userinfo_signed_response_alg": "ES512" }),
+        json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "userinfo_signed_response_alg": "none" }),
+        json!({ "redirect_uris": [CB], "grant_types": ["authorization_code"], "userinfo_encrypted_response_alg": "RSA-OAEP" }),
+    ] {
+        let (_, result) = register_userinfo(body.clone()).await;
+        assert_eq!(
+            result.expect_err(&body.to_string()).error,
+            "invalid_client_metadata"
+        );
+    }
+}

@@ -23,6 +23,9 @@ pub struct DcrOptions {
     /// Whether registered clients require PKCE; unset, the `Client` default
     /// (required).
     pub require_pkce: Option<bool>,
+    /// The algorithms userinfo can be signed with (discovery's
+    /// `userinfo_signing_alg_values_supported`).
+    pub userinfo_signing_algorithms: Vec<String>,
 }
 
 /// The registration endpoint's absolute URL, `{origin}{path}`: a client's
@@ -97,6 +100,21 @@ pub async fn register(
         && let Err(e) = check_sector_document(fetcher, uri, &client.redirect_uris).await
     {
         return Ok(Err(e));
+    }
+    // Signed userinfo, with an algorithm discovery advertises; encrypted
+    // userinfo isn't offered.
+    if request.userinfo_encrypted_response_alg.is_some() {
+        return Ok(Err(RegistrationError::metadata(
+            "userinfo_encrypted_response_alg is not supported",
+        )));
+    }
+    if let Some(alg) = &request.userinfo_signed_response_alg {
+        if !options.userinfo_signing_algorithms.contains(alg) {
+            return Ok(Err(RegistrationError::metadata(&format!(
+                "userinfo_signed_response_alg {alg} is not supported"
+            ))));
+        }
+        client.userinfo_signed_response_alg = Some(alg.clone());
     }
     client.client_id = unique_id();
     if let Some(require) = options.require_pkce {

@@ -1,32 +1,5 @@
 [
   {
-    "test-name": "oidcc-userinfo-rs256",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "EnsureContentTypeApplicationJwt",
-    "expected-result": "failure",
-    "comment": "signed userinfo isn't supported: registration ignores userinfo_signed_response_alg and userinfo answers JSON"
-  },
-  {
-    "test-name": "oidcc-userinfo-rs256",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "ValidateUserInfoResponseSignature",
-    "expected-result": "failure",
-    "comment": "signed userinfo isn't supported: registration ignores userinfo_signed_response_alg and userinfo answers JSON"
-  },
-  {
-    "test-name": "oidcc-userinfo-rs256",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "ExtractSignedUserInfoFromUserInfoEndpointResponse",
-    "expected-result": "failure",
-    "comment": "signed userinfo isn't supported: registration ignores userinfo_signed_response_alg and userinfo answers JSON"
-  },
-  {
     "test-name": "oidcc-registration-jwks-uri",
     "variant": "*",
     "configuration-filename": "*/dynamic.json",

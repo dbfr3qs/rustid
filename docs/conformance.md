@@ -36,7 +36,7 @@ Every run used the suite image `sha256:df0385890213…` (pinned by digest in `co
 | `oidcc-formpost-implicit-certification-test-plan` | discovery, static client | 54 | 35 passed, 9 review, 6 warnings and 4 skips expected |
 | `oidcc-formpost-hybrid-certification-test-plan` | discovery, static client | 96 | 66 passed, 12 review, 12 warnings and 6 skips expected |
 | `oidcc-config-certification-test-plan` | (fixed by the plan) | 1 | 1 passed |
-| `oidcc-dynamic-certification-test-plan` | code; discovery, dynamic registration, `private_key_jwt` (fixed by the plan) | 23 | 8 passed, 6 review, 1 warning, 3 skips and 5 failures expected |
+| `oidcc-dynamic-certification-test-plan` | code; discovery, dynamic registration, `private_key_jwt` (fixed by the plan) | 23 | 9 passed, 6 review, 1 warning, 3 skips and 4 failures expected |
 | `oidcc-3rdparty-init-login-certification-test-plan` | code; dynamic registration, `client_secret_basic` | 2 | 2 passed |
 | `fapi2-security-profile-id2-test-plan` | plain FAPI, PAR (`simple`), OpenID Connect, `private_key_jwt`, DPoP | 58 | 51 passed, 4 review, 2 warnings and 1 skip expected |
 | `fapi2-security-profile-final-test-plan` | as ID2, issuer-only client assertion audiences | 52 | 45 passed, 4 review, 2 warnings and 1 skip expected |
@@ -88,7 +88,6 @@ Each is listed with its reason in `conformance/expected/`:
   - `test-claims-parameter-identity-claims` is skipped: the `claims` parameter isn't supported.
 - **FAPI 2.0 final and Message Signing:** the same three as FAPI 2 (the Message Signing plan's modules are the final plan's, run with signed requests and JARM).
 - **Dynamic registration:**
-  - `userinfo-rs256` fails: `userinfo_signed_response_alg` is ignored and userinfo answers JSON;
   - `registration-jwks-uri` and `refresh-token-rp-key-rotation` fail: `jwks_uri` is accepted but never fetched, and `private_key_jwt` needs `jwks`;
   - `request-uri-signed-rs256` fails: the suite's request object has no `exp`, which request objects require;
   - `server-rotate-keys` fails: it needs the signing key rotated by hand during the test;

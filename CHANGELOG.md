@@ -7,6 +7,16 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-08
+
+### Added
+
+- Signed userinfo (OpenID Connect Core 1.0 §5.3.2): a client with `userinfoSignedResponseAlg` (dynamic registration: `userinfo_signed_response_alg`, one of discovery's `userinfo_signing_alg_values_supported`) gets its userinfo answers as `application/jwt`, with `iss` and `aud`, signed with rustid's key for that algorithm. Other clients, and error answers, are unchanged.
+
+### Changed
+
+- Dynamic registration refuses `userinfo_encrypted_response_alg` (encrypted userinfo isn't offered) and unadvertised `userinfo_signed_response_alg` values, which were previously echoed and ignored.
+
 ## [0.9.1] - 2026-10-07
 
 Fixes from 0.9.0's final review, which 0.9.0 was released without.

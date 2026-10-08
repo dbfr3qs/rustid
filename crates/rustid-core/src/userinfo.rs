@@ -43,6 +43,53 @@ pub async fn userinfo(
     ctx: &ValidationContext<'_>,
     token: &str,
 ) -> Result<Result<Map<String, Value>, &'static str>, StoreError> {
+    Ok(answer(ctx, token).await?.map(|(claims, _)| claims))
+}
+
+/// What the userinfo endpoint answers: the claims as JSON, or, for a client
+/// with `userinfoSignedResponseAlg`, a JWT of them (OIDC Core §5.3.2).
+#[derive(Debug, Clone, PartialEq)]
+pub enum UserInfoAnswer {
+    Json(Map<String, Value>),
+    Jwt(String),
+}
+
+/// [`userinfo`], signed for a client that asks: its claims plus `iss` and
+/// `aud` (the client), signed with the server's key for the client's
+/// algorithm. No such key is a server error, never an unsigned answer.
+#[tracing::instrument(name = "userinfo.validate_request", skip_all)]
+pub async fn userinfo_response(
+    ctx: &ValidationContext<'_>,
+    token: &str,
+) -> Result<Result<UserInfoAnswer, &'static str>, StoreError> {
+    let (mut claims, client) = match answer(ctx, token).await? {
+        Ok(found) => found,
+        Err(error) => return Ok(Err(error)),
+    };
+    let Some(alg) = client.userinfo_signed_response_alg.as_deref() else {
+        return Ok(Ok(UserInfoAnswer::Json(claims)));
+    };
+    let Some(key) = ctx.keys.signing_key(&[alg.to_owned()]).await? else {
+        return Err(StoreError::Backend(format!(
+            "client {} asks for userinfo signed with {alg}, and there is no signing key for it",
+            client.client_id
+        )));
+    };
+    claims.insert("iss".into(), Value::String(ctx.issuer.to_owned()));
+    claims.insert("aud".into(), Value::String(client.client_id.clone()));
+    let jwt = crate::jwt::encode(&key, &[], &claims)
+        .map_err(|e| StoreError::Backend(format!("signing userinfo: {e}")))?;
+    Ok(Ok(UserInfoAnswer::Jwt(jwt)))
+}
+
+/// The claims and the client the token was issued to.
+async fn answer(
+    ctx: &ValidationContext<'_>,
+    token: &str,
+) -> Result<
+    Result<(Map<String, Value>, std::sync::Arc<crate::clients::Client>), &'static str>,
+    StoreError,
+> {
     let validated = match access_tokens::validate(ctx, token).await? {
         Ok(validated) => validated,
         Err(error) => return Ok(Err(error)),
@@ -135,5 +182,5 @@ pub async fn userinfo(
             claim.value = pairwise.clone();
         }
     }
-    Ok(Ok(claims::to_dictionary(&outgoing)))
+    Ok(Ok((claims::to_dictionary(&outgoing), client)))
 }

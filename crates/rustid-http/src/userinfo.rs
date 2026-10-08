@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, HeaderValue, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use rustid_core::access_tokens::{EXPIRED_TOKEN, INVALID_TOKEN, ValidationContext};
 use rustid_core::events::RequestInfo;
-use rustid_core::userinfo::{INSUFFICIENT_SCOPE, userinfo as process};
+use rustid_core::userinfo::{INSUFFICIENT_SCOPE, UserInfoAnswer, userinfo_response as process};
 use serde_json::Value;
 
 use crate::ProtocolState;
@@ -38,7 +38,19 @@ pub(crate) async fn userinfo(
         now: chrono::Utc::now(),
     };
     match process(&ctx, &token).await {
-        Ok(Ok(claims)) => no_cache_json(StatusCode::OK, &Value::Object(claims)),
+        Ok(Ok(UserInfoAnswer::Json(claims))) => {
+            no_cache_json(StatusCode::OK, &Value::Object(claims))
+        }
+        Ok(Ok(UserInfoAnswer::Jwt(jwt))) => {
+            let mut response = (
+                StatusCode::OK,
+                [(axum::http::header::CONTENT_TYPE, "application/jwt")],
+                jwt,
+            )
+                .into_response();
+            set_no_cache(&mut response);
+            response
+        }
         Ok(Err(e)) => error(e),
         Err(e) => internal_error(state, info, "UserInfoEndpoint", &e.to_string()),
     }

@@ -90,6 +90,8 @@ fn configuration_validation_rules() {
     assert!(err(r#"{ "clientId": "c", "allowedGrantTypes": ["authorization_code"], "requireClientSecret": false }"#).contains("No redirect URI"));
     assert!(err(r#"{ "clientId": "c", "allowedGrantTypes": ["implicit"], "redirectUris": ["javascript:alert(1)"] }"#).contains("invalid scheme"));
     assert!(err(r#"{ "clientId": "c", "allowedGrantTypes": ["implicit"], "redirectUris": ["https://x/cb#frag"] }"#).contains("fragment"));
+    assert!(err(r#"{ "clientId": "c", "allowedGrantTypes": ["implicit"], "redirectUris": ["https://x/cb"], "userinfoSignedResponseAlg": "HS256" }"#).contains("userinfoSignedResponseAlg"));
+    assert!(err(r#"{ "clientId": "c", "allowedGrantTypes": ["implicit"], "redirectUris": ["https://x/cb"], "userinfoSignedResponseAlg": "none" }"#).contains("userinfoSignedResponseAlg"));
     assert!(err(r#"{ "clientId": "c", "allowedGrantTypes": ["implicit"], "redirectUris": ["https://x"], "allowedCorsOrigins": ["https://x/"] }"#).contains("invalid origin"));
     assert!(
         err(r#"{ "clientId": "c", "allowedGrantTypes": ["client_credentials"] }"#)

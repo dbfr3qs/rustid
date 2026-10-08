@@ -120,6 +120,9 @@ pub struct Client {
     pub sector_identifier_uri: Option<String>,
     /// Joins the server's salt in this client's pairwise subjects.
     pub pair_wise_subject_salt: Option<String>,
+    /// The algorithm userinfo answers are signed with for this client
+    /// (OIDC Core §5.3.2); unset, userinfo answers JSON.
+    pub userinfo_signed_response_alg: Option<String>,
     /// Token requests must present a client certificate, which the tokens
     /// are bound to (RFC 8705).
     pub require_certificate_bound_tokens: bool,
@@ -193,6 +196,7 @@ impl Default for Client {
             subject_type: SubjectType::Public,
             sector_identifier_uri: None,
             pair_wise_subject_salt: None,
+            userinfo_signed_response_alg: None,
             require_certificate_bound_tokens: false,
             require_dpop: false,
             dpop_validation_mode: crate::dpop::DPoPValidationMode::Iat,
@@ -542,6 +546,13 @@ pub fn validate_client(
     {
         return Err(format!(
             "PostLogoutRedirectUri '{uri}' uses invalid scheme."
+        ));
+    }
+    if let Some(alg) = &client.userinfo_signed_response_alg
+        && !crate::federation::upstream::ASYMMETRIC_ALGORITHMS.contains(&alg.as_str())
+    {
+        return Err(format!(
+            "userinfoSignedResponseAlg '{alg}' isn't an algorithm userinfo can be signed with."
         ));
     }
     if let Some(uri) = &client.sector_identifier_uri

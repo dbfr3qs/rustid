@@ -146,3 +146,72 @@ async fn a_pairwise_client_without_a_salt_fails_closed() {
         "{issued:?}"
     );
 }
+
+fn asking_for(alg: Option<&str>, pairwise: bool) -> Fixture {
+    let mut f = Fixture::new();
+    if pairwise {
+        f.options.pairwise.salt = Some("server-salt-0123456789".into());
+    }
+    f.edit_clients(|clients| {
+        for c in clients.iter_mut().filter(|c| c.client_id == "web") {
+            c.userinfo_signed_response_alg = alg.map(str::to_owned);
+            if pairwise {
+                c.subject_type = rustid_core::clients::SubjectType::Pairwise;
+            }
+        }
+    });
+    f
+}
+
+#[tokio::test]
+async fn a_client_that_asks_gets_a_signed_answer() {
+    use rustid_core::userinfo::{UserInfoAnswer, userinfo_response};
+    let f = asking_for(Some("RS256"), false);
+    let t = token(&f, &["openid", "profile", "api1"], chrono::Utc::now()).await;
+    let UserInfoAnswer::Jwt(jwt) = userinfo_response(&ctx(&f), &t).await.unwrap().unwrap() else {
+        panic!("a JWT");
+    };
+    let jws = rustid_core::jwt::Jws::decode(&jwt).unwrap();
+    assert_eq!(jws.header_str("alg"), Some("RS256"));
+    let key = f.material.signing.first().unwrap();
+    assert!(jws.verify(&key.public_jwk()));
+    assert_eq!(jws.payload["iss"], ISSUER);
+    assert_eq!(jws.payload["aud"], "web");
+    assert_eq!(jws.payload["sub"], "1");
+    assert_eq!(jws.payload["name"], "Alice");
+}
+
+#[tokio::test]
+async fn a_client_that_doesnt_ask_gets_json() {
+    use rustid_core::userinfo::{UserInfoAnswer, userinfo_response};
+    let f = asking_for(None, false);
+    let t = token(&f, &["openid", "profile", "api1"], chrono::Utc::now()).await;
+    let UserInfoAnswer::Json(claims) = userinfo_response(&ctx(&f), &t).await.unwrap().unwrap()
+    else {
+        panic!("JSON");
+    };
+    assert_eq!(
+        serde_json::Value::Object(claims),
+        serde_json::json!({ "name": "Alice", "sub": "1" })
+    );
+}
+
+#[tokio::test]
+async fn a_signed_answer_keeps_the_pairwise_subject() {
+    use rustid_core::userinfo::{UserInfoAnswer, userinfo_response};
+    let f = asking_for(Some("RS256"), true);
+    let t = token(&f, &["openid", "api1"], chrono::Utc::now()).await;
+    let UserInfoAnswer::Jwt(jwt) = userinfo_response(&ctx(&f), &t).await.unwrap().unwrap() else {
+        panic!("a JWT");
+    };
+    let sub = rustid_core::jwt::Jws::decode(&jwt).unwrap().payload["sub"].clone();
+    assert_ne!(sub, "1");
+}
+
+#[tokio::test]
+async fn no_key_for_the_algorithm_is_a_server_error_never_unsigned() {
+    use rustid_core::userinfo::userinfo_response;
+    let f = asking_for(Some("ES256"), false);
+    let t = token(&f, &["openid", "api1"], chrono::Utc::now()).await;
+    assert!(userinfo_response(&ctx(&f), &t).await.is_err());
+}

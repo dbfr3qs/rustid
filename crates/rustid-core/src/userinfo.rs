@@ -147,18 +147,25 @@ async fn answer(
         .collect();
     let resources = ctx.stores.resources.get_all_enabled_resources().await?;
     let mut requested: Vec<String> = Vec::new();
-    // What the scopes ask for, then what the `claims` parameter did.
-    let asked = validated
-        .claims
-        .iter()
-        .filter(|c| c.claim_type == crate::claims_request::USERINFO_CLAIMS)
-        .map(|c| &c.value);
+    // What the scopes ask for, then what the `claims` parameter did, as far
+    // as the client's scopes still allow.
+    let asked = crate::claims_request::RequestedClaims {
+        userinfo: validated
+            .claims
+            .iter()
+            .filter(|c| c.claim_type == crate::claims_request::USERINFO_CLAIMS)
+            .map(|c| c.value.clone())
+            .collect(),
+        id_token: Vec::new(),
+    }
+    .allowed(&client, &resources.identity_resources)
+    .userinfo;
     for claim_type in resources
         .identity_resources
         .iter()
         .filter(|r| scopes.contains(&r.name.as_str()))
         .flat_map(|r| &r.user_claims)
-        .chain(asked)
+        .chain(&asked)
     {
         if !requested.contains(claim_type) {
             requested.push(claim_type.clone());

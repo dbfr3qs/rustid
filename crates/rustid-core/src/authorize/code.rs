@@ -90,7 +90,11 @@ impl AuthorizationCode {
             requested_claims: request
                 .resources
                 .as_ref()
-                .map(|r| request.requested_claims.granted(client, r))
+                .map(|r| {
+                    request
+                        .requested_claims
+                        .granted(client, r, request.was_consent_shown)
+                })
                 .unwrap_or_default(),
         }
     }

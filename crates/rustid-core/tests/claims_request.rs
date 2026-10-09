@@ -397,4 +397,142 @@ mod carried {
     fn a_profile_service_cant_set_the_userinfo_request() {
         assert!(rustid_core::tokens::PROTOCOL_CLAIM_TYPES.contains(&"userinfo_claims"));
     }
+
+    #[tokio::test]
+    async fn a_consent_page_shown_anyway_limits_the_request() {
+        // `web` doesn't require consent, but `prompt=consent` showed the
+        // page and the user granted only `openid`.
+        let f = Fixture::new();
+        let mut r = request(
+            &f,
+            "web",
+            "code id_token token",
+            &["openid", "api1"],
+            asking(&["name"], &["name"]),
+        );
+        r.was_consent_shown = true;
+        let code = AuthorizationCode::for_request(&r, Utc::now());
+        assert_eq!(code.requested_claims, RequestedClaims::default());
+        let issuer = Issuer {
+            options: &f.options,
+            stores: &f.stores,
+            keys: &f.keys,
+            issuer: ISSUER,
+            now: Utc::now(),
+        };
+        let mut r = request(
+            &f,
+            "hybrid",
+            "code id_token token",
+            &["openid", "api1"],
+            asking(&["name"], &["name"]),
+        );
+        r.was_consent_shown = true;
+        let tokens = browser_tokens(&issuer, &r, Some("code")).await.unwrap();
+        assert!(
+            payload(tokens.id_token.as_deref().unwrap())
+                .get("name")
+                .is_none()
+        );
+        assert!(
+            payload(tokens.access_token.as_deref().unwrap())
+                .get("userinfo_claims")
+                .is_none()
+        );
+    }
+
+    fn without_profile(f: &mut Fixture, client_id: &str) {
+        let id = client_id.to_owned();
+        f.edit_clients(|clients| {
+            let c = clients.iter_mut().find(|c| c.client_id == id).unwrap();
+            c.allowed_scopes.retain(|s| s != "profile");
+        });
+    }
+
+    #[tokio::test]
+    async fn refresh_and_userinfo_follow_the_clients_current_scopes() {
+        for client_id in ["web", "code-update-claims"] {
+            let mut f = Fixture::new();
+            let response = redeem(
+                &f,
+                client_id,
+                &["openid", "api1", "offline_access"],
+                asking(&["name"], &["name"]),
+            )
+            .await;
+            // An admin takes `profile` away from the client.
+            without_profile(&mut f, client_id);
+            assert_eq!(
+                userinfo(&f, &response.access_token).await,
+                serde_json::json!({ "sub": "1" }),
+                "{client_id}: an access token issued before"
+            );
+            let form = Form::from_pairs(&[
+                ("grant_type", "refresh_token"),
+                ("client_id", client_id),
+                ("refresh_token", response.refresh_token.as_deref().unwrap()),
+            ]);
+            let refreshed = process(&f.ctx(Utc::now()), None, &form).await.unwrap();
+            assert!(
+                payload(&refreshed.access_token)
+                    .get("userinfo_claims")
+                    .is_none(),
+                "{client_id}"
+            );
+            assert!(
+                payload(refreshed.id_token.as_deref().unwrap())
+                    .get("name")
+                    .is_none(),
+                "{client_id}"
+            );
+        }
+    }
+
+    /// Counts its calls and answers a claim nobody asked for.
+    #[derive(Default)]
+    struct Counting {
+        calls: std::sync::Mutex<usize>,
+    }
+
+    #[async_trait::async_trait]
+    impl rustid_core::profile::ProfileService for Counting {
+        async fn profile_claims(
+            &self,
+            _: &rustid_core::profile::ProfileRequest<'_>,
+        ) -> Result<Vec<Claim>, rustid_core::profile::ProfileError> {
+            *self.calls.lock().unwrap() += 1;
+            Ok(vec![Claim::string("static", "yes")])
+        }
+
+        async fn is_active(
+            &self,
+            _: &rustid_core::profile::ActiveRequest<'_>,
+        ) -> Result<bool, rustid_core::profile::ProfileError> {
+            Ok(true)
+        }
+    }
+
+    #[tokio::test]
+    async fn an_id_token_with_every_identity_claim_still_asks_the_profile_service() {
+        // `response_type=id_token`, `scope=openid`: no claim types besides
+        // `sub`, which the profile service was always asked about anyway.
+        let mut f = Fixture::new();
+        let counting = Arc::new(Counting::default());
+        f.stores.profile = counting.clone();
+        let issuer = Issuer {
+            options: &f.options,
+            stores: &f.stores,
+            keys: &f.keys,
+            issuer: ISSUER,
+            now: Utc::now(),
+        };
+        let mut r = request(&f, "spa", "id_token", &["openid"], Default::default());
+        r.redirect_uri = Some("https://spa.test/cb".into());
+        let tokens = browser_tokens(&issuer, &r, None).await.unwrap();
+        assert_eq!(
+            payload(tokens.id_token.as_deref().unwrap())["static"],
+            "yes"
+        );
+        assert_eq!(*counting.calls.lock().unwrap(), 1);
+    }
 }

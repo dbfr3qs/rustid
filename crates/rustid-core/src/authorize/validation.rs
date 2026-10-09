@@ -699,13 +699,7 @@ async fn validate_scope_and_resources(
         let Some(parsed) = parsed else {
             return Ok(invalid("Invalid claims parameter"));
         };
-        let allowed: Vec<_> = enabled
-            .identity_resources
-            .iter()
-            .filter(|ir| client(r).allowed_scopes.contains(&ir.name))
-            .cloned()
-            .collect();
-        r.requested_claims = parsed.limited_to(&allowed);
+        r.requested_claims = parsed.allowed(client(r), &enabled.identity_resources);
     }
     let resources = match validate_requested_resources(
         client(r),

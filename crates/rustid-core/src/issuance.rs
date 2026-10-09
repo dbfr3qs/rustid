@@ -209,7 +209,9 @@ impl Issuer<'_> {
                 requested.push(claim_type.clone());
             }
         }
-        let profile = if requested.is_empty() {
+        let profile = if !includes_identity_claims(client, request)
+            && request.requested_claim_types.is_empty()
+        {
             Vec::new()
         } else {
             self.profile_claims(callers::IDENTITY_TOKEN, client, session, &requested)

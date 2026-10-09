@@ -42,7 +42,10 @@ pub async fn browser_tokens(
         .split(' ')
         .collect();
     let session_id = request.session_id.as_deref().filter(|s| !s.is_empty());
-    let requested_claims = request.requested_claims.granted(client, &resources);
+    let requested_claims =
+        request
+            .requested_claims
+            .granted(client, &resources, request.was_consent_shown);
     let access_token = if response_types.contains(&"token") {
         let mut record = issuer
             .user_access_token_record(client, &resources, session, session_id)

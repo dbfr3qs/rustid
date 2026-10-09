@@ -69,10 +69,27 @@ impl RequestedClaims {
         }
     }
 
-    /// What the grant may carry: for a client that shows consent, only the
-    /// claim types of the identity resources granted.
-    pub fn granted(&self, client: &Client, resources: &ValidatedResources) -> RequestedClaims {
-        if client.require_consent {
+    /// Only the claim types of identity resources the client is allowed
+    /// (`resources` being the enabled ones).
+    pub fn allowed(&self, client: &Client, resources: &[IdentityResource]) -> RequestedClaims {
+        let allowed: Vec<IdentityResource> = resources
+            .iter()
+            .filter(|r| client.allowed_scopes.contains(&r.name))
+            .cloned()
+            .collect();
+        self.limited_to(&allowed)
+    }
+
+    /// What the grant may carry: when the client requires consent, or the
+    /// consent page was shown anyway (`prompt=consent`), only the claim
+    /// types of the identity resources granted.
+    pub fn granted(
+        &self,
+        client: &Client,
+        resources: &ValidatedResources,
+        consent_shown: bool,
+    ) -> RequestedClaims {
+        if client.require_consent || consent_shown {
             self.limited_to(&resources.identity_resources)
         } else {
             self.clone()

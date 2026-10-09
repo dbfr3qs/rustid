@@ -1155,6 +1155,11 @@ async fn issue_for_refresh(
 ) -> Result<TokenResponse, TokenFailure> {
     let issuer = ctx.issuer();
     let session_id = token.session_id.clone();
+    // The `claims` request, as far as the client's scopes still allow.
+    let enabled = ctx.stores.resources.get_all_enabled_resources().await?;
+    let requested_claims = token
+        .requested_claims
+        .allowed(client, &enabled.identity_resources);
     // A new access token when claims are refreshed, or when none was
     // issued yet for this resource indicator.
     let stored = token.access_token_for(resource).cloned();
@@ -1178,12 +1183,17 @@ async fn issue_for_refresh(
                 .await?;
             record.token.confirmation.clone_from(&proof.confirmation);
             record
-                .token
-                .claims
-                .extend(token.requested_claims.userinfo_claims());
-            record
         }
     };
+    let mut record = record;
+    record
+        .token
+        .claims
+        .retain(|c| c.claim_type != crate::claims_request::USERINFO_CLAIMS);
+    record
+        .token
+        .claims
+        .extend(requested_claims.userinfo_claims());
     token.set_access_token(record.clone(), resource);
     let access_token = issuer
         .serialize_access_token(
@@ -1215,7 +1225,7 @@ async fn issue_for_refresh(
             state_hash: None,
             session_id: session_id.as_deref(),
             include_all_identity_claims: false,
-            requested_claim_types: &token.requested_claims.id_token,
+            requested_claim_types: &requested_claims.id_token,
         };
         Some(
             issuer

@@ -38,9 +38,9 @@ Every run used the suite image `sha256:df0385890213…` (pinned by digest in `co
 | `oidcc-config-certification-test-plan` | (fixed by the plan) | 1 | 1 passed |
 | `oidcc-dynamic-certification-test-plan` | code; discovery, dynamic registration, `private_key_jwt` (fixed by the plan) | 23 | 11 passed, 6 review, 1 warning, 3 skips and 2 failures expected |
 | `oidcc-3rdparty-init-login-certification-test-plan` | code; dynamic registration, `client_secret_basic` | 2 | 2 passed |
-| `fapi2-security-profile-id2-test-plan` | plain FAPI, PAR (`simple`), OpenID Connect, `private_key_jwt`, DPoP | 58 | 51 passed, 4 review, 2 warnings and 1 failure expected |
-| `fapi2-security-profile-final-test-plan` | as ID2, issuer-only client assertion audiences | 52 | 45 passed, 4 review, 2 warnings and 1 failure expected |
-| `fapi2-message-signing-final-test-plan` | as final, signed requests (`signed_non_repudiation`), JARM responses | 67 | 59 passed, 4 review, 2 warnings and 1 failure expected |
+| `fapi2-security-profile-id2-test-plan` | plain FAPI, PAR (`simple`), OpenID Connect, `private_key_jwt`, DPoP | 58 | 51 passed, 4 review and 3 warnings expected |
+| `fapi2-security-profile-final-test-plan` | as ID2, issuer-only client assertion audiences | 52 | 45 passed, 4 review and 3 warnings expected |
+| `fapi2-message-signing-final-test-plan` | as final, signed requests (`signed_non_repudiation`), JARM responses | 67 | 59 passed, 4 review and 3 warnings expected |
 | `fapi-ciba-id1-test-plan` | plain FAPI, `private_key_jwt`, poll, static client, mTLS-bound tokens | 34 | 33 passed, 1 failure expected |
 | `oidcc-client-basic-certification-test-plan` (rp) | static client | 14 | 13 passed, 1 skip expected |
 | `oidcc-client-back-channel-logout-rp-basic` (rp) | code, static client, `client_secret_basic` | 8 | 8 passed |
@@ -84,7 +84,7 @@ Each is listed with its reason in `conformance/expected/`:
 - **FAPI 2:**
   - `happy-flow` warns about `idp` in the id token;
   - `attempt-reuse-authorization-code-after-one-second` warns that reusing a code doesn't revoke its tokens;
-  - `test-claims-parameter-identity-claims` fails at userinfo: the userinfo endpoint doesn't accept DPoP-bound access tokens yet, and this is the only module that calls it.
+  - `test-claims-parameter-identity-claims` warns about `idp` and `sid` in the id token, which the suite doesn't know.
 - **FAPI 2.0 final and Message Signing:** the same three as FAPI 2 (the Message Signing plan's modules are the final plan's, run with signed requests and JARM).
 - **Dynamic registration:**
   - `request-uri-signed-rs256` fails: the suite's request object has no `exp`, which request objects require;

@@ -7,6 +7,18 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+### Security
+
+- The userinfo endpoint accepted sender-constrained access tokens as plain bearer tokens: a DPoP-bound token (RFC 9449) or a token bound to a client certificate (RFC 8705) was served without its proof or certificate. It now refuses a DPoP-bound token sent as `Bearer`, and serves a certificate-bound token only over a connection presenting that certificate.
+
+### Added
+
+- The userinfo endpoint accepts `Authorization: DPoP` with a DPoP proof bound to the token. Refusals carry a `WWW-Authenticate` challenge for both schemes, and a `DPoP-Nonce` when the client must use one.
+
+### Changed
+
+- The userinfo endpoint matches the `Bearer` scheme without regard to case (RFC 7235).
+
 ## [0.12.0] - 2026-10-09
 
 ### Added

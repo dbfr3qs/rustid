@@ -35,6 +35,17 @@ fn state(resource: Option<&str>) -> AppState {
             .unwrap(),
         );
     }
+    clients.clients.push(
+        serde_json::from_value(serde_json::json!({
+            "clientId": "web.nonce",
+            "allowedGrantTypes": ["authorization_code"],
+            "requireClientSecret": false,
+            "redirectUris": ["https://client.test/callback"],
+            "allowedScopes": ["openid", "api1"],
+            "dpopValidationMode": "Nonce",
+        }))
+        .unwrap(),
+    );
     let key = KeyConfig {
         kid: "k1".into(),
         alg: "RS256".into(),
@@ -307,12 +318,20 @@ async fn a_resource_on_an_endpoint_path_leaves_its_other_methods_alone() {
 /// A user access token for `web` (scope `openid api1`), bound to `key`'s
 /// thumbprint when given.
 async fn user_token(state: &AppState, key: Option<&rustid_core::keys::LoadedKey>) -> String {
+    user_token_for(state, "web", key).await
+}
+
+async fn user_token_for(
+    state: &AppState,
+    client_id: &str,
+    key: Option<&rustid_core::keys::LoadedKey>,
+) -> String {
     use rustid_core::jwt::b64url;
     let s = &state.0;
     let client = s
         .stores
         .clients
-        .find_client_by_id("web")
+        .find_client_by_id(client_id)
         .await
         .unwrap()
         .unwrap();
@@ -442,4 +461,37 @@ async fn userinfo_serves_bearer_tokens_as_before() {
         headers["www-authenticate"],
         "Bearer realm=\"rustid\",error=\"invalid_token\""
     );
+}
+
+#[tokio::test]
+async fn userinfo_refuses_proofs_for_another_method_or_token() {
+    let state = state(None);
+    let key = proof_key();
+    let token = user_token(&state, Some(&key)).await;
+    let post = proof(&key, "POST", USERINFO_URL, Some(&token), None);
+    let (status, _, _) = send(state.clone(), userinfo("DPoP", &token, Some(&post))).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let other = user_token(&state, Some(&key)).await;
+    let for_other = proof(&key, "GET", USERINFO_URL, Some(&other), None);
+    let (status, headers, _) = send(state, userinfo("DPoP", &token, Some(&for_other))).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let challenge = headers["www-authenticate"].to_str().unwrap();
+    assert!(
+        challenge.contains("DPoP error=\"invalid_dpop_proof\""),
+        "{challenge}"
+    );
+}
+
+#[tokio::test]
+async fn userinfo_hands_out_the_nonce_a_proof_must_carry() {
+    let state = state(None);
+    let key = proof_key();
+    let token = user_token_for(&state, "web.nonce", Some(&key)).await;
+    let first = proof(&key, "GET", USERINFO_URL, Some(&token), None);
+    let (status, headers, _) = send(state.clone(), userinfo("DPoP", &token, Some(&first))).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let nonce = headers["dpop-nonce"].to_str().unwrap().to_owned();
+    let second = proof(&key, "GET", USERINFO_URL, Some(&token), Some(&nonce));
+    let (status, _, body) = send(state, userinfo("DPoP", &token, Some(&second))).await;
+    assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
 }

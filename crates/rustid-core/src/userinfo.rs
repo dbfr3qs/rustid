@@ -74,14 +74,17 @@ pub enum UserInfoRefusal {
 /// constrained: a DPoP-bound token needs the `DPoP` scheme and a proof
 /// bound to it (RFC 9449 §7), and a certificate-bound token the
 /// certificate it's bound to (RFC 8705).
-#[tracing::instrument(name = "userinfo.validate_request", skip_all)]
+#[tracing::instrument(name = "userinfo.request", skip_all)]
 pub async fn userinfo_for_request(
     ctx: &ValidationContext<'_>,
     request: &UserInfoRequest<'_>,
     protector: &crate::data_protection::DataProtector,
 ) -> Result<Result<UserInfoAnswer, UserInfoRefusal>, StoreError> {
-    // An invalid token gets userinfo's own error below.
-    if let Ok(validated) = crate::access_tokens::validate(ctx, request.token).await? {
+    let validated = match access_tokens::validate(ctx, request.token).await? {
+        Ok(validated) => validated,
+        Err(error) => return Ok(Err(UserInfoRefusal::Error(error))),
+    };
+    {
         let resource = crate::protected_resource::ResourceRequest {
             authorization: None,
             dpop_proofs: request.dpop_proofs,
@@ -102,7 +105,7 @@ pub async fn userinfo_for_request(
             return Ok(Err(UserInfoRefusal::Challenge(challenge)));
         }
     }
-    Ok(userinfo_response(ctx, request.token)
+    Ok(respond(ctx, &validated)
         .await?
         .map_err(UserInfoRefusal::Error))
 }
@@ -123,7 +126,18 @@ pub async fn userinfo_response(
     ctx: &ValidationContext<'_>,
     token: &str,
 ) -> Result<Result<UserInfoAnswer, &'static str>, StoreError> {
-    let (mut claims, client) = match answer(ctx, token).await? {
+    match access_tokens::validate(ctx, token).await? {
+        Ok(validated) => respond(ctx, &validated).await,
+        Err(error) => Ok(Err(error)),
+    }
+}
+
+/// The answer for a validated token: JSON, or a JWT for a client that asks.
+async fn respond(
+    ctx: &ValidationContext<'_>,
+    validated: &access_tokens::ValidatedToken,
+) -> Result<Result<UserInfoAnswer, &'static str>, StoreError> {
+    let (mut claims, client) = match answer_for(ctx, validated).await? {
         Ok(found) => found,
         Err(error) => return Ok(Err(error)),
     };
@@ -151,10 +165,20 @@ async fn answer(
     Result<(Map<String, Value>, std::sync::Arc<crate::clients::Client>), &'static str>,
     StoreError,
 > {
-    let validated = match access_tokens::validate(ctx, token).await? {
-        Ok(validated) => validated,
-        Err(error) => return Ok(Err(error)),
-    };
+    match access_tokens::validate(ctx, token).await? {
+        Ok(validated) => answer_for(ctx, &validated).await,
+        Err(error) => Ok(Err(error)),
+    }
+}
+
+/// [`answer`] for a validated token.
+async fn answer_for(
+    ctx: &ValidationContext<'_>,
+    validated: &access_tokens::ValidatedToken,
+) -> Result<
+    Result<(Map<String, Value>, std::sync::Arc<crate::clients::Client>), &'static str>,
+    StoreError,
+> {
     let has_openid = validated
         .claims
         .iter()

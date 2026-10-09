@@ -237,3 +237,42 @@ async fn bearer_tokens_are_served_as_before() {
         Err(UserInfoRefusal::Error("invalid_token"))
     ));
 }
+
+/// Counts the active checks access token validation makes.
+#[derive(Default)]
+struct Counting {
+    token_checks: std::sync::Mutex<usize>,
+}
+
+#[async_trait::async_trait]
+impl rustid_core::profile::ProfileService for Counting {
+    async fn profile_claims(
+        &self,
+        request: &rustid_core::profile::ProfileRequest<'_>,
+    ) -> Result<Vec<Claim>, rustid_core::profile::ProfileError> {
+        rustid_core::profile::DefaultProfileService
+            .profile_claims(request)
+            .await
+    }
+
+    async fn is_active(
+        &self,
+        request: &rustid_core::profile::ActiveRequest<'_>,
+    ) -> Result<bool, rustid_core::profile::ProfileError> {
+        if request.caller == rustid_core::profile::active_callers::ACCESS_TOKEN {
+            *self.token_checks.lock().unwrap() += 1;
+        }
+        Ok(true)
+    }
+}
+
+#[tokio::test]
+async fn the_token_is_validated_once_per_request() {
+    let mut f = Fixture::new();
+    let counting = std::sync::Arc::new(Counting::default());
+    f.stores.profile = counting.clone();
+    let at = token(&f, "web", None, None).await;
+    *counting.token_checks.lock().unwrap() = 0;
+    served(call(&f, &at, false, &[], None).await);
+    assert_eq!(*counting.token_checks.lock().unwrap(), 1);
+}

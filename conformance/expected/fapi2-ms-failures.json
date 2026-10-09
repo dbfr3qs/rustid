@@ -16,5 +16,32 @@
     "condition": "EnsureHttpStatusCodeIs4xx",
     "expected-result": "warning",
     "comment": "code reuse doesn't revoke the tokens already issued (a 'should')"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-test-claims-parameter-identity-claims",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Call userinfo endpoint",
+    "condition": "EnsureHttpStatusCodeIs200",
+    "expected-result": "failure",
+    "comment": "the userinfo endpoint doesn't accept DPoP-bound access tokens (Authorization: DPoP); only this module calls userinfo"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-test-claims-parameter-identity-claims",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Call userinfo endpoint",
+    "condition": "EnsureContentTypeJson",
+    "expected-result": "failure",
+    "comment": "the userinfo endpoint doesn't accept DPoP-bound access tokens (Authorization: DPoP); only this module calls userinfo"
+  },
+  {
+    "test-name": "fapi2-security-profile-final-test-claims-parameter-identity-claims",
+    "variant": "*",
+    "configuration-filename": "*/fapi2-ms.json",
+    "current-block": "Call userinfo endpoint",
+    "condition": "ExtractUserInfoFromUserInfoEndpointResponse",
+    "expected-result": "failure",
+    "comment": "the userinfo endpoint doesn't accept DPoP-bound access tokens (Authorization: DPoP); only this module calls userinfo"
   }
 ]

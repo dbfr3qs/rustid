@@ -25,22 +25,22 @@ Every run used the suite image `sha256:df0385890213…` (pinned by digest in `co
 
 | Plan | Variant | Modules | Result |
 |---|---|---|---|
-| `oidcc-basic-certification-test-plan` | discovery, static client | 35 | 25 passed, 4 review, 4 warnings and 2 skips expected |
+| `oidcc-basic-certification-test-plan` | discovery, static client | 35 | 26 passed, 4 review, 3 warnings and 2 skips expected |
 | `oidcc-rp-initiated-logout-certification-test-plan` | code, static client | 11 | 3 passed, 8 review |
 | `oidcc-frontchannel-rp-initiated-logout-certification-test-plan` | code, static client | 2 | 2 passed |
 | `oidcc-backchannel-rp-initiated-logout-certification-test-plan` | code, static client | 2 | 2 passed |
 | `oidcc-session-management-certification-test-plan` | code, static client | 2 | 2 passed |
-| `oidcc-implicit-certification-test-plan` | discovery, static client | 54 | 35 passed, 9 review, 6 warnings and 4 skips expected |
-| `oidcc-hybrid-certification-test-plan` | discovery, static client | 96 | 66 passed, 12 review, 12 warnings and 6 skips expected |
-| `oidcc-formpost-basic-certification-test-plan` | discovery, static client | 35 | 25 passed, 4 review, 4 warnings and 2 skips expected |
-| `oidcc-formpost-implicit-certification-test-plan` | discovery, static client | 54 | 35 passed, 9 review, 6 warnings and 4 skips expected |
-| `oidcc-formpost-hybrid-certification-test-plan` | discovery, static client | 96 | 66 passed, 12 review, 12 warnings and 6 skips expected |
+| `oidcc-implicit-certification-test-plan` | discovery, static client | 54 | 37 passed, 9 review, 4 warnings and 4 skips expected |
+| `oidcc-hybrid-certification-test-plan` | discovery, static client | 96 | 69 passed, 12 review, 9 warnings and 6 skips expected |
+| `oidcc-formpost-basic-certification-test-plan` | discovery, static client | 35 | 26 passed, 4 review, 3 warnings and 2 skips expected |
+| `oidcc-formpost-implicit-certification-test-plan` | discovery, static client | 54 | 37 passed, 9 review, 4 warnings and 4 skips expected |
+| `oidcc-formpost-hybrid-certification-test-plan` | discovery, static client | 96 | 69 passed, 12 review, 9 warnings and 6 skips expected |
 | `oidcc-config-certification-test-plan` | (fixed by the plan) | 1 | 1 passed |
 | `oidcc-dynamic-certification-test-plan` | code; discovery, dynamic registration, `private_key_jwt` (fixed by the plan) | 23 | 11 passed, 6 review, 1 warning, 3 skips and 2 failures expected |
 | `oidcc-3rdparty-init-login-certification-test-plan` | code; dynamic registration, `client_secret_basic` | 2 | 2 passed |
-| `fapi2-security-profile-id2-test-plan` | plain FAPI, PAR (`simple`), OpenID Connect, `private_key_jwt`, DPoP | 58 | 51 passed, 4 review, 2 warnings and 1 skip expected |
-| `fapi2-security-profile-final-test-plan` | as ID2, issuer-only client assertion audiences | 52 | 45 passed, 4 review, 2 warnings and 1 skip expected |
-| `fapi2-message-signing-final-test-plan` | as final, signed requests (`signed_non_repudiation`), JARM responses | 67 | 59 passed, 4 review, 2 warnings and 1 skip expected |
+| `fapi2-security-profile-id2-test-plan` | plain FAPI, PAR (`simple`), OpenID Connect, `private_key_jwt`, DPoP | 58 | 51 passed, 4 review, 2 warnings and 1 failure expected |
+| `fapi2-security-profile-final-test-plan` | as ID2, issuer-only client assertion audiences | 52 | 45 passed, 4 review, 2 warnings and 1 failure expected |
+| `fapi2-message-signing-final-test-plan` | as final, signed requests (`signed_non_repudiation`), JARM responses | 67 | 59 passed, 4 review, 2 warnings and 1 failure expected |
 | `fapi-ciba-id1-test-plan` | plain FAPI, `private_key_jwt`, poll, static client, mTLS-bound tokens | 34 | 33 passed, 1 failure expected |
 | `oidcc-client-basic-certification-test-plan` (rp) | static client | 14 | 13 passed, 1 skip expected |
 | `oidcc-client-back-channel-logout-rp-basic` (rp) | code, static client, `client_secret_basic` | 8 | 8 passed |
@@ -79,13 +79,12 @@ Each is listed with its reason in `conformance/expected/`:
 - `oidcc-server` warns that id tokens carry `idp`, which every id token carries.
 - `oidcc-ensure-request-with-acr-values-succeeds` warns that there is no `acr` claim: none is issued unless the UI sets one.
 - `oidcc-codereuse-30seconds` warns that reusing a code doesn't revoke the tokens it already issued (a "should").
-- `oidcc-claims-essential` warns that `name` wasn't in userinfo: the `claims` request parameter isn't supported.
 - `oidcc-unsigned-request-object-…` and `oidcc-ensure-request-object-with-redirect-uri` are skipped: unsigned request objects aren't supported.
-- **Implicit and hybrid** (and their form_post plans) meet the same four warnings in the blocks those flows add: the id token from the authorization endpoint, or the token endpoint's. They're scoped by response type in the expected files. `oidcc-claims-essential` also warns that an essential `name` isn't added to the id token, for the same reason. `oidcc-ensure-request-without-nonce-fails` passes: rustid refuses the request on its error page, which the browser automation expects.
+- **Implicit and hybrid** (and their form_post plans) meet the same three warnings in the blocks those flows add: the id token from the authorization endpoint, or the token endpoint's. They're scoped by response type in the expected files. `oidcc-ensure-request-without-nonce-fails` passes: rustid refuses the request on its error page, which the browser automation expects.
 - **FAPI 2:**
   - `happy-flow` warns about `idp` in the id token;
   - `attempt-reuse-authorization-code-after-one-second` warns that reusing a code doesn't revoke its tokens;
-  - `test-claims-parameter-identity-claims` is skipped: the `claims` parameter isn't supported.
+  - `test-claims-parameter-identity-claims` fails at userinfo: the userinfo endpoint doesn't accept DPoP-bound access tokens yet, and this is the only module that calls it.
 - **FAPI 2.0 final and Message Signing:** the same three as FAPI 2 (the Message Signing plan's modules are the final plan's, run with signed requests and JARM).
 - **Dynamic registration:**
   - `request-uri-signed-rs256` fails: the suite's request object has no `exp`, which request objects require;

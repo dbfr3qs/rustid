@@ -27,7 +27,7 @@ Each claim is a plain request:
 
 ## What a client may ask for
 
-Only claim types that belong to an identity resource the client is allowed (`allowedScopes`) are kept; the rest are dropped without an error. For a client that shows consent, only the claim types of the identity resources the user granted are kept. So the parameter never gives a client a claim it couldn't get by asking for a scope.
+Only claim types that belong to an identity resource the client is allowed (`allowedScopes`) are kept; the rest are dropped without an error. When the consent page is shown (the client requires consent, or the request has `prompt=consent`), only the claim types of the identity resources the user granted are kept. Refreshes and userinfo check the request again against the client's current scopes. So the parameter never gives a client a claim it couldn't get by asking for a scope.
 
 The values come from the profile service, as for scopes: the `profile_claims` hook ([hooks.md](hooks.md)) sees the extra types in `requested_claim_types`.
 

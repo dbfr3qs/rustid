@@ -367,6 +367,7 @@ pub fn discovery_document(ctx: &DiscoveryContext<'_>) -> Map<String, Value> {
 
     if e.enable_authorize_endpoint {
         m.insert("request_parameter_supported".into(), Value::Bool(true));
+        m.insert("claims_parameter_supported".into(), Value::Bool(true));
         if !o.supported_request_object_signing_algorithms.is_empty() {
             m.insert(
                 "request_object_signing_alg_values_supported".into(),

@@ -7,6 +7,7 @@ pub mod admin;
 pub mod authorize;
 pub mod ciba;
 pub mod claims;
+pub mod claims_request;
 pub mod client_assertion;
 pub mod client_auth;
 pub mod client_certificate;

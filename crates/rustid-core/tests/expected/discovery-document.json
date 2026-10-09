@@ -95,6 +95,7 @@
     "S256"
   ],
   "request_parameter_supported": true,
+  "claims_parameter_supported": true,
   "request_object_signing_alg_values_supported": [
     "RS256",
     "RS384",

@@ -8,6 +8,7 @@ use chrono::{DateTime, Utc};
 use super::request::ValidatedAuthorizeRequest;
 use super::request_object;
 use super::*;
+use crate::claims_request::RequestedClaims;
 use crate::clients::{Client, validate_client};
 use crate::events::{Event, EventService, RequestInfo};
 use crate::options::{InputLengthRestrictions, ProtocolOptions};
@@ -691,6 +692,21 @@ async fn validate_scope_and_resources(
     r.resource_indicators = indicators;
 
     let enabled = ctx.stores.resources.get_all_enabled_resources().await?;
+    if let Some(claims) = r.raw.get("claims") {
+        let parsed = (utf16_len(&claims) <= ctx.options.input_length_restrictions.jwt)
+            .then(|| RequestedClaims::parse(&claims))
+            .flatten();
+        let Some(parsed) = parsed else {
+            return Ok(invalid("Invalid claims parameter"));
+        };
+        let allowed: Vec<_> = enabled
+            .identity_resources
+            .iter()
+            .filter(|ir| client(r).allowed_scopes.contains(&ir.name))
+            .cloned()
+            .collect();
+        r.requested_claims = parsed.limited_to(&allowed);
+    }
     let resources = match validate_requested_resources(
         client(r),
         &enabled,

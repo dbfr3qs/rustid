@@ -63,6 +63,9 @@ pub struct ValidatedAuthorizeRequest {
     pub login_hint: Option<String>,
     /// The requested `acr_values`, de-duplicated.
     pub acr_values: Vec<String>,
+    /// What the `claims` parameter asks for, limited to the identity
+    /// resources the client is allowed.
+    pub requested_claims: crate::claims_request::RequestedClaims,
     pub ui_locales: Option<String>,
     /// The session id: empty for anonymous users.
     pub session_id: Option<String>,

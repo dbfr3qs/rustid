@@ -7,6 +7,14 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+### Added
+
+- Clients' keys at a `jwks_uri`: a client with `jwksUri` (dynamic registration: `jwks_uri`, https) has its keys fetched from there and kept for five minutes. They authenticate it with `private_key_jwt` and verify its request objects (authorize, PAR and CIBA). A token signed by a key rustid hasn't seen makes it fetch again, at most once a minute per client, so clients can rotate keys.
+
+### Changed
+
+- Dynamic registration accepts `private_key_jwt` and `require_signed_request_object` with `jwks_uri` alone; it previously required `jwks`. A `jwks_uri` that isn't https is refused.
+
 ## [0.10.0] - 2026-10-08
 
 ### Added

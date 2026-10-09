@@ -1,23 +1,5 @@
 [
   {
-    "test-name": "oidcc-registration-jwks-uri",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "EnsureHttpStatusCodeIs201",
-    "expected-result": "failure",
-    "comment": "jwks_uri isn't supported: registration accepts jwks_uri but never fetches it, and refuses private_key_jwt without jwks (\"Missing jwks parameter\")"
-  },
-  {
-    "test-name": "oidcc-registration-jwks-uri",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "ExtractDynamicRegistrationResponse",
-    "expected-result": "failure",
-    "comment": "jwks_uri isn't supported: registration accepts jwks_uri but never fetches it, and refuses private_key_jwt without jwks (\"Missing jwks parameter\")"
-  },
-  {
     "test-name": "oidcc-server-rotate-keys",
     "variant": "*",
     "configuration-filename": "*/dynamic.json",
@@ -25,24 +7,6 @@
     "condition": "VerifyNewJwksHasNewSigningKey",
     "expected-result": "failure",
     "comment": "the module needs the server's signing key rotated by hand while it waits; the conformance instance has one static key (key management off)"
-  },
-  {
-    "test-name": "oidcc-refresh-token-rp-key-rotation",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "EnsureHttpStatusCodeIs201",
-    "expected-result": "failure",
-    "comment": "needs jwks_uri for the RP's rotated key, which registration doesn't support (private_key_jwt needs jwks)"
-  },
-  {
-    "test-name": "oidcc-refresh-token-rp-key-rotation",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "ExtractDynamicRegistrationResponse",
-    "expected-result": "failure",
-    "comment": "needs jwks_uri for the RP's rotated key, which registration doesn't support (private_key_jwt needs jwks)"
   },
   {
     "test-name": "oidcc-request-uri-signed-rs256",
@@ -70,23 +34,5 @@
     "condition": "EnsureIdTokenDoesNotContainNonRequestedClaims",
     "expected-result": "warning",
     "comment": "idp (the identity provider that signed the user in) is in every id token"
-  },
-  {
-    "test-name": "oidcc-registration-jwks-uri",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "CheckNoErrorFromDynamicRegistrationEndpoint",
-    "expected-result": "failure",
-    "comment": "jwks_uri isn't fetched, and private_key_jwt needs jwks: registration answers invalid_client_metadata, which the suite reads now that errors use RFC 7591 member names"
-  },
-  {
-    "test-name": "oidcc-refresh-token-rp-key-rotation",
-    "variant": "*",
-    "configuration-filename": "*/dynamic.json",
-    "current-block": "*",
-    "condition": "CheckNoErrorFromDynamicRegistrationEndpoint",
-    "expected-result": "failure",
-    "comment": "jwks_uri isn't fetched, and private_key_jwt needs jwks: registration answers invalid_client_metadata, which the suite reads now that errors use RFC 7591 member names"
   }
 ]

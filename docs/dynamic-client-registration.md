@@ -47,10 +47,11 @@ The request must be `application/json`; anything else is 415. A body that isn't 
 - **Scopes:** `scope`, space-separated. `offline_access` is dropped: ask for the `refresh_token` grant instead.
 - **Client authentication:** `token_endpoint_auth_method` is `client_secret_basic` by default.
   - With `client_secret_basic` or `client_secret_post`, the server generates a secret.
-  - With `private_key_jwt`, the client sends its public keys in `jwks`; `jwks_uri` isn't fetched.
+  - With `private_key_jwt`, the client sends its public keys in `jwks`, or publishes them at an https `jwks_uri` (not both).
   - With `none`, the client is public and gets no secret.
 
-  Keys sent in `jwks` are also used for signed request objects (`require_signed_request_object`).
+  The client's keys, from `jwks` or `jwks_uri`, also verify its signed request objects (`require_signed_request_object`).
+- **`jwks_uri`:** rustid fetches it (through `[request_uri] ca_file`) and keeps the key set for five minutes. A token signed with a key rustid hasn't seen makes it fetch again, at most once a minute per client, so a client can rotate keys. A failed fetch or a malformed set means no keys from the URI. Static and admin clients set it as `jwksUri`.
 - **Other metadata:** `client_name`, `client_uri`, `logo_uri`, `initiate_login_uri`, the logout URIs and their session flags, and `default_max_age`.
 - **Signed userinfo:** `userinfo_signed_response_alg`, one of discovery's `userinfo_signing_alg_values_supported`. The client's userinfo answers are then `application/jwt`: the claims plus `iss` and `aud`, signed with rustid's key for that algorithm (OpenID Connect Core 1.0 §5.3.2). Static and admin clients set it as `userinfoSignedResponseAlg`.
 - **Subject type:** `subject_type` is `public` (the default) or `pairwise`, which needs the server's `[pairwise] salt` ([pairwise-subjects.md](pairwise-subjects.md)). `sector_identifier_uri` must be `https`. rustid fetches it (through `[request_uri] ca_file`), and it must be a JSON array listing every redirect URI. A pairwise client whose redirect URIs name more than one host needs one. Problems are `invalid_client_metadata`.
@@ -97,7 +98,6 @@ There is no update (PUT). Initial access tokens don't grant management.
 
 ## Not supported
 
-- fetching `jwks_uri`;
 - software statements (accepted and echoed, not checked);
 - encrypted userinfo (`userinfo_encrypted_response_alg`, refused);
 - implicit and hybrid clients.

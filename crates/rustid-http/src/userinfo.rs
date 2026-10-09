@@ -1,5 +1,6 @@
-//! `UserInfoEndpoint`: the bearer token, and
-//! the response or protected resource error around `rustid_core::userinfo`.
+//! `UserInfoEndpoint`: the access token (a bearer token, or a DPoP-bound
+//! one with its proof), and the response or protected resource error
+//! around `rustid_core::userinfo`.
 
 use axum::body::Body;
 use axum::http::header::{AUTHORIZATION, WWW_AUTHENTICATE};
@@ -7,7 +8,10 @@ use axum::http::{HeaderMap, HeaderValue, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use rustid_core::access_tokens::{EXPIRED_TOKEN, INVALID_TOKEN, ValidationContext};
 use rustid_core::events::RequestInfo;
-use rustid_core::userinfo::{INSUFFICIENT_SCOPE, UserInfoAnswer, userinfo_response as process};
+use rustid_core::protected_resource::Challenge;
+use rustid_core::userinfo::{
+    INSUFFICIENT_SCOPE, UserInfoAnswer, UserInfoRefusal, UserInfoRequest, userinfo_for_request,
+};
 use serde_json::Value;
 
 use crate::ProtocolState;
@@ -26,7 +30,7 @@ pub(crate) async fn userinfo(
     if method != Method::GET && method != Method::POST {
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
-    let Some(token) = bearer_token(headers, body).await else {
+    let Some((token, dpop)) = access_token(headers, body).await else {
         return error(INVALID_TOKEN);
     };
     let urls = RequestUrls::new(state, route);
@@ -37,7 +41,17 @@ pub(crate) async fn userinfo(
         issuer: urls.issuer(),
         now: chrono::Utc::now(),
     };
-    match process(&ctx, &token).await {
+    let proofs = crate::token::dpop_proofs(headers);
+    let url = format!("{}{}", route.origin.base_url(), route.path);
+    let request = UserInfoRequest {
+        token: &token,
+        dpop,
+        dpop_proofs: &proofs,
+        method: method.as_str(),
+        url: &url,
+        client_certificate: route.client_certificate.as_deref(),
+    };
+    match userinfo_for_request(&ctx, &request, &state.interaction.protector).await {
         Ok(Ok(UserInfoAnswer::Json(claims))) => {
             no_cache_json(StatusCode::OK, &Value::Object(claims))
         }
@@ -51,31 +65,39 @@ pub(crate) async fn userinfo(
             set_no_cache(&mut response);
             response
         }
-        Ok(Err(e)) => error(e),
+        Ok(Err(UserInfoRefusal::Error(e))) => error(e),
+        Ok(Err(UserInfoRefusal::Challenge(challenge))) => challenged(&challenge),
         Err(e) => internal_error(state, info, "UserInfoEndpoint", &e.to_string()),
     }
 }
 
-/// `Authorization: Bearer <token>` (the scheme
-/// matched case-sensitively, the rest trimmed), else an `access_token` field
-/// in a form body.
-async fn bearer_token(headers: &HeaderMap, body: Body) -> Option<String> {
-    if let Some(token) = headers
+/// The token from `Authorization: Bearer <token>` or `DPoP <token>` (the
+/// scheme matched without regard to case, the rest trimmed), else a
+/// bearer token in a form body's `access_token`; and whether the `DPoP`
+/// scheme carried it.
+async fn access_token(headers: &HeaderMap, body: Body) -> Option<(String, bool)> {
+    let authorization = headers
         .get(AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
-        .map(str::trim)
-        .and_then(|v| v.strip_prefix("Bearer"))
-        .map(str::trim)
-        .filter(|t| !t.is_empty())
-    {
-        return Some(token.to_owned());
+        .map(str::trim);
+    if let Some(authorization) = authorization {
+        for (scheme, dpop) in [("Bearer", false), ("DPoP", true)] {
+            if let Some(token) = authorization
+                .get(..scheme.len())
+                .filter(|s| s.eq_ignore_ascii_case(scheme))
+                .map(|_| authorization[scheme.len()..].trim())
+                .filter(|t| !t.is_empty())
+            {
+                return Some((token.to_owned(), dpop));
+            }
+        }
     }
     if is_form_content_type(headers) {
         let form = read_form(body).await?;
         return form
             .first("access_token")
             .filter(|t| !t.trim().is_empty())
-            .map(str::to_owned);
+            .map(|t| (t.to_owned(), false));
     }
     None
 }
@@ -102,6 +124,25 @@ fn error(error: &str) -> Response {
     set_no_cache(&mut response);
     if let Ok(value) = HeaderValue::from_str(&value) {
         response.headers_mut().insert(WWW_AUTHENTICATE, value);
+    }
+    response
+}
+
+/// 401 for a sender-constrained token used without its proof or
+/// certificate: the challenge, and the nonce a DPoP proof must carry.
+fn challenged(challenge: &Challenge) -> Response {
+    let mut response = StatusCode::UNAUTHORIZED.into_response();
+    set_no_cache(&mut response);
+    let headers = response.headers_mut();
+    if let Ok(value) = HeaderValue::from_str(&challenge.www_authenticate()) {
+        headers.insert(WWW_AUTHENTICATE, value);
+    }
+    if let Some(nonce) = challenge
+        .dpop_nonce
+        .as_deref()
+        .and_then(|n| HeaderValue::from_str(n).ok())
+    {
+        headers.insert(rustid_core::dpop::NONCE_HEADER, nonce);
     }
     response
 }

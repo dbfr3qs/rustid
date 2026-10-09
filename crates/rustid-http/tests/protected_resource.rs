@@ -303,3 +303,143 @@ async fn a_resource_on_an_endpoint_path_leaves_its_other_methods_alone() {
     let token = client_token(state.clone()).await;
     assert!(!token.is_empty());
 }
+
+/// A user access token for `web` (scope `openid api1`), bound to `key`'s
+/// thumbprint when given.
+async fn user_token(state: &AppState, key: Option<&rustid_core::keys::LoadedKey>) -> String {
+    use rustid_core::jwt::b64url;
+    let s = &state.0;
+    let client = s
+        .stores
+        .clients
+        .find_client_by_id("web")
+        .await
+        .unwrap()
+        .unwrap();
+    let enabled = s
+        .stores
+        .resources
+        .get_all_enabled_resources()
+        .await
+        .unwrap();
+    let resources = rustid_core::scopes::validate_requested_resources(
+        &client,
+        &enabled,
+        &["openid".to_owned(), "api1".to_owned()],
+        &[],
+    )
+    .unwrap();
+    let session = rustid_core::session::UserSession::sign_in(
+        rustid_core::session::SignIn {
+            subject_id: "1".into(),
+            ..Default::default()
+        },
+        None,
+        chrono::Utc::now(),
+        3600,
+    );
+    let issuer = rustid_core::issuance::Issuer {
+        options: &s.options,
+        stores: &s.stores,
+        keys: &s.keys,
+        issuer: "https://idsrv.test",
+        now: chrono::Utc::now(),
+    };
+    let mut record = issuer
+        .user_access_token_record(&client, &resources, &session, None)
+        .await
+        .unwrap();
+    if let Some(key) = key {
+        let public = key.public_jwk();
+        // RFC 7638: the required members, sorted, without whitespace.
+        let canonical = format!(
+            r#"{{"e":"{}","kty":"RSA","n":"{}"}}"#,
+            public.e.unwrap(),
+            public.n.unwrap()
+        );
+        let thumbprint = b64url(
+            aws_lc_rs::digest::digest(&aws_lc_rs::digest::SHA256, canonical.as_bytes()).as_ref(),
+        );
+        record.token.confirmation = Some(rustid_core::dpop::cnf(&thumbprint));
+    }
+    issuer
+        .serialize_access_token(&client, &resources, &record, "1", None, None)
+        .await
+        .unwrap()
+}
+
+const USERINFO_URL: &str = "http://server/connect/userinfo";
+
+fn userinfo(scheme: &str, token: &str, dpop: Option<&str>) -> Request<Body> {
+    let mut request = Request::get("/connect/userinfo")
+        .header("host", "server")
+        .header("authorization", format!("{scheme} {token}"));
+    if let Some(dpop) = dpop {
+        request = request.header("dpop", dpop);
+    }
+    request.body(Body::empty()).unwrap()
+}
+
+#[tokio::test]
+async fn userinfo_serves_a_dpop_bound_token_with_its_proof() {
+    let state = state(None);
+    let key = proof_key();
+    let token = user_token(&state, Some(&key)).await;
+    let dpop = proof(&key, "GET", USERINFO_URL, Some(&token), None);
+    let (status, _, body) = send(state.clone(), userinfo("DPoP", &token, Some(&dpop))).await;
+    assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+    let json: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json["sub"], "1");
+    // The scheme's case doesn't matter.
+    let again = proof(&key, "GET", USERINFO_URL, Some(&token), None);
+    let (status, _, _) = send(state.clone(), userinfo("dpop", &token, Some(&again))).await;
+    assert_eq!(status, StatusCode::OK);
+    // A replayed proof: the challenge names the DPoP error.
+    let (status, headers, _) = send(state.clone(), userinfo("DPoP", &token, Some(&dpop))).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let challenge = headers["www-authenticate"].to_str().unwrap();
+    assert!(
+        challenge.contains("DPoP error=\"invalid_dpop_proof\""),
+        "{challenge}"
+    );
+    // No proof.
+    let (status, _, _) = send(state, userinfo("DPoP", &token, None)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn userinfo_refuses_a_dpop_bound_token_as_a_bearer_token() {
+    let state = state(None);
+    let token = user_token(&state, Some(&proof_key())).await;
+    let (status, headers, _) = send(state.clone(), userinfo("Bearer", &token, None)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let challenge = headers["www-authenticate"].to_str().unwrap();
+    assert!(
+        challenge.starts_with("Bearer error=\"invalid_token\""),
+        "{challenge}"
+    );
+    // Nor in a form body.
+    let request = Request::post("/connect/userinfo")
+        .header("host", "server")
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(Body::from(format!("access_token={token}")))
+        .unwrap();
+    let (status, _, _) = send(state, request).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn userinfo_serves_bearer_tokens_as_before() {
+    let state = state(None);
+    let token = user_token(&state, None).await;
+    let (status, _, body) = send(state.clone(), userinfo("Bearer", &token, None)).await;
+    assert_eq!(status, StatusCode::OK);
+    let json: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json["sub"], "1");
+    let (status, headers, _) = send(state, userinfo("Bearer", "nonsense", None)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        headers["www-authenticate"],
+        "Bearer realm=\"rustid\",error=\"invalid_token\""
+    );
+}

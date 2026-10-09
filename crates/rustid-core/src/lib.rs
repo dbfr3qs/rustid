@@ -10,6 +10,7 @@ pub mod claims;
 pub mod client_assertion;
 pub mod client_auth;
 pub mod client_certificate;
+pub mod client_jwks;
 pub mod clients;
 pub mod consent;
 pub mod data_protection;

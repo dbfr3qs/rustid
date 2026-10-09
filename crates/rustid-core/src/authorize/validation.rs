@@ -191,7 +191,15 @@ async fn run(
     if let e @ Err(_) = load_request_object(ctx, r).await {
         return Ok(e);
     }
-    if let e @ Err(_) = validate_request_object(ctx, r) {
+    // A client's keys at its `jwksUri` verify its request objects too.
+    let loaded = client(r).clone();
+    let keyed = match r.request_object.as_deref() {
+        Some(object) => {
+            crate::client_jwks::with_jwks_uri_keys(ctx.stores, &loaded, Some(object), ctx.now).await
+        }
+        None => std::borrow::Cow::Borrowed(loaded.as_ref()),
+    };
+    if let e @ Err(_) = validate_request_object(ctx, &keyed, r) {
         return Ok(e);
     }
     if let e @ Err(_) = validate_ui_locales(r, limits) {
@@ -443,7 +451,11 @@ pub fn return_url_query(r: &ValidatedAuthorizeRequest) -> String {
 /// other than client authentication is an error). On the authorize
 /// endpoint a `request_uri` is replaced by `request`, so the return URL
 /// carries the object itself.
-fn validate_request_object(ctx: &AuthorizeContext<'_>, r: &mut ValidatedAuthorizeRequest) -> Step {
+fn validate_request_object(
+    ctx: &AuthorizeContext<'_>,
+    keyed: &Client,
+    r: &mut ValidatedAuthorizeRequest,
+) -> Step {
     const CLIENT_AUTHENTICATION: &[&str] = &[
         "client_id",
         "client_secret",
@@ -459,13 +471,9 @@ fn validate_request_object(ctx: &AuthorizeContext<'_>, r: &mut ValidatedAuthoriz
         return Ok(());
     };
     let invalid_object = Err((INVALID_REQUEST_OBJECT, Some("Invalid JWT request")));
-    let Some(payload) = request_object::validate(
-        ctx.options,
-        ctx.issuer,
-        client(r),
-        &object,
-        ctx.now.timestamp(),
-    ) else {
+    let Some(payload) =
+        request_object::validate(ctx.options, ctx.issuer, keyed, &object, ctx.now.timestamp())
+    else {
         return invalid_object;
     };
     let first = |name: &str| {

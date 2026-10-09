@@ -573,6 +573,8 @@ pub struct Stores {
     pub token_request: Arc<dyn crate::token_request::TokenRequestValidator>,
     /// Likewise: how request objects are fetched by reference.
     pub request_uri: Arc<dyn crate::request_uri::RequestUriFetcher>,
+    /// The key sets fetched from clients' `jwksUri`s (through `request_uri`).
+    pub client_jwks: Arc<crate::client_jwks::JwksCache>,
     /// Likewise: how back-channel logout tokens are posted.
     pub back_channel: Arc<dyn crate::logout::BackChannelSender>,
     /// Likewise: the CIBA user validator, notification and custom validator.

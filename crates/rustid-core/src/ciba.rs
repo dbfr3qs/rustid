@@ -354,10 +354,13 @@ async fn validate(
             )));
         }
         let invalid = |d| Ok(Err(fail(REQUEST_OBJECT_ERROR, Some(d))));
+        let keyed =
+            crate::client_jwks::with_jwks_uri_keys(ctx.stores, client, Some(&object), ctx.now)
+                .await;
         let Some(claims) = crate::authorize::request_object::validate_with(
             ctx.options,
             ctx.issuer,
-            client,
+            &keyed,
             &object,
             ctx.now.timestamp(),
             false,

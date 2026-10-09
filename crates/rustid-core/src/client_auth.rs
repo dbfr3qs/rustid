@@ -91,7 +91,15 @@ pub async fn authenticate(
     }
     let mut confirmation = None;
     if client.require_client_secret && !client.is_implicit_only() {
-        match validate_secrets(ctx, &client.client_secrets, &parsed).await? {
+        // Keys at the client's jwksUri count as its JWK secrets.
+        let keyed = crate::client_jwks::with_jwks_uri_keys(
+            ctx.stores,
+            &client,
+            parsed.credential.as_deref(),
+            ctx.now,
+        )
+        .await;
+        match validate_secrets(ctx, &keyed.client_secrets, &parsed).await? {
             Some(cnf) => confirmation = cnf,
             None => {
                 fail(&client.client_id, "Invalid client secret");

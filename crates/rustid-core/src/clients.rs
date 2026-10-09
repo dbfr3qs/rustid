@@ -120,6 +120,9 @@ pub struct Client {
     pub sector_identifier_uri: Option<String>,
     /// Joins the server's salt in this client's pairwise subjects.
     pub pair_wise_subject_salt: Option<String>,
+    /// An https URL publishing the client's keys (a JSON Web Key Set), for
+    /// its client assertions and request objects, besides its `JWK` secrets.
+    pub jwks_uri: Option<String>,
     /// The algorithm userinfo answers are signed with for this client
     /// (OIDC Core §5.3.2); unset, userinfo answers JSON.
     pub userinfo_signed_response_alg: Option<String>,
@@ -196,6 +199,7 @@ impl Default for Client {
             subject_type: SubjectType::Public,
             sector_identifier_uri: None,
             pair_wise_subject_salt: None,
+            jwks_uri: None,
             userinfo_signed_response_alg: None,
             require_certificate_bound_tokens: false,
             require_dpop: false,
@@ -548,6 +552,11 @@ pub fn validate_client(
             "PostLogoutRedirectUri '{uri}' uses invalid scheme."
         ));
     }
+    if let Some(uri) = &client.jwks_uri
+        && !url::Url::parse(uri).is_ok_and(|u| u.scheme() == "https" && u.host().is_some())
+    {
+        return Err(format!("jwksUri '{uri}' must be an https URL."));
+    }
     if let Some(alg) = &client.userinfo_signed_response_alg
         && !crate::federation::upstream::ASYMMETRIC_ALGORITHMS.contains(&alg.as_str())
     {
@@ -570,7 +579,12 @@ pub fn validate_client(
         );
     }
     for grant in grants {
-        if grant != "implicit" && client.require_client_secret && client.client_secrets.is_empty() {
+        // Keys at a jwksUri are secrets too, read when they're needed.
+        if grant != "implicit"
+            && client.require_client_secret
+            && client.client_secrets.is_empty()
+            && client.jwks_uri.is_none()
+        {
             return Err(format!(
                 "Client secret is required for {grant}, but no client secret is configured."
             ));

@@ -852,6 +852,7 @@ async fn build_stores(
                         rustid_core::token_request::DefaultTokenRequestValidator,
                     ),
                     request_uri: Arc::new(rustid_core::request_uri::NoRequestUriFetcher),
+                    client_jwks: Default::default(),
                     back_channel: Arc::new(rustid_core::logout::NoBackChannelSender),
                     grant_validation: Arc::new(rustid_core::grant_validation::NoGrantValidator),
                     ciba: Arc::new(rustid_core::ciba::NopCibaService),

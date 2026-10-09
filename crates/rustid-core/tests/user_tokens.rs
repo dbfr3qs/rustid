@@ -161,6 +161,7 @@ fn identity_tokens_hash_the_access_token_and_add_identity_claims_on_request() {
         state_hash: Some("sh"),
         session_id: Some("SID"),
         include_all_identity_claims: false,
+        requested_claim_types: &[],
     };
     let token = identity_token(
         "https://i",
@@ -191,6 +192,7 @@ fn identity_tokens_hash_the_access_token_and_add_identity_claims_on_request() {
     let all = IdentityTokenRequest {
         subject: None,
         include_all_identity_claims: true,
+        requested_claim_types: &[],
         ..request
     };
     assert!(includes_identity_claims(&client, &all));

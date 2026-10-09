@@ -199,16 +199,21 @@ impl Issuer<'_> {
         let key = self.keys.signing_key(allowed).await?.ok_or_else(|| {
             TokenFailure::Server(format!("no signing key for algorithms {allowed:?}"))
         })?;
-        let profile = if includes_identity_claims(client, request) {
-            self.profile_claims(
-                callers::IDENTITY_TOKEN,
-                client,
-                session,
-                &identity_token_claim_types(resources),
-            )
-            .await?
+        let mut requested = if includes_identity_claims(client, request) {
+            identity_token_claim_types(resources)
         } else {
             Vec::new()
+        };
+        for claim_type in request.requested_claim_types {
+            if !requested.contains(claim_type) {
+                requested.push(claim_type.clone());
+            }
+        }
+        let profile = if requested.is_empty() {
+            Vec::new()
+        } else {
+            self.profile_claims(callers::IDENTITY_TOKEN, client, session, &requested)
+                .await?
         };
         if crate::pairwise::unavailable(self.options, client) {
             return Err(TokenFailure::Server(crate::pairwise::unavailable_message(

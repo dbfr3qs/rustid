@@ -42,10 +42,25 @@ pub async fn browser_tokens(
         .split(' ')
         .collect();
     let session_id = request.session_id.as_deref().filter(|s| !s.is_empty());
+    let requested_claims = request.requested_claims.granted(client, &resources);
     let access_token = if response_types.contains(&"token") {
+        let mut record = issuer
+            .user_access_token_record(client, &resources, session, session_id)
+            .await?;
+        record
+            .token
+            .claims
+            .extend(requested_claims.userinfo_claims());
         Some(
             issuer
-                .user_access_token(client, &resources, session, session_id, None)
+                .serialize_access_token(
+                    client,
+                    &resources,
+                    &record,
+                    &session.subject_id,
+                    session_id,
+                    None,
+                )
                 .await?,
         )
     } else {
@@ -70,6 +85,7 @@ pub async fn browser_tokens(
             // An access token is requested by every response type but a
             // bare `id_token`: a code can still be redeemed for one.
             include_all_identity_claims: request.response_type == Some("id_token"),
+            requested_claim_types: &requested_claims.id_token,
         };
         Some(
             issuer

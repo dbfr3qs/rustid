@@ -282,6 +282,7 @@ pub fn translate_refresh_token(row: &GrantRow) -> Result<PersistedGrant, ImportE
     let mut tokens = source.access_tokens;
     let default = tokens.remove("").or(source.access_token).map(access_token);
     let token = RefreshToken {
+        requested_claims: Default::default(),
         client_id: source.client_id,
         subject,
         session_id: source.session_id,

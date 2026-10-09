@@ -7,7 +7,14 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
+use crate::clients::Client;
 use crate::resources::IdentityResource;
+use crate::scopes::ValidatedResources;
+use crate::tokens::Claim;
+
+/// The access token claim carrying the claim types asked for in userinfo,
+/// one claim per type.
+pub const USERINFO_CLAIMS: &str = "userinfo_claims";
 
 /// The claim types asked for, in request order.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,5 +67,22 @@ impl RequestedClaims {
             userinfo: self.userinfo.iter().filter(allowed).cloned().collect(),
             id_token: self.id_token.iter().filter(allowed).cloned().collect(),
         }
+    }
+
+    /// What the grant may carry: for a client that shows consent, only the
+    /// claim types of the identity resources granted.
+    pub fn granted(&self, client: &Client, resources: &ValidatedResources) -> RequestedClaims {
+        if client.require_consent {
+            self.limited_to(&resources.identity_resources)
+        } else {
+            self.clone()
+        }
+    }
+
+    /// The access token claims recording the userinfo request.
+    pub fn userinfo_claims(&self) -> impl Iterator<Item = Claim> + '_ {
+        self.userinfo
+            .iter()
+            .map(|name| Claim::string(USERINFO_CLAIMS, name))
     }
 }

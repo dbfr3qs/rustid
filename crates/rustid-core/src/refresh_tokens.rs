@@ -39,6 +39,13 @@ pub struct RefreshToken {
     /// How the request that created it proved possession of a key.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub proof_type: Option<ProofType>,
+    /// What the `claims` parameter asked for: new access tokens and id
+    /// tokens on refresh carry it again.
+    #[serde(
+        default,
+        skip_serializing_if = "crate::claims_request::RequestedClaims::is_empty"
+    )]
+    pub requested_claims: crate::claims_request::RequestedClaims,
 }
 
 /// `ProofType`: how a token request proved possession of a key.

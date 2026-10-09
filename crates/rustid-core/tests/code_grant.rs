@@ -43,6 +43,7 @@ fn code(client_id: &str, scopes: &[&str]) -> AuthorizationCode {
         nonce: Some("n1".into()),
         state_hash: None,
         was_consent_shown: false,
+        requested_claims: Default::default(),
     }
 }
 

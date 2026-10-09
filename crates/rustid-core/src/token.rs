@@ -956,6 +956,10 @@ async fn issue_for_code(
         .user_access_token_record(client, resources, &code.subject, session_id)
         .await?;
     record.token.confirmation.clone_from(&proof.confirmation);
+    record
+        .token
+        .claims
+        .extend(code.requested_claims.userinfo_claims());
     let access_token = issuer
         .serialize_access_token(
             client,
@@ -982,6 +986,7 @@ async fn issue_for_code(
             lifetime: refresh_tokens::initial_lifetime(client),
             consumed_time: None,
             proof_type: Some(proof.proof_type),
+            requested_claims: code.requested_claims.clone(),
         };
         token.set_access_token(record, resource);
         Some(refresh_tokens::create(ctx.stores.grants.as_ref(), &token).await?)
@@ -997,6 +1002,7 @@ async fn issue_for_code(
             state_hash: code.state_hash.as_deref(),
             session_id,
             include_all_identity_claims: false,
+            requested_claim_types: &code.requested_claims.id_token,
         };
         Some(
             issuer
@@ -1172,6 +1178,10 @@ async fn issue_for_refresh(
                 .await?;
             record.token.confirmation.clone_from(&proof.confirmation);
             record
+                .token
+                .claims
+                .extend(token.requested_claims.userinfo_claims());
+            record
         }
     };
     token.set_access_token(record.clone(), resource);
@@ -1205,6 +1215,7 @@ async fn issue_for_refresh(
             state_hash: None,
             session_id: session_id.as_deref(),
             include_all_identity_claims: false,
+            requested_claim_types: &token.requested_claims.id_token,
         };
         Some(
             issuer

@@ -148,6 +148,7 @@ pub(super) async fn issue_for_ciba(
         .await?;
     let refresh_token = if resources.offline_access {
         let mut token = RefreshToken {
+            requested_claims: Default::default(),
             client_id: client.client_id.clone(),
             subject: subject.clone(),
             session_id: session_id.map(str::to_owned),
@@ -174,6 +175,7 @@ pub(super) async fn issue_for_ciba(
         state_hash: None,
         session_id,
         include_all_identity_claims: false,
+        requested_claim_types: &[],
     };
     let id_token = issuer
         .identity_token(client, resources, subject, &identity_request)

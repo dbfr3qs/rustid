@@ -9,6 +9,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::request::ValidatedAuthorizeRequest;
+use crate::claims_request::RequestedClaims;
 use crate::grants::{PersistedGrant, hashed_key, new_handle};
 use crate::params::Params;
 use crate::session::UserSession;
@@ -41,6 +42,9 @@ pub struct AuthorizationCode {
     /// `s_hash`, when `emit_state_hash` is on (sub-plan 2c).
     pub state_hash: Option<String>,
     pub was_consent_shown: bool,
+    /// What the `claims` parameter asked for, as far as the grant allows.
+    #[serde(default, skip_serializing_if = "RequestedClaims::is_empty")]
+    pub requested_claims: RequestedClaims,
 }
 
 /// Base64 of the UTF-8 SHA-256.
@@ -83,6 +87,11 @@ impl AuthorizationCode {
             nonce: request.nonce.clone(),
             state_hash: None,
             was_consent_shown: request.was_consent_shown,
+            requested_claims: request
+                .resources
+                .as_ref()
+                .map(|r| request.requested_claims.granted(client, r))
+                .unwrap_or_default(),
         }
     }
 

@@ -255,6 +255,7 @@ pub const PROTOCOL_CLAIM_TYPES: &[&str] = &[
     "sub",
     "scope",
     "cnf",
+    "userinfo_claims",
 ];
 
 /// Distinct types, without the ones a token's
@@ -394,6 +395,8 @@ pub struct IdentityTokenRequest<'a> {
     pub session_id: Option<&'a str>,
     /// Issue every requested identity claim (no access token was issued).
     pub include_all_identity_claims: bool,
+    /// Claim types the `claims` parameter asked for in the id token.
+    pub requested_claim_types: &'a [String],
     /// The `sub` the client sees, when it isn't the session's own (a
     /// pairwise subject).
     pub subject: Option<&'a str>,

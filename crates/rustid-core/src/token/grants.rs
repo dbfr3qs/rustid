@@ -289,6 +289,7 @@ async fn refresh_token(
     proof: &super::RequestProof,
 ) -> Result<String, TokenFailure> {
     let mut token = RefreshToken {
+        requested_claims: Default::default(),
         client_id: client.client_id.clone(),
         subject,
         session_id: None,

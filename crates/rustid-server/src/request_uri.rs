@@ -1,7 +1,8 @@
-//! Fetching request objects by reference
-//! over HTTP, without following redirects, within 10 seconds, and reading at
-//! most 1 MiB. The URI is the client's; which hosts it may name
-//! is the operator's concern (enable request URIs only for trusted clients).
+//! Fetching what clients publish by reference (request objects, sector
+//! identifier documents, `jwks_uri` key sets) over HTTP, without following
+//! redirects, within 10 seconds, and reading at most 1 MiB. The URI is the
+//! client's; which hosts it may name is the operator's concern (enable
+//! request URIs and dynamic registration only for trusted clients).
 
 use std::time::Duration;
 

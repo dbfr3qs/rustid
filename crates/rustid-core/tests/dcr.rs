@@ -902,3 +902,46 @@ async fn unadvertised_or_encrypted_userinfo_is_invalid_client_metadata() {
         );
     }
 }
+
+#[test]
+fn private_key_jwt_with_a_jwks_uri_is_valid() {
+    let client = dcr::validate(&mut request(json!({
+        "grant_types": ["client_credentials"], "token_endpoint_auth_method": "private_key_jwt",
+        "jwks_uri": "https://example.com/jwks", "require_signed_request_object": true
+    })))
+    .unwrap();
+    assert_eq!(client.jwks_uri.as_deref(), Some("https://example.com/jwks"));
+    assert!(client.client_secrets.is_empty());
+    assert!(client.require_request_object);
+}
+
+#[test]
+fn a_jwks_uri_must_be_https() {
+    for uri in [
+        "http://example.com/jwks",
+        "jwks",
+        "https://example.com/jwks#f",
+    ] {
+        assert_eq!(
+            error(json!({ "grant_types": ["client_credentials"], "jwks_uri": uri })),
+            metadata("jwks_uri must be an https URL"),
+            "{uri}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn a_registered_jwks_uri_is_stored_and_echoed() {
+    let stores = memory();
+    let body = register_in(
+        &stores,
+        &Default::default(),
+        json!({ "grant_types": ["client_credentials"], "token_endpoint_auth_method": "private_key_jwt",
+        "jwks_uri": "https://example.com/jwks" }),
+    )
+    .await;
+    assert!(body.get("client_secret").is_none());
+    assert_eq!(body["jwks_uri"], "https://example.com/jwks");
+    let client = stored(&stores, &body).await;
+    assert_eq!(client.jwks_uri.as_deref(), Some("https://example.com/jwks"));
+}

@@ -297,7 +297,16 @@ fn secrets(request: &mut RegistrationRequest, client: &mut Client) -> Step {
     if request.jwks_uri.is_some() && request.jwks.is_some() {
         return fail("The jwks_uri and jwks parameters must not be used together");
     }
+    if let Some(uri) = &request.jwks_uri {
+        if !url::Url::parse(uri)
+            .is_ok_and(|u| u.scheme() == "https" && u.host().is_some() && u.fragment().is_none())
+        {
+            return fail("jwks_uri must be an https URL");
+        }
+        client.jwks_uri = Some(uri.clone());
+    }
     if request.jwks.is_none()
+        && request.jwks_uri.is_none()
         && request.token_endpoint_auth_method.as_deref() == Some("private_key_jwt")
     {
         return fail(
@@ -308,11 +317,14 @@ fn secrets(request: &mut RegistrationRequest, client: &mut Client) -> Step {
         .token_endpoint_auth_method
         .get_or_insert_with(|| "client_secret_basic".to_owned());
     let keys = request.jwks.as_ref().and_then(|j| j.keys.as_ref());
-    if keys.is_none() && request.require_signed_request_object == Some(true) {
+    if keys.is_none()
+        && request.jwks_uri.is_none()
+        && request.require_signed_request_object == Some(true)
+    {
         return fail("Jwks are required when the require signed request object flag is enabled");
     }
+    client.require_request_object = request.require_signed_request_object.unwrap_or(false);
     if let Some(keys) = keys {
-        client.require_request_object = request.require_signed_request_object.unwrap_or(false);
         for key in keys {
             let Value::Object(jwk) = key else {
                 return fail("malformed jwk");

@@ -66,3 +66,20 @@ async fn the_userinfo_signing_algorithm_round_trips() {
         "PS256"
     );
 }
+
+#[tokio::test]
+async fn the_jwks_uri_round_trips() {
+    let store = InMemoryConfiguration::default();
+    let admin = ClientAdmin::default();
+    let mut input = pairwise();
+    input.client.subject_type = SubjectType::Public;
+    input.client.sector_identifier_uri = None;
+    input.client.redirect_uris = vec!["https://a.example/cb".into()];
+    input.client.jwks_uri = Some("https://a.example/jwks".into());
+    let saved = admin.create(&store, input).await.unwrap().unwrap();
+    let read = admin.get(&store, &saved.id).await.unwrap().unwrap();
+    assert_eq!(
+        serde_json::to_value(&read.item).unwrap()["jwksUri"],
+        "https://a.example/jwks"
+    );
+}

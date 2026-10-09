@@ -47,6 +47,66 @@ pub async fn userinfo(
     Ok(answer(ctx, token).await?.map(|(claims, _)| claims))
 }
 
+/// A userinfo request as the endpoint received it.
+#[derive(Debug, Clone, Copy)]
+pub struct UserInfoRequest<'a> {
+    pub token: &'a str,
+    /// The token came with the `DPoP` scheme.
+    pub dpop: bool,
+    /// The `DPoP` headers.
+    pub dpop_proofs: &'a [String],
+    pub method: &'a str,
+    /// The endpoint's URL, which a proof's `htu` must name.
+    pub url: &'a str,
+    pub client_certificate: Option<&'a crate::client_certificate::ClientCertificate>,
+}
+
+/// Why a userinfo request was refused: a protected resource error
+/// (`invalid_token`, `expired_token`, `insufficient_scope`), or a
+/// sender-constrained token used without its proof or certificate.
+#[derive(Debug, Clone, PartialEq)]
+pub enum UserInfoRefusal {
+    Error(&'static str),
+    Challenge(crate::protected_resource::Challenge),
+}
+
+/// [`userinfo_response`] for a request whose token may be sender-
+/// constrained: a DPoP-bound token needs the `DPoP` scheme and a proof
+/// bound to it (RFC 9449 §7), and a certificate-bound token the
+/// certificate it's bound to (RFC 8705).
+#[tracing::instrument(name = "userinfo.validate_request", skip_all)]
+pub async fn userinfo_for_request(
+    ctx: &ValidationContext<'_>,
+    request: &UserInfoRequest<'_>,
+    protector: &crate::data_protection::DataProtector,
+) -> Result<Result<UserInfoAnswer, UserInfoRefusal>, StoreError> {
+    // An invalid token gets userinfo's own error below.
+    if let Ok(validated) = crate::access_tokens::validate(ctx, request.token).await? {
+        let resource = crate::protected_resource::ResourceRequest {
+            authorization: None,
+            dpop_proofs: request.dpop_proofs,
+            method: request.method,
+            url: request.url,
+            client_certificate: request.client_certificate,
+        };
+        if let Err(challenge) = crate::protected_resource::check_binding(
+            ctx,
+            &validated,
+            request.token,
+            request.dpop,
+            &resource,
+            protector,
+        )
+        .await?
+        {
+            return Ok(Err(UserInfoRefusal::Challenge(challenge)));
+        }
+    }
+    Ok(userinfo_response(ctx, request.token)
+        .await?
+        .map_err(UserInfoRefusal::Error))
+}
+
 /// What the userinfo endpoint answers: the claims as JSON, or, for a client
 /// with `userinfoSignedResponseAlg`, a JWT of them (OIDC Core §5.3.2).
 #[derive(Debug, Clone, PartialEq)]

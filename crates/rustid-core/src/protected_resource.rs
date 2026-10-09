@@ -2,7 +2,7 @@
 //! DPoP-bound tokens, for conformance runs:
 //! A bearer token, or a DPoP-bound token with a proof bound to it.
 
-use crate::access_tokens::{ValidationContext, validate};
+use crate::access_tokens::{ValidatedToken, ValidationContext, validate};
 use crate::data_protection::DataProtector;
 use crate::dpop::{self, BoundToken, INVALID_DPOP_PROOF};
 use crate::stores::{StoreError, find_enabled_client};
@@ -81,6 +81,29 @@ pub async fn authenticate(
         Ok(validated) => validated,
         Err(_) => return refused(),
     };
+    if let Err(challenge) = check_binding(ctx, &validated, token, dpop, request, protector).await? {
+        return Ok(Err(challenge));
+    }
+    Ok(Ok(validated
+        .first("sub")
+        .or(validated.first("client_id"))
+        .unwrap_or_default()
+        .to_owned()))
+}
+
+/// Whether a valid token may be used as presented: with `dpop` (the
+/// `DPoP` scheme), a proof bound to it; as a bearer token, only when it
+/// isn't DPoP-bound, and when it's bound to a certificate only over a
+/// connection presenting that certificate.
+pub async fn check_binding(
+    ctx: &ValidationContext<'_>,
+    validated: &ValidatedToken,
+    token: &str,
+    dpop: bool,
+    request: &ResourceRequest<'_>,
+    protector: &DataProtector,
+) -> Result<Result<(), Challenge>, StoreError> {
+    let refused = || Ok(Err(Challenge::default()));
     let cnf = validated
         .first("cnf")
         .map(|c| serde_json::Value::String(c.to_owned()));
@@ -160,11 +183,7 @@ pub async fn authenticate(
             ..Challenge::default()
         }));
     }
-    Ok(Ok(validated
-        .first("sub")
-        .or(validated.first("client_id"))
-        .unwrap_or_default()
-        .to_owned()))
+    Ok(Ok(()))
 }
 
 /// The `x5t#S256` of a `cnf` claim (as JSON text), when it binds the token

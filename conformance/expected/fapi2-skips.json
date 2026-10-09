@@ -1,8 +1,1 @@
-[
-  {
-    "test-name": "fapi2-security-profile-id2-test-claims-parameter-identity-claims",
-    "variant": "*",
-    "configuration-filename": "*/fapi2.json",
-    "comment": "the claims request parameter isn't supported (claims_parameter_supported is false)"
-  }
-]
+[]

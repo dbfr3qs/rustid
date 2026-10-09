@@ -1,27 +1,5 @@
 [
   {
-    "test-name": "oidcc-claims-essential",
-    "variant": {
-      "response_type": "id_token token"
-    },
-    "configuration-filename": "*/formpost-implicit.json",
-    "current-block": "",
-    "condition": "EnsureUserInfoContainsName",
-    "expected-result": "warning",
-    "comment": "the claims request parameter isn't supported"
-  },
-  {
-    "test-name": "oidcc-claims-essential",
-    "variant": {
-      "response_type": "id_token"
-    },
-    "configuration-filename": "*/formpost-implicit.json",
-    "current-block": "Verify authorization endpoint response",
-    "condition": "EnsureIdTokenContainsName",
-    "expected-result": "warning",
-    "comment": "the claims request parameter isn't supported: an essential name claim isn't added to the id token"
-  },
-  {
     "test-name": "oidcc-ensure-request-with-acr-values-succeeds",
     "variant": "*",
     "configuration-filename": "*/formpost-implicit.json",

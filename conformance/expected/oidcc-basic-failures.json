@@ -25,14 +25,5 @@
     "condition": "EnsureHttpStatusCodeIs4xx",
     "expected-result": "warning",
     "comment": "code reuse doesn't revoke the tokens already issued (a 'should')"
-  },
-  {
-    "test-name": "oidcc-claims-essential",
-    "variant": "*",
-    "configuration-filename": "*/oidcc-basic.json",
-    "current-block": "",
-    "condition": "EnsureUserInfoContainsName",
-    "expected-result": "warning",
-    "comment": "the claims request parameter isn't supported"
   }
 ]

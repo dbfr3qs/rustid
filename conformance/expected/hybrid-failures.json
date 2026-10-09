@@ -1,14 +1,5 @@
 [
   {
-    "test-name": "oidcc-claims-essential",
-    "variant": "*",
-    "configuration-filename": "*/hybrid.json",
-    "current-block": "",
-    "condition": "EnsureUserInfoContainsName",
-    "expected-result": "warning",
-    "comment": "the claims request parameter isn't supported"
-  },
-  {
     "test-name": "oidcc-codereuse-30seconds",
     "variant": "*",
     "configuration-filename": "*/hybrid.json",

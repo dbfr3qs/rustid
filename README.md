@@ -72,6 +72,7 @@ Then try:
 | [docs/admin-api.md](docs/admin-api.md) | The admin API: clients, resources, SAML service providers, schemas |
 | [docs/dynamic-client-registration.md](docs/dynamic-client-registration.md) | Clients registering themselves (RFC 7591), and RFC 7592 read and delete |
 | [docs/pairwise-subjects.md](docs/pairwise-subjects.md) | Pairwise subject identifiers for clients that ask for them |
+| [docs/claims-parameter.md](docs/claims-parameter.md) | The `claims` request parameter: asking for individual claims |
 | [docs/migration.md](docs/migration.md) | Importing a migration bundle |
 | [docs/conformance.md](docs/conformance.md) | OpenID Foundation conformance runs |
 | [docs/fuzzing.md](docs/fuzzing.md) | Fuzz targets and campaigns |

@@ -7,6 +7,8 @@ minor version may change configuration or APIs.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-09
+
 ### Added
 
 - The `claims` request parameter (OpenID Connect Core 1.0 §5.5), on authorize and PAR, in the query or a request object. Its `userinfo` and `id_token` members add claim types to userinfo and the id token, limited to the identity resources the client is allowed (when the consent page is shown, the ones the user granted), and checked again on refresh and at userinfo. Access tokens record the userinfo request as `userinfo_claims`. Discovery lists `claims_parameter_supported: true`. See [docs/claims-parameter.md](docs/claims-parameter.md).
